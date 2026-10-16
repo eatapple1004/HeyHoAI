@@ -4,148 +4,93 @@
 <meta charset="UTF-8" />
 <meta name="google" content="notranslate" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia · Community Creations</title>
-<script src="/js/flags.js" defer></script>
-<script src="/js/no-pip.js" defer></script>
+<title>Doppia · Explore</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
-<script src="/js/i18n.js?v=27" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
-<style>
-  .wrap{max-width:none;margin:0;padding:34px 24px 80px;position:relative;z-index:2}/* (2026-07-03) Leonardo식 full-bleed. 롤백: max-width:1280px;margin:0 auto 복원 */
-  .head{margin-bottom:24px}
-  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
-  .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
-  /* 마소너리 그리드 */
-  /* creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
-  .grid{column-count:2;column-gap:14px}  /* 폴백 */
-  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
-  @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-  @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}/* (2026-07-03) full-bleed지만 한 줄 최대 4개 + 이후 줄바꿈. */
-  #grid .card{margin:0;align-self:start;break-inside:auto}
-  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
-  .card .media{display:block;width:100%;height:auto;background:#0c0c14}
-  .hlink{color:inherit;text-decoration:none}
-  .hlink:hover{color:var(--accent2);text-decoration:underline}
-  /* 호버 오버레이: 평소 숨김 → 호버 시 상단(생성자+하트)·하단(액션). 컨테이너는 클릭 통과(pointer-events:none), 버튼만 클릭. */
-  .card .ovt,.card .ovb{position:absolute;left:0;right:0;opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
-  .card:hover .ovt,.card:hover .ovb{opacity:1}
-  .card .ovt{top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
-  .card .ovb{bottom:0;padding:30px 11px 12px;background:linear-gradient(transparent,rgba(0,0,0,.82))}
-  .card .by{pointer-events:auto;font-size:12px;color:#fff;font-weight:600;text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
-  .card a.by:hover{text-decoration:underline}
-  .card .like{pointer-events:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,border-color .15s}
-  .card .like:active{transform:scale(.88)}
-  .card .like .hrt{font-size:13px;line-height:1}
-  .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.6)}
-  .card .act{pointer-events:auto;width:100%;border:none;border-radius:9px;padding:9px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .act.save{background:rgba(255,255,255,.17);color:#fff;border:1px solid rgba(255,255,255,.32)}
-  .card .act.use{background:var(--accent);color:#fff}
-  .card .act.ghost{background:rgba(255,255,255,.14);color:#fff}
-  .card .vbadge{position:absolute;top:9px;left:9px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:3;opacity:0;transition:opacity .15s}
-  .card:hover .vbadge{opacity:1}
-  .empty{text-align:center;color:var(--dim);padding:80px 20px}
-  .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
-  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
-  #toast.show{opacity:1}
-  /* (2026-07-03) Templates 카탈로그 CSS(.tabbar/.filter-row/.chip/.tgrid/.tcard 등)는 Store(/store)로 이전 */
-</style>
+<script src="/js/topnav.js?v=31" defer></script>
+<script src="/js/thumbs.js?v=2"></script>
 </head>
-<body class="has-rail">
-<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
-<div class="grain"></div>
-<div class="credits" id="saasUserBox"></div><!-- rail.js가 레일 하단으로 이동 · saas-auth.js가 아바타 채움 -->
+<body>
+<!-- (2026-10-13) 베이스 1차 — Explore = 입구 여러 개(힉스필드 구조). 캐러셀(Image·Video·Engines live / Lens·Pack·KakaoTalk·MCP soon) → 카톡 배너(soon) + 툴 카드 → 커뮤니티 피드.
+     옛 explore.html(Community Creations 단일 피드)은 맨 아래 Community 섹션으로 흡수. 좋아요·상세 링크는 그대로. -->
 <div class="wrap">
-  <div class="head">
-    <h1>Community Creations</h1>
-    <div class="sub">Real creations from the Doppia community. Like one? <b style="color:var(--accent2)">Make it with your own face or product.</b></div>
+  <div class="carwrap"><button class="carbtn l" id="carL">‹</button><div class="car" id="car">
+    <a class="shc" href="/image">
+      <div class="shv split2"><div><img src="/img/landing/picked/serum-03.jpg" alt=""><span class="tg y">Your photo</span></div><div><img src="/img/producthero/stone-plinth-luxe.jpg" alt=""><span class="tg p">Nano Banana Pro</span></div></div>
+      <h3>IMAGE <span class="bd top">top</span></h3><p>Every image engine in one place. Reference + prompt, label kept.</p>
+    </a>
+    <a class="shc" href="/video">
+      <div class="shv"><div class="vid3"><img src="/img/producthero/liquid-splash.jpg" alt=""><img src="/img/producthero/silk-drape.jpg" alt=""><img src="/img/producthero/noir-gold.jpg" alt=""><span class="play">▶</span></div><span class="tg y">image → video · sound on</span></div>
+      <h3>VIDEO <span class="bd new">new</span></h3><p>Kling · Veo · Runway · Seedance · Wan · Hailuo · Grok. Start from any image result.</p>
+    </a>
+    <!-- (2026-10-13) Doppia Works — 3번째 카드(사용자: 잘 보이되 1등은 아니게). 사진 없이 타일 4장. (10-16) Doppia × USAsia Journal 로 — 단골 타일 자리에 저널 노출. -->
+    <a class="shc" href="/works">
+      <div class="shv"><div class="engmosaic"><div><b>6</b>questions</div><div><b>📣</b>Promotion</div><div><b>🎯</b>Ads</div><div><b>📰</b>USAsia Journal</div></div><span class="tg y">we run it for you</span></div>
+      <h3>DOPPIA × USASIA JOURNAL <span class="bd new">new</span></h3><p>Marketing check-up in six questions. Doppia runs your promotion and ads — and lists you in USAsia Journal.</p>
+    </a>
+    <a class="shc" href="/image">
+      <div class="shv"><div class="engmosaic" id="engmosaic"></div><span class="tg y" id="engTag">engines live on this server</span></div>
+      <h3>ENGINES <span class="bd new">new</span></h3><p id="engList">Loading the catalog…</p>
+    </a>
+    <a class="shc" href="/shoot">
+      <div class="shv"><div class="mix4"><img src="/img/models/f003.jpg" alt=""><img src="/img/productcut/ghost-mannequin-cut.png" alt=""><img src="/img/backgrounds/bg-studio-1.jpg" alt=""><img src="/img/studiomodel/model-cut.png" alt=""></div><span class="tg y">model + garment + background</span></div>
+      <h3>DOPPIA SHOOT · MODEL SHOTS</h3><p>Pick a model, upload the garment, choose the scene.</p>
+    </a>
+    <a class="shc" href="/lens">
+      <div class="shv"><div class="lens7"><img src="/img/productcut/product-cut.png" alt=""><img src="/img/productcut/flat-lay-cut.png" alt=""><img src="/img/productcut/detail-cut.png" alt=""><img src="/img/producthero/dewy-glass.jpg" alt=""><img src="/img/accessories/jewelry-on-hand.png" alt=""><img src="/img/producthero/sunlit-pop.jpg" alt=""><img src="/img/producthero/gift-set-group.jpg" alt=""></div><span class="tg y">7 presets · label kept ✓</span></div>
+      <h3>DOPPIA LENS · PRODUCT SHOTS</h3><p>Saved looks — drop in your product, get the same concept every time.</p>
+    </a>
+    <a class="shc soon" href="#" onclick="return false">
+      <div class="shv"><div class="lens7"><img src="/img/productcut/product-cut.png" alt=""><img src="/img/producthero/palette-flat-lay.jpg" alt=""><img src="/img/producthero/swatch-beside.jpg" alt=""><img src="/img/producthero/bath-ledge.jpg" alt=""><img src="/img/producthero/botanical-dew.jpg" alt=""><img src="/img/producthero/gloss-mirror.jpg" alt=""><img src="/img/producthero/wet-tile-spa.jpg" alt=""></div><span class="tg p" style="left:auto;right:10px">1 photo → whole listing</span><span class="ribbon">COMING SOON</span></div>
+      <h3>CONTENT PACK</h3><p>Coupang · Naver Smart Store · own website · Amazon. The listing you actually upload.</p>
+    </a>
+    <a class="shc soon" href="#" onclick="return false">
+      <div class="shv" style="background:linear-gradient(120deg,#1a1430,#2a1640);display:grid;place-items:center"><div style="text-align:center;color:var(--lime);font-family:'Sora';font-weight:800;font-size:26px;line-height:1.1">SEND A PHOTO<br>ON KAKAOTALK</div><span class="ribbon">COMING SOON</span></div>
+      <h3>KAKAOTALK</h3><p>No app, no sign-up. Send the photo, get the shot back.</p>
+    </a>
+  </div><button class="carbtn r" id="carR">›</button></div>
+
+  <div class="promo">
+    <div class="pbig soon"><span class="ribbon">COMING SOON</span><h2>SEND A PHOTO<br>ON KAKAOTALK.<br>GET THE SHOT BACK.</h2><p>No app, no sign-up. Image · Video from one chat.</p><span class="pcta">Coming soon</span><img src="/img/producthero/noir-gold.jpg" alt=""></div>
+    <div class="tcards" id="tcards"></div>
   </div>
 
-  <!-- ▼▼▼ (2026-07-03) Templates 탭 → 독립 Store 페이지(/store)로 분리. Explore = 커뮤니티 Creations 전용. 롤백: 탭바 + #tab-templates 섹션 + 카탈로그 CSS/JS(switchTab·loadCatalog·tcard·acquireTpl·?tab=templates) 복원 ▼▼▼ -->
-  <!-- Creations: 커뮤니티 공개 결과 피드 -->
-  <div class="grid" id="grid"></div>
-  <div class="empty hidden" id="empty"><b>Nothing here yet</b>Be the first — create something in Shots (Public mode on) and it shows up here.</div>
+  <div class="sect"><h2>Community</h2><p>Public results from everyone. Like one? Make it with your own product.</p></div>
+  <div class="masonry" id="grid" style="columns:4"></div>
+  <div class="empty" id="empty" hidden><b>Nothing here yet</b><br>Generate something in Image with Private Mode off and it shows up here.</div>
 </div>
-<div id="toast"></div>
 <script>
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
-
-// Explore Creations 카드 = 호버 액션 없는 깔끔한 미리보기(클릭→상세). 템플릿 획득(acquire)은 Store(/store)로 이전.
-function card(it){
-  // 미디어 로드 실패(파일 누락 404 등) → 카드 자체 제거(빈 카드 안 뜨게)
-  const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
-  const media=it.type==='video'
-    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay ${onerr}></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
-  const by=it.creatorHandle
-    ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
-    : `<span class="by">@creator</span>`;
-  const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
-  return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'">
-    <div class="ovt">${by}${like}</div>
-    ${media}
-  </div>`;
-}
-async function toggleLike(idx,btn){
-  const on=btn.classList.contains('on');
-  btn.disabled=true;
-  try{
-    const r=await fetch('/api/generate/results/'+idx+'/like',{method:on?'DELETE':'POST'});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    btn.classList.toggle('on',d.data.liked);
-    btn.querySelector('.hrt').textContent=d.data.liked?'♥':'♡';
-    btn.querySelector('.lct').textContent=d.data.likes;
-    btn.title=d.data.liked?'Liked':'Like';
-  }catch(e){toast('Like failed: '+(e.message||e));}
-  finally{btn.disabled=false;}
-}
-
-async function load(){
-  const grid=document.getElementById('grid'),empty=document.getElementById('empty');
-  try{
-    const d=(await(await fetch('/api/generate/community?limit=80')).json()).data||[];
-    if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
-    empty.classList.add('hidden');grid.innerHTML=d.map(card).join('');
-    playFeedVideos();
-    layoutGridMasonry();
-  }catch(e){console.error('explore load failed',e);empty.classList.remove('hidden');}
-}
-// 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
-function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
-function layoutGridMasonry(){
-  const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
-  g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
-    if(m&&!m.__gmHooked){ m.__gmHooked=1; try{m.loading='eager';}catch(e){} const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
-      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeGridCard(c); else m.addEventListener(ev,()=>sizeGridCard(c),{once:true}); }
-    sizeGridCard(c); });
-}
-addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
-// 동적 삽입된 영상은 autoplay 속성만으론 재생이 안 걸려 명시적으로 play() 호출(muted=정책 통과). 화면 들어올 때 재생.
-function playFeedVideos(){
-  const vids=document.querySelectorAll('.card video.media');
-  if(!vids.length)return;
-  const kick=v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});};
-  if('IntersectionObserver' in window){
-    const io=new IntersectionObserver((es)=>es.forEach(e=>{e.isIntersecting?kick(e.target):e.target.pause();}),{threshold:.25});
-    vids.forEach(v=>io.observe(v));
-  }else{ vids.forEach(kick); }
-}
-async function reportResult(idx){
-  if(!confirm('Report this creation for review?'))return;
-  try{
-    const r=await fetch('/api/generate/results/'+idx+'/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'inappropriate'})});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast(d.data&&d.data.takenDown?'Reported — removed from feed':'Reported. Thank you.');
-    if(d.data&&d.data.takenDown)load();
-  }catch(e){toast('Report failed: '+(e.message||e));}
-}
-
-load();
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+// 캐러셀
+const car=$('#car');const step=()=>car.querySelector('.shc').getBoundingClientRect().width+16;
+$('#carL').addEventListener('click',()=>car.scrollBy({left:-step(),behavior:'smooth'}));$('#carR').addEventListener('click',()=>car.scrollBy({left:step(),behavior:'smooth'}));
+// 툴 카드
+const TC=[['🖼','Image','top','Every image engine · reference + prompt','/image'],['▶','Video','new','Kling · Veo · Runway · Seedance · Wan · Hailuo','/video'],['📚','Library','','Results · products · sets','/gallery'],['✦','Doppia Lens','top','Saved looks · official & trending · share yours','/lens'],['📦','Content Pack','soon','Platform-ready listing → ZIP','#'],['💬','KakaoTalk','soon','Send a photo, get the shot back','#'],['✳','Doppia MCP','soon','Generate from Claude','#'],['🩺','Doppia × USAsia Journal','new','Six-question check-up · we run it · listed in USAsia Journal','/works'],['🏢','Business','','For teams & brands','/business'],['🤝','Affiliate','','Earn with Doppia','/affiliate'],['💳','Billing','','Credits · plans','/billing']]; // (2026-10-13) Works·Business·Affiliate 카드 추가 — 다 살아 있는 페이지(dev 200)
+$('#tcards').innerHTML=TC.map(c=>`<a class="tc ${c[2]==='soon'?'soon':''}" href="${c[4]}" ${c[4]==='#'?'onclick="return false"':''}><span class="ic">${c[0]}</span><b>${esc(c[1])}${c[2]?` <span class="bd ${c[2]}">${c[2]}</span>`:''}</b><small>${esc(c[3])}</small></a>`).join('');
+// 엔진 카드 = 카탈로그(키 있는 것만)
+const ICON={topaz:'▲','seedance-2.5':'S','wan-3':'W','hailuo-2.3':'M','minimax-h3':'M','grok-video':'X',happyhorse:'A','flux-3-video':'F','gemini-omni':'G',gemini:'🍌',openai:'G',seedream:'S',fal:'F',replicate:'R',xai:'X',higgsfield:'H',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S'}; // topnav.js ICON 과 같은 표 — 프로바이더가 늘면 둘 다
+function boot(){DoppiaNav.tools().then(T=>{const all=[...(T.image||[]),...(T.video||[])].filter(t=>t.id!=='flux-pro');$('#engmosaic').innerHTML=all.slice(0,20).map(t=>`<div><b>${ICON[t.id]||ICON[t.provider]||'•'}</b>${esc(t.label)}</div>`).join('')||'<div>No engines</div>';$('#engTag').textContent=all.length+' engines live on this server';$('#engList').textContent=all.map(t=>t.label).join(' · ')||'No API keys configured on this server.';});}
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+// 커뮤니티 피드(옛 explore 그대로: 상세 링크 + 좋아요)
+function card(it){ // 필드는 GET /api/generate/community 응답 그대로(url·type·creatorHandle·likes·liked) — url 없는 행은 카드 자체를 안 만든다(옛 '/images/' 빈 요청 404의 원인)
+  if(!it.url)return '';
+  const onerr='onerror="var c=this.closest(\'.card\');if(c)c.remove()"'; // 미디어 404 → 빈 카드 안 뜨게 카드 제거(옛 explore와 동일)
+  const media=it.type==='video'?DoppiaThumb.video(it.url,'media','.card'):DoppiaThumb.img(it.url,'media','.card'); // 썸네일(js/thumbs.js) — 원본 PNG·영상 60개를 한꺼번에 받던 것
+  const by=it.creatorHandle?`<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`:'<span class="by">@creator</span>';
+  return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'"><div class="ovt">${by}<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();window.__like(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span> <span class="lct">${it.likes||0}</span></button></div>${media}</div>`;}
+window.__like=async function(idx,btn){const on=btn.classList.contains('on');btn.disabled=true;try{const r=await fetch('/api/generate/results/'+idx+'/like',{method:on?'DELETE':'POST'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'failed');btn.classList.toggle('on',d.data.liked);btn.querySelector('.hrt').textContent=d.data.liked?'♥':'♡';btn.querySelector('.lct').textContent=d.data.likes;}catch(e){toast('Like failed: '+(e.message||e))}finally{btn.disabled=false}};
+(async function load(){const grid=$('#grid'),empty=$('#empty');try{const d=(await(await fetch('/api/generate/community?limit=60')).json()).data||[];if(!d.length){empty.hidden=false;return}grid.innerHTML=d.map(card).join('');DoppiaThumb.watch(grid);}catch(e){empty.hidden=false}})();
+})();
 </script>
-<script src="/js/biz-footer.js?v=5"></script>
+<script src="/js/biz-footer.js?v=6"></script>
 </body>
 </html>

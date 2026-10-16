@@ -3,6 +3,8 @@ import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestj
 import {
   GenerateService,
   GENERATE_UPLOAD_OPTIONS,
+  VIDEO_UPLOAD_OPTIONS,
+  EDIT_UPLOAD_OPTIONS,
   BGM_UPLOAD_OPTIONS,
   UGC_MAX_PRODUCT_IMAGES,
 } from './generate.service';
@@ -152,8 +154,142 @@ export class GenerateController {
     return this.send(res, await this.generate.op('deleteReviews', req));
   }
 
+  // POST /api/generate/edit — Image Editor: 캔버스(+마스크) → op 별 자동 엔진 편집 → 새 creation
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }, { name: 'guide', maxCount: 1 }], EDIT_UPLOAD_OPTIONS))
+  @Post('edit')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postEdit(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postEdit', req));
+  }
+
+  // POST /api/generate/video-edit/upload — Video Editor 미디어 업로드(영상·음악, 50MB) → /images/<uuid>.mp4
+  @UseInterceptors(FileInterceptor('file', VIDEO_UPLOAD_OPTIONS))
+  @Post('video-edit/upload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditUpload(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditUpload', req));
+  }
+
+  // POST /api/generate/video-edit/render — 타임라인 JSON → ffmpeg mp4 → Library (?async=1 권장)
+  @Post('video-edit/render')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditRender(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditRender', req));
+  }
+
+  // POST /api/generate/video-edit/ai — 클립 구간 → 기존 영상 파이프라인(Seedance Edit/Extend · Topaz · Kling Motion) → video job
+  @Post('video-edit/ai')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditAi(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditAi', req));
+  }
+
+  // POST /api/generate/video-edit/captions — 구간 오디오 → Gemini 자동 자막 (?async=1 권장)
+  @Post('video-edit/captions')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditCaptions(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditCaptions', req));
+  }
+
+  // POST /api/generate/video-edit/scenes — 클립 구간의 장면 전환 시각(초) — 편집기 '장면 나누기'
+  @Post('video-edit/scenes')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditScenes(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditScenes', req));
+  }
+
+  // ── Doppia Lens (2026-10-16) — 고정 경로를 :slug 보다 먼저 ──
+  // GET /api/generate/lens?scope=all|mine|official&category=&q=
+  @Get('lens')
+  async getLensList(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLensList', req));
+  }
+
+  // POST /api/generate/lens — 렌즈 만들기(JSON)
+  @Post('lens')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLens', req));
+  }
+
+  // POST /api/generate/lens-upload — 렌즈 스타일 참고 이미지 업로드
+  @UseInterceptors(FileInterceptor('file', GENERATE_UPLOAD_OPTIONS))
+  @Post('lens-upload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensUpload(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLensUpload', req));
+  }
+
+  // /api/generate/lens-folders — 내 렌즈 폴더(GET 목록 · POST 만들기 · PATCH 이름 바꾸기 · DELETE ?path=)
+  @Get('lens-folders')
+  async getLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Post('lens-folders')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Patch('lens-folders')
+  async patchLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Delete('lens-folders')
+  async deleteLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  // GET /api/generate/lens-draft/:idx — 내 결과물 → 렌즈 초안
+  @Get('lens-draft/:idx')
+  async getLensDraft(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLensDraft', req));
+  }
+
+  // GET /api/generate/lens/:slug
+  @Get('lens/:slug')
+  async getLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLens', req));
+  }
+
+  // PATCH /api/generate/lens/:slug
+  @Patch('lens/:slug')
+  async patchLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('patchLens', req));
+  }
+
+  // DELETE /api/generate/lens/:slug
+  @Delete('lens/:slug')
+  async deleteLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('deleteLens', req));
+  }
+
+  // POST /api/generate/lens/:slug/run — 내 제품·인물 이미지로 렌즈 실행(?async=1 권장)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'product', maxCount: 1 }, { name: 'person', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  @Post('lens/:slug/run')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensRun(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLensRun', req));
+  }
+
+  // GET /api/generate/jobs/:id — ?async=1 로 시작한 긴 작업(edit·face-swap) 상태 { status:'running'|'done', result:{status,body} }
+  @Get('jobs/:id')
+  async getAsyncJob(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getAsyncJob', req));
+  }
+
+  // POST /api/generate/face-swap — 우리 모델 사진 + 본인 얼굴(동의·성인 판별) → 비공개 결과
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'face', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  @Post('face-swap')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postFaceSwap(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postFaceSwap', req));
+  }
+
   // POST /api/generate/video/async
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }], VIDEO_UPLOAD_OPTIONS))
   @Post('video/async')
   @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postVideoAsync(@Req() req: any, @Res({ passthrough: true }) res: any) {

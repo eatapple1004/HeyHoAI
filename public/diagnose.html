@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/works-icon.svg?v=2">
 <link rel="icon" type="image/png" sizes="32x32" href="/works-icon-32.png?v=2">
 <link rel="apple-touch-icon" href="/works-icon-180.png?v=2">
-<title>Doppia Works — Free marketing check-up</title>
+<title>Doppia × USAsia Journal — Free marketing check-up</title>
 <meta name="description" content="Six quick taps. See where your marketing stands and what to do next — for a shop, a brand, or an online store.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -142,6 +142,7 @@
   .dg-fade{animation:dgfade .25s ease}
   @keyframes dgfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media(prefers-reduced-motion:reduce){.dg-fade{animation:none}.prog .bar i{transition:none}}
+  html[lang="ja"] body{word-break:normal;overflow-wrap:anywhere} /* (10-17) 일본어는 keep-all 이면 넘친다 */
 </style>
 </head>
 <body>
@@ -149,10 +150,11 @@
 
 <nav class="dg-nav">
   <div class="in">
-    <a class="brand" href="/works"><span class="dot"></span><span>DOPPIA</span><span class="sfx" style="font-weight:600;color:var(--dim);margin-left:2px">Works</span></a>
+    <a class="brand" href="/works"><span class="dot"></span><span>DOPPIA</span><span class="sfx" style="font-weight:600;color:var(--dim);margin-left:2px">× USAsia Journal</span></a>
     <div class="lang" role="group" aria-label="Language">
       <button type="button" data-lang="en">EN</button>
       <button type="button" data-lang="ko">KO</button>
+      <button type="button" data-lang="ja">JA</button>
     </div>
   </div>
 </nav>
@@ -166,10 +168,12 @@
   // ── 언어 (i18n.js와 같은 키·쿠키를 써서 다른 페이지와 선택이 이어진다) ──
   var LANG_KEY = 'doppia_lang';
   function getLang() {
-    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en') return v; } catch (e) {}
-    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en)/);
+    // (2026-10-16) ja 추가 — 저장값·쿠키·브라우저 언어 세 경로 모두 en|ko|ja
+    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en' || v === 'ja') return v; } catch (e) {}
+    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en|ja)/);
     if (m) return m[1];
-    return /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+    var bl = (navigator.language || '').toLowerCase().slice(0, 2);
+    return (bl === 'ko' || bl === 'ja') ? bl : 'en';
   }
   function setLang(l) {
     try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
@@ -202,7 +206,7 @@
       next1: 'The team reviews every channel and link you give us', next2: 'We write a one-page report: where you stand, what we would change first, and the scope we would propose', next3: 'You receive it by email or phone — no commitment either way',
       doneDue: 'In order of request · expected by {d}',
       rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
-      secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
+      secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia would take on',
       chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
       chAdd: 'Add link', chLoading: 'Checking your channel…', chRetry: 'Add another link',
       chFail: { not_found: "We couldn't find that account or place. Check the link or name and try again.", private: 'This account is private, so we can only see the basics.', unsupported: 'Automatic lookup works for Instagram and Kakao Map only. We keep this link and check it ourselves when writing your report.', no_key: 'Live lookup is not enabled on this server yet.', upstream: 'The lookup timed out. Please try once more.', rate: 'Lookup limit reached for now — the full report will include these numbers anyway.' },
@@ -212,10 +216,10 @@
       scopeCadence: { daily: 'Keep daily posting · we take over production', weekly: '4 posts a week · we take over scheduling', monthly: '3 posts a week · restart the rhythm', rarely: '3 posts a week · restart from zero', stopped: '3 posts a week · restart from zero', none: 'Open the channels first · then 3 posts a week' },
       scopeReport: 'Written report on the 1st of every month',
       sc_ch: 'Channel operations', sc_ads: 'Ads', sc_content: 'Content production', sc_maps: 'Maps & reviews', sc_crm: 'Customer relationships', sc_consult: 'Strategy consulting', sc_open: 'Channel setup',
-      dopH: 'What is Doppia?', dopP: 'Doppia turns one product photo into cuts and ad videos. It is the production engine Doppia Works runs on — and you can use it yourself, free to start.',
+      dopH: 'What is Doppia?', dopP: 'Doppia turns one product photo into cuts and ad videos. It is the production engine behind Doppia × USAsia Journal — and you can use it yourself, free to start.',
       dopBtn: 'Make something with Doppia',
       // buttons
-      reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works',
+      reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia',
       reportHintSmall: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
       reportHintBrand: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
       // form
@@ -235,7 +239,7 @@
       submit: 'Send me the report', sending: 'Sending…', cancel: 'Back to results',
       errRequired: 'Please complete the marked fields.', errContact: 'Please enter a valid email or phone number.',
       errNet: "Couldn't send right now. Your answers are kept — please try again in a moment.",
-      doneTitle: 'All set. Your report is on its way.', doneBody: 'The Doppia Works team reviews your actual channels and writes it up in 7–10 business days. Meanwhile, you can try Doppia free with one product photo.',
+      doneTitle: 'All set. Your report is on its way.', doneBody: 'The Doppia team reviews your actual channels and writes it up in 7–10 business days. Meanwhile, you can try Doppia free with one product photo.',
       doneTry: 'Try Doppia free',
       // state fragments
       sell: { instore: ' from a physical location', online: ' online', both: ' both in-store and online', local: '' },
@@ -263,7 +267,7 @@
       info: '마지막으로, 리포트에 쓸 정보', infoh: '이름은 리포트에 들어가요. 링크를 넣으면 실제 숫자를 가져올 수 있어요.',
       fBizInfo: '가게·브랜드 이름', fLinkInfo: '인스타·스토어·지도 링크 (선택)', seeResult: '결과 보기',
       rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
-      secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia Works가 맡을 범위',
+      secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia가 맡을 범위',
       chEmpty: '인스타·스토어·지도 링크를 넣으면 이 칸이 실제 숫자로 채워져요 — 마지막 게시, 게시 리듬, 지도 사진, 리뷰.',
       chAdd: '링크 넣기', chLoading: '채널 확인 중…', chRetry: '다른 링크도 넣기',
       chFail: { not_found: '계정이나 가게를 찾지 못했어요. 링크나 이름을 확인하고 다시 넣어주세요.', private: '비공개 계정이라 기본 정보만 볼 수 있어요.', unsupported: '자동 조회는 인스타그램·카카오맵만 돼요. 이 링크는 저장해 두고 리포트를 쓸 때 팀이 직접 확인합니다.', no_key: '이 서버에는 실측이 아직 켜져 있지 않아요.', upstream: '조회가 늦어졌어요. 한 번만 다시 눌러주세요.', rate: '지금은 조회 횟수를 다 썼어요 — 신청하시면 리포트에는 이 숫자가 그대로 들어가요.' },
@@ -273,9 +277,9 @@
       scopeCadence: { daily: '매일 게시 유지 · 제작을 저희가', weekly: '주 4회 게시 · 예약·운영을 저희가', monthly: '주 3회 게시 · 리듬 되살리기', rarely: '주 3회 게시 · 처음부터 다시 쌓기', stopped: '주 3회 게시 · 처음부터 다시 쌓기', none: '채널 개설부터 · 그다음 주 3회' },
       scopeReport: '매월 1일 서면 리포트',
       sc_ch: '채널 운영', sc_ads: '광고 운영', sc_content: '콘텐츠 제작', sc_maps: '지도·리뷰 관리', sc_crm: '고객 관리', sc_consult: '전략 컨설팅', sc_open: '채널 개설',
-      dopH: 'Doppia가 뭔가요?', dopP: 'Doppia는 제품 사진 한 장으로 컷과 광고 영상을 만드는 도구예요. Doppia Works가 운영할 때 쓰는 제작 엔진이고, 직접 써보셔도 돼요. 시작은 무료예요.',
+      dopH: 'Doppia가 뭔가요?', dopP: 'Doppia는 제품 사진 한 장으로 컷과 광고 영상을 만드는 도구예요. Doppia × USAsia Journal 운영에 쓰는 제작 엔진이고, 직접 써보셔도 돼요. 시작은 무료예요.',
       dopBtn: 'Doppia로 직접 만들어보기',
-      reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기',
+      reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia와 상담하기',
       reportHintSmall: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
       reportHintBrand: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
       formTitle: '업체 정보', formHintSmall: '리포트는 아래 정보를 기준으로 작성됩니다.',
@@ -294,110 +298,169 @@
       submit: '리포트 신청하기', sending: '보내는 중…', cancel: '결과로 돌아가기',
       errRequired: '표시된 항목을 채워주세요.', errContact: '이메일이나 전화번호 형식을 확인해주세요.',
       errNet: '지금은 보낼 수 없습니다. 답변은 저장되어 있으니 잠시 후 다시 시도해주세요.',
-      doneTitle: '접수되었습니다. 리포트를 보내드리겠습니다.', doneBody: 'Doppia Works 팀이 실제 채널을 검토해 영업일 7~10일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
+      doneTitle: '접수되었습니다. 리포트를 보내드리겠습니다.', doneBody: 'Doppia 팀이 실제 채널을 검토해 영업일 7~10일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
       doneTry: 'Doppia 무료로 써보기',
       sell: { instore: '매장에서 운영하는 ', online: '온라인에서 파는 ', both: '매장과 온라인 모두에서 파는 ', local: '' },
       promoNone: '아직 온라인에서 따로 알리고 있진 않아요', promoOn: '{list}{ro} 알리고 계세요', andMore: ' 등', and: '과 ',
       freq: { daily: '게시는 거의 매일 하고 계세요.', weekly: '게시는 주에 몇 번 하고 계세요.', monthly: '게시는 한 달에 몇 번 정도예요.', rarely: '게시는 가끔 하는 정도예요.', stopped: '게시는 하다가 멈춘 상태예요.' },
       state: '{sell}{biz} 사업이고, {promo}. {freq}',
       stateBrand: '{sell}{biz} 브랜드이고, {promo}. {freq}'
+    },
+    // (2026-10-16) 일본어 — 영어 원문 기준. 조립 문장(state·promoOn)은 일본어 어순으로 다시 짰다({ro}는 ja에서 빈 문자열).
+    ja: {
+      step: '{total}問中 {n}問目', back: '戻る', next: '次へ', pick3: '最大3つ', picked: '3つ中 {n}つ選択', more: '選択肢をもっと見る', less: '閉じる',
+      q0: 'どんなお店・ブランドを運営していますか?', q0h: 'いちばん近いものをひとつ選んでください。',
+      q01: '主にどこで販売していますか?', q01h: 'ひとつ選んでください。',
+      q02: 'マーケティングは誰が担当していますか?', q02h: 'ひとつ選んでください。',
+      q1: '今、どこで発信していますか?', q1h: '当てはまるものをすべて選んでください。',
+      q2: 'どのくらいの頻度で投稿していますか?', q2h: '全チャネルを合わせて、だいたいで結構です。',
+      q4: '今、マーケティングでいちばん難しいことは?', q4h: '最大3つ。正直に選んでください — 見るのはあなただけです。',
+      resEyebrow: '診断結果', echoH: 'お聞かせいただいたこと', noneNote: 'まだオンラインにお店がありません。チャネルを開くところから一緒に始めましょう。',
+      seeMine: '自分の写真やリンクで見る', soon: '近日公開',
+      leadSoon: '申し込みはまもなく受付開始。今は無料で試してみてください — 商品写真1枚でDoppiaが何を作るか見られます。',
+      restart: '最初からやり直す', otherPh: 'ご自身の言葉で入力してください', otherLabel: 'その他 — ご自身の言葉で',
+      info: '最後に、レポートに使う情報', infoh: '名前はレポートに載ります。リンクを入れると実際の数字を取得できます。',
+      fBizInfo: 'お店・ブランド名', fLinkInfo: 'Instagram・ストア・マップのリンク (任意)', seeResult: '結果を見る',
+      rcvEyebrow: '受付完了',
+      nextH: 'この後の流れ',
+      next1: 'チームがご記入のチャネルとリンクをひとつずつ確認します', next2: '1ページのレポートを書きます — 現状、最初に変えること、提案する範囲', next3: 'メールまたは電話でお受け取りください — どちらでも契約の義務はありません',
+      doneDue: '受付順に対応 · {d}までに送付予定',
+      rpTag: 'マーケティング診断 · 1ページ', rpBizFallback: 'あなたのお店', rpMetaCh: 'チャネル', rpMetaDate: '確認日',
+      secState: '現状', secCh: 'チャネルの状態', secSaid: 'お聞かせいただいたこと', secScope: 'Doppiaが担当する範囲',
+      chEmpty: 'Instagram・ストア・マップのリンクを入れると、この欄が実際の数字で埋まります — 最終投稿、投稿リズム、マップ写真、レビュー。',
+      chAdd: 'リンクを追加', chLoading: 'チャネルを確認中…', chRetry: '別のリンクを追加',
+      chFail: { not_found: 'そのアカウントや店舗が見つかりませんでした。リンクや名前を確認して、もう一度お試しください。', private: '非公開アカウントのため、基本情報のみ確認できます。', unsupported: '自動取得はInstagramとカカオマップのみ対応です。このリンクは保存し、レポート作成時にチームが直接確認します。', no_key: 'このサーバーではライブ取得がまだ有効になっていません。', upstream: '取得がタイムアウトしました。もう一度お試しください。', rate: '取得回数の上限に達しました — レポートにはこの数字が含まれます。' },
+      igFollowers: 'フォロワー', igPosts: '投稿', igLast: '最終投稿から', igLastV: '{n}日', igNever: '投稿なし', ig30: '直近30日の投稿', igEng: 'エンゲージメント', igReels: 'リール比率', igPriv: '非公開アカウント — 基本情報のみ',
+      kkName: 'カカオマップで発見', kkPhotos: 'マップ写真', kkReviews: 'レビュー', kkRating: '評価', kkRatingNa: 'レビュー不足', kkBlog: 'ブログレビュー', kkBlogLast: 'ブログ最終投稿から', kkIg: 'Instagram連携', kkIgNo: 'Instagram連携なし', kkYes: 'あり',
+      flagQuiet: '停滞', flagOk: '活発',
+      scopeCadence: { daily: '毎日の投稿を維持 · 制作はこちらが担当', weekly: '週4回投稿 · 予約・運用はこちらが担当', monthly: '週3回投稿 · リズムを取り戻す', rarely: '週3回投稿 · ゼロから積み直す', stopped: '週3回投稿 · ゼロから積み直す', none: 'まずチャネル開設 · その後週3回' },
+      scopeReport: '毎月1日に書面レポート',
+      sc_ch: 'チャネル運用', sc_ads: '広告運用', sc_content: 'コンテンツ制作', sc_maps: 'マップ・レビュー管理', sc_crm: '顧客管理', sc_consult: '戦略コンサルティング', sc_open: 'チャネル開設',
+      dopH: 'Doppiaとは?', dopP: 'Doppiaは商品写真1枚からカットと広告動画を作るツールです。Doppia × USAsia Journalの運用を支える制作エンジンで、ご自身でも使えます。始めるのは無料です。',
+      dopBtn: 'Doppiaで作ってみる',
+      reportSmall: '詳しいレポートを受け取る', reportBrand: 'Doppiaに相談する',
+      reportHintSmall: '無料です。次の画面でチャネルのリンクといくつかの情報をお聞きし、チームがひとつずつ確認して7〜10営業日以内にレポートを書きます。',
+      reportHintBrand: '無料です。次の画面でチャネルのリンクといくつかの情報をお聞きし、チームがひとつずつ確認して7〜10営業日以内にレポートを書きます。',
+      formTitle: '事業について', formHintSmall: 'レポートは以下の情報をもとに作成します。',
+      formHintBrand: 'レポートは以下の情報をもとに作成します。',
+      secContact: '連絡先', secLinks: '運用中のチャネル', secLinksH: '運用中と回答されたチャネルです。レポート作成前にそれぞれ確認します。', secBiz: '事業について',
+      fLinkOther: 'その他のリンク', fLinkOtherPh: 'ウェブサイト、カタログ、記事など',
+      fProduct: '主力の商品・サービス', fProductPh: '例: 手作り陶器 · 敏感肌向けスキンケア · ランチセット',
+      fArea: '店舗の所在地', fAreaPh: '例: 仁川 松島',
+      fGoal: 'これから3か月で、いちばん望むこと', fGoalPh: '例: 平日の来店を増やす · 新ラインの発売 · 初のオンライン売上',
+      fBudget: '月間マーケティング予算', budgetPick: '選択してください', budgets: ['回答しない', 'まだない', '₩50万未満', '₩50万〜₩200万', '₩200万以上'],
+      linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: '協業したクリエイター、またはキャンペーンのリンク', maps: 'Googleマップ / Naver Place / カカオマップのリンク', website: 'ウェブサイト・ブログ・ストアのURL', marketplaces: 'Amazon / Coupang / EtsyのストアURL', delivery: 'デリバリー・予約アプリの店舗ページ', paidads: '広告アカウントまたは最近の広告 (任意)', email: 'ニュースレター・CRMツール (任意)', offline: 'チラシや看板の写真があればリンク' },
+      fBiz: 'お店・ブランド名', fBizPh: '例: ARVO Skincare', fCompany: '会社名', fCompanyPh: '例: ARVO株式会社',
+      fName: 'お名前', fNamePh: '例: 山田 花子', fContact: 'メールまたは電話', fContactPh: 'you@example.com または 090-0000-0000',
+      fEmail: '業務用メール', fEmailPh: 'you@company.com', fLink: 'Instagram・ストア・マップのリンク (任意)', fLinkPh: 'instagram.com/yourshop',
+      fMsg: 'その他 (任意)', fMsgPh: '知りたいこと、試したこと、期限など',
+      submit: 'レポートを申し込む', sending: '送信中…', cancel: '結果に戻る',
+      errRequired: '印の付いた項目を入力してください。', errContact: '有効なメールアドレスまたは電話番号を入力してください。',
+      errNet: '今は送信できませんでした。回答は保存されています — しばらくしてからもう一度お試しください。',
+      doneTitle: '受け付けました。レポートをお送りします。', doneBody: 'Doppiaチームが実際のチャネルを確認し、7〜10営業日以内にお送りします。その間、商品写真1枚でDoppiaを無料でお試しいただけます。',
+      doneTry: 'Doppiaを無料で試す',
+      sell: { instore: '店舗で運営する', online: 'オンラインで販売する', both: '店舗とオンラインの両方で販売する', local: '' },
+      promoNone: 'オンラインでの発信はまだ特にしていません', promoOn: '{list}で発信しています', andMore: ' など', and: 'と',
+      freq: { daily: '投稿はほぼ毎日しています。', weekly: '投稿は週に数回しています。', monthly: '投稿は月に数回ほどです。', rarely: '投稿はたまにする程度です。', stopped: '投稿は止まっています。' },
+      state: '{sell}{biz}の事業で、{promo}。{freq}',
+      stateBrand: '{sell}{biz}のブランドで、{promo}。{freq}'
     }
   };
 
-  // 선택지. id는 로직용, 문구는 언어별. 정본 = 노션 §4
+  // 선택지. id는 로직용, 문구는 언어별(en·ko·ja, 부제 sen/sko/sja, 결과 한 줄 len/lko/lja). 정본 = 노션 §4 (ja는 2026-10-16 영어 기준 번역)
   var OPT = {
     q0: [
-      { id: 'fashion', en: 'Fashion & Accessories', ko: '패션·잡화' },
-      { id: 'beauty', en: 'Beauty & Skincare', ko: '화장품·뷰티' },
-      { id: 'food', en: 'Food & Beverage', ko: '식품·음료' },
-      { id: 'home', en: 'Home & Living', ko: '홈·리빙' },
-      { id: 'health', en: 'Health & Wellness', ko: '건강·웰니스', sen: 'Supplements, health foods and other products', sko: '영양제·건강식품 등 제품' },
-      { id: 'pets', en: 'Pets', ko: '반려동물' },
-      { id: 'tech', en: 'Tech & Gadgets', ko: '전자·가젯' },
-      { id: 'kids', en: 'Kids & Hobbies', ko: '키즈·취미' },
-      { id: 'local', en: 'Local Service', ko: '매장 서비스', sen: 'Restaurant, salon, studio, clinic, gym', sko: '음식점·미용실·스튜디오·클리닉·헬스장·필라테스' },
-      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true }
+      { id: 'fashion', en: 'Fashion & Accessories', ko: '패션·잡화', ja: 'ファッション・雑貨' },
+      { id: 'beauty', en: 'Beauty & Skincare', ko: '화장품·뷰티', ja: 'コスメ・スキンケア' },
+      { id: 'food', en: 'Food & Beverage', ko: '식품·음료', ja: '食品・飲料' },
+      { id: 'home', en: 'Home & Living', ko: '홈·리빙', ja: 'ホーム・リビング' },
+      { id: 'health', en: 'Health & Wellness', ko: '건강·웰니스', ja: '健康・ウェルネス', sen: 'Supplements, health foods and other products', sko: '영양제·건강식품 등 제품', sja: 'サプリ・健康食品などの商品' },
+      { id: 'pets', en: 'Pets', ko: '반려동물', ja: 'ペット' },
+      { id: 'tech', en: 'Tech & Gadgets', ko: '전자·가젯', ja: 'テック・ガジェット' },
+      { id: 'kids', en: 'Kids & Hobbies', ko: '키즈·취미', ja: 'キッズ・ホビー' },
+      { id: 'local', en: 'Local Service', ko: '매장 서비스', ja: '店舗サービス', sen: 'Restaurant, salon, studio, clinic, gym', sko: '음식점·미용실·스튜디오·클리닉·헬스장·필라테스', sja: '飲食店・サロン・スタジオ・クリニック・ジム' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', ja: 'その他 (自由入力)', free: true }
     ],
     q01: [
-      { id: 'instore', en: 'In-store', ko: '매장에서' },
-      { id: 'online', en: 'Online', ko: '온라인에서' },
-      { id: 'both', en: 'Both', ko: '둘 다' }
+      { id: 'instore', en: 'In-store', ko: '매장에서', ja: '店舗で' },
+      { id: 'online', en: 'Online', ko: '온라인에서', ja: 'オンラインで' },
+      { id: 'both', en: 'Both', ko: '둘 다', ja: '両方' }
     ],
     q02: [
-      { id: 'me', en: 'Just me', ko: '제가 직접 해요' },
-      { id: 'one', en: 'One person on the team', ko: '직원 한 명이 해요' },
-      { id: 'team', en: 'An in-house team', ko: '마케팅 팀이 있어요' },
-      { id: 'agency', en: 'An agency', ko: '대행사가 해요' }
+      { id: 'me', en: 'Just me', ko: '제가 직접 해요', ja: '自分でやっている' },
+      { id: 'one', en: 'One person on the team', ko: '직원 한 명이 해요', ja: 'スタッフ1人が担当' },
+      { id: 'team', en: 'An in-house team', ko: '마케팅 팀이 있어요', ja: '社内にチームがある' },
+      { id: 'agency', en: 'An agency', ko: '대행사가 해요', ja: '代理店に任せている' }
     ],
     q1: [
-      { id: 'instagram', en: 'Instagram', ko: '인스타그램', online: true },
-      { id: 'tiktok', en: 'TikTok', ko: '틱톡', online: true },
-      { id: 'facebook', en: 'Facebook', ko: '페이스북', online: true },
-      { id: 'youtube', en: 'YouTube', ko: '유튜브', online: true },
-      { id: 'influencers', en: 'Influencers & creators', ko: '인플루언서·크리에이터', online: true },
-      { id: 'maps', en: 'Maps & local listings', ko: '지도·플레이스', sen: 'Google Maps, Naver Place, Kakao Map, Yelp', sko: '구글맵·네이버 플레이스·카카오맵', hideWhen: ['online'] },
-      { id: 'website', en: 'Website / Blog / Online store', ko: '홈페이지·블로그·스토어', sen: 'Shopify, Smart Store, Naver Blog', sko: '쇼피파이·스마트스토어·네이버 블로그', online: true },
-      { id: 'marketplaces', en: 'Marketplaces', ko: '오픈마켓', sen: 'Amazon, Coupang, Etsy', sko: '아마존·쿠팡·엣시', online: true, hideWhen: ['instore'] },
-      { id: 'delivery', en: 'Delivery & booking apps', ko: '배달·예약 앱', sen: 'Uber Eats, Baemin, Booksy', sko: '배민·쿠팡이츠·네이버예약', hideWhen: ['online'] },
-      { id: 'paidads', en: 'Paid ads', ko: '유료 광고', sen: 'Meta Ads, Google Ads', sko: '메타 광고·구글 광고', online: true },
-      { id: 'email', en: 'Email / SMS / CRM', ko: '이메일·문자·CRM', online: true },
-      { id: 'offline', en: 'Offline', ko: '오프라인', sen: 'Flyers, signage, events', sko: '전단·간판·현수막·행사', hideWhen: ['online'] },
-      { id: 'wom', en: 'Word of mouth / regulars', ko: '입소문·단골' },
-      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true },
-      { id: 'none', en: 'Not promoting yet', ko: '따로 안 하고 있어요', exclusive: true }
+      { id: 'instagram', en: 'Instagram', ko: '인스타그램', ja: 'Instagram', online: true },
+      { id: 'tiktok', en: 'TikTok', ko: '틱톡', ja: 'TikTok', online: true },
+      { id: 'facebook', en: 'Facebook', ko: '페이스북', ja: 'Facebook', online: true },
+      { id: 'youtube', en: 'YouTube', ko: '유튜브', ja: 'YouTube', online: true },
+      { id: 'influencers', en: 'Influencers & creators', ko: '인플루언서·크리에이터', ja: 'インフルエンサー・クリエイター', online: true },
+      { id: 'maps', en: 'Maps & local listings', ko: '지도·플레이스', ja: 'マップ・ローカル掲載', sen: 'Google Maps, Naver Place, Kakao Map, Yelp', sko: '구글맵·네이버 플레이스·카카오맵', sja: 'Googleマップ・Naver Place・カカオマップ・Yelp', hideWhen: ['online'] },
+      { id: 'website', en: 'Website / Blog / Online store', ko: '홈페이지·블로그·스토어', ja: 'ウェブサイト / ブログ / オンラインストア', sen: 'Shopify, Smart Store, Naver Blog', sko: '쇼피파이·스마트스토어·네이버 블로그', sja: 'Shopify・Smart Store・Naverブログ', online: true },
+      { id: 'marketplaces', en: 'Marketplaces', ko: '오픈마켓', ja: 'マーケットプレイス', sen: 'Amazon, Coupang, Etsy', sko: '아마존·쿠팡·엣시', sja: 'Amazon・Coupang・Etsy', online: true, hideWhen: ['instore'] },
+      { id: 'delivery', en: 'Delivery & booking apps', ko: '배달·예약 앱', ja: 'デリバリー・予約アプリ', sen: 'Uber Eats, Baemin, Booksy', sko: '배민·쿠팡이츠·네이버예약', sja: 'Uber Eats・Baemin・Booksy', hideWhen: ['online'] },
+      { id: 'paidads', en: 'Paid ads', ko: '유료 광고', ja: '有料広告', sen: 'Meta Ads, Google Ads', sko: '메타 광고·구글 광고', sja: 'Meta広告・Google広告', online: true },
+      { id: 'email', en: 'Email / SMS / CRM', ko: '이메일·문자·CRM', ja: 'メール / SMS / CRM', online: true },
+      { id: 'offline', en: 'Offline', ko: '오프라인', ja: 'オフライン', sen: 'Flyers, signage, events', sko: '전단·간판·현수막·행사', sja: 'チラシ・看板・イベント', hideWhen: ['online'] },
+      { id: 'wom', en: 'Word of mouth / regulars', ko: '입소문·단골', ja: '口コミ・常連' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', ja: 'その他 (自由入力)', free: true },
+      { id: 'none', en: 'Not promoting yet', ko: '따로 안 하고 있어요', ja: 'まだ特にしていない', exclusive: true }
     ],
     q2: [
-      { id: 'daily', en: 'Almost every day', ko: '거의 매일' },
-      { id: 'weekly', en: 'A few times a week', ko: '주에 몇 번' },
-      { id: 'monthly', en: 'A few times a month', ko: '한 달에 몇 번' },
-      { id: 'rarely', en: 'Rarely', ko: '가끔' },
-      { id: 'stopped', en: "I've stopped", ko: '하다가 멈췄어요' }
+      { id: 'daily', en: 'Almost every day', ko: '거의 매일', ja: 'ほぼ毎日' },
+      { id: 'weekly', en: 'A few times a week', ko: '주에 몇 번', ja: '週に数回' },
+      { id: 'monthly', en: 'A few times a month', ko: '한 달에 몇 번', ja: '月に数回' },
+      { id: 'rarely', en: 'Rarely', ko: '가끔', ja: 'たまに' },
+      { id: 'stopped', en: "I've stopped", ko: '하다가 멈췄어요', ja: 'やめてしまった' }
     ],
     q4small: [
-      { id: 'nocust', en: "New customers aren't coming", ko: '새 고객이 안 늘어요', lean: 'ops',
-        len: 'Right now your business is barely visible online. Step one is simply being seen more often.', lko: '지금 가게가 온라인에서 보이는 시간이 너무 짧아요. 보이는 시간을 늘리는 것부터예요.' },
-      { id: 'how', en: "Don't know how to get the word out", ko: '뭘 어떻게 알려야 할지 모르겠어요', lean: 'ops',
-        len: "You shouldn't have to plan it all yourself. We decide what to post; you just approve.", lko: '기획까지 사장님이 하실 필요 없어요. 뭘 올릴지는 저희가 정하고, 사장님은 확인만 하시면 돼요.' },
-      { id: 'spend', en: "Don't know where to spend", ko: '어디에 돈을 써야 할지 모르겠어요', lean: 'ops',
-        len: "Before spending more, make sure the channels you already have are working. That's the cheapest investment.", lko: '돈을 더 쓰기 전에, 지금 있는 채널이 제대로 돌아가는지부터예요. 그게 가장 싼 투자예요.' },
-      { id: 'ads', en: "Tried ads, couldn't see results", ko: '광고를 해봤는데 효과를 모르겠어요', lean: 'ops',
-        len: 'Ads burn money when the content behind them is weak. We fill the content first and send you the numbers every month.', lko: '광고는 보여줄 콘텐츠가 약하면 돈만 나가요. 콘텐츠를 먼저 채우고, 숫자는 매달 정리해서 보여드려요.' },
-      { id: 'nosales', en: 'Followers, but no sales', ko: '팔로워는 있는데 매출로 안 이어져요', lean: 'ops',
-        len: 'People are watching, which is the hard part. What turns watching into buying is what the posts say.', lko: '보는 사람은 있다는 뜻이에요. 보는 사람이 사게 만드는 건 게시물의 내용이에요.' },
-      { id: 'compet', en: 'Competitors stand out more', ko: '경쟁 업체가 더 눈에 띄어요', lean: 'ops',
-        len: "It's rarely the product that loses. It's usually how it's shown.", lko: '제품이 밀리는 게 아니라 보여주는 방식이 밀리는 경우가 대부분이에요.' },
-      { id: 'notime', en: 'No time to keep it up', ko: '꾸준히 할 시간이 없어요', lean: 'ops',
-        len: "We won't ask you to find time. Keep your hours; we handle the posting.", lko: '시간을 내시라고 안 할게요. 사장님 시간은 그대로 두고, 게시는 저희가 해요.' },
-      { id: 'agency', en: 'Agencies cost a lot, deliver little', ko: '대행사는 비싸고 믿기 어려워요', lean: 'self',
-        len: "So we'll show you how to see results yourself, in about ten minutes.", lko: '그래서 사장님이 직접, 10분 안에 결과를 보는 방법을 먼저 보여드려요.' },
-      { id: 'content', en: 'Making photos & videos is hard', ko: '사진·영상 만드는 게 어려워요', lean: 'self',
-        len: 'One product photo is enough. Make cuts and videos right away, no photoshoot.', lko: '제품 사진 한 장이면 돼요. 촬영 없이 컷과 영상을 바로 만들어 보세요.' },
-      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
-        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
-      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
-        len: "Let us show you an easier way to do what you're already doing.", lko: '지금 하고 계신 걸 더 쉽게 만드는 방법을 보여드릴게요.' }
+      { id: 'nocust', en: "New customers aren't coming", ko: '새 고객이 안 늘어요', ja: '新規のお客様が来ない', lean: 'ops',
+        len: 'Right now your business is barely visible online. Step one is simply being seen more often.', lko: '지금 가게가 온라인에서 보이는 시간이 너무 짧아요. 보이는 시간을 늘리는 것부터예요.', lja: '今、お店はオンラインでほとんど見えていません。まずはもっと見られることからです。' },
+      { id: 'how', en: "Don't know how to get the word out", ko: '뭘 어떻게 알려야 할지 모르겠어요', ja: 'どう広めればいいかわからない', lean: 'ops',
+        len: "You shouldn't have to plan it all yourself. We decide what to post; you just approve.", lko: '기획까지 사장님이 하실 필요 없어요. 뭘 올릴지는 저희가 정하고, 사장님은 확인만 하시면 돼요.', lja: 'すべて自分で企画する必要はありません。何を投稿するかはこちらが決め、確認だけお願いします。' },
+      { id: 'spend', en: "Don't know where to spend", ko: '어디에 돈을 써야 할지 모르겠어요', ja: 'どこにお金を使えばいいかわからない', lean: 'ops',
+        len: "Before spending more, make sure the channels you already have are working. That's the cheapest investment.", lko: '돈을 더 쓰기 전에, 지금 있는 채널이 제대로 돌아가는지부터예요. 그게 가장 싼 투자예요.', lja: 'もっと使う前に、今あるチャネルがきちんと機能しているか確認を。それが最も安い投資です。' },
+      { id: 'ads', en: "Tried ads, couldn't see results", ko: '광고를 해봤는데 효과를 모르겠어요', ja: '広告を試したが効果がわからない', lean: 'ops',
+        len: 'Ads burn money when the content behind them is weak. We fill the content first and send you the numbers every month.', lko: '광고는 보여줄 콘텐츠가 약하면 돈만 나가요. 콘텐츠를 먼저 채우고, 숫자는 매달 정리해서 보여드려요.', lja: '広告は裏にあるコンテンツが弱いとお金だけが出ていきます。先にコンテンツを埋め、数字は毎月お届けします。' },
+      { id: 'nosales', en: 'Followers, but no sales', ko: '팔로워는 있는데 매출로 안 이어져요', ja: 'フォロワーはいるが売上につながらない', lean: 'ops',
+        len: 'People are watching, which is the hard part. What turns watching into buying is what the posts say.', lko: '보는 사람은 있다는 뜻이에요. 보는 사람이 사게 만드는 건 게시물의 내용이에요.', lja: '見ている人はいる、というのが難しい部分です。見ることを買うことに変えるのは投稿の中身です。' },
+      { id: 'compet', en: 'Competitors stand out more', ko: '경쟁 업체가 더 눈에 띄어요', ja: '競合のほうが目立っている', lean: 'ops',
+        len: "It's rarely the product that loses. It's usually how it's shown.", lko: '제품이 밀리는 게 아니라 보여주는 방식이 밀리는 경우가 대부분이에요.', lja: '負けているのは商品ではなく、見せ方であることがほとんどです。' },
+      { id: 'notime', en: 'No time to keep it up', ko: '꾸준히 할 시간이 없어요', ja: '続ける時間がない', lean: 'ops',
+        len: "We won't ask you to find time. Keep your hours; we handle the posting.", lko: '시간을 내시라고 안 할게요. 사장님 시간은 그대로 두고, 게시는 저희가 해요.', lja: '時間を作ってくださいとは言いません。時間はそのままで、投稿はこちらが行います。' },
+      { id: 'agency', en: 'Agencies cost a lot, deliver little', ko: '대행사는 비싸고 믿기 어려워요', ja: '代理店は高いのに成果が少ない', lean: 'self',
+        len: "So we'll show you how to see results yourself, in about ten minutes.", lko: '그래서 사장님이 직접, 10분 안에 결과를 보는 방법을 먼저 보여드려요.', lja: 'だからまず、10分ほどでご自身で結果を見る方法をお見せします。' },
+      { id: 'content', en: 'Making photos & videos is hard', ko: '사진·영상 만드는 게 어려워요', ja: '写真・動画を作るのが大変', lean: 'self',
+        len: 'One product photo is enough. Make cuts and videos right away, no photoshoot.', lko: '제품 사진 한 장이면 돼요. 촬영 없이 컷과 영상을 바로 만들어 보세요.', lja: '商品写真1枚で十分。撮影なしで、カットと動画をすぐ作れます。' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', ja: 'その他 (自由入力)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.', lja: 'ご自身の言葉で書いていただいた内容は、レポートでそのまま扱います。' },
+      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', ja: '特にない', lean: 'both', exclusive: true,
+        len: "Let us show you an easier way to do what you're already doing.", lko: '지금 하고 계신 걸 더 쉽게 만드는 방법을 보여드릴게요.', lja: 'いま行っていることを、もっと簡単にする方法をお見せします。' }
     ],
     q4brand: [
-      { id: 'volume', en: 'Never enough content for every channel and SKU', ko: '채널·제품은 늘어나는데 콘텐츠가 늘 부족해요', lean: 'self',
-        len: 'One product photo becomes a full set of cuts sized for every channel. The bottleneck was never ideas; it was production speed.', lko: '제품 사진 한 장으로 채널별 비율·포맷에 맞춘 컷이 한 번에 나와요. 부족한 건 아이디어가 아니라 생산 속도였을 거예요.' },
-      { id: 'launch', en: 'Every launch means another shoot', ko: '신제품 나올 때마다 촬영부터 다시 해요', lean: 'self',
-        len: 'A single sample photo before launch becomes the cut and video set. Launch content without booking a shoot.', lko: '런칭 전 샘플 사진 한 장으로 컷과 영상 세트를 만들어요. 촬영 일정 없이 런칭 콘텐츠를 준비할 수 있어요.' },
-      { id: 'cost', en: 'Production is too slow and expensive', ko: '제작 비용과 시간이 너무 커요', lean: 'self',
-        len: 'Minutes per cut, priced in credits. Run it yourselves and compare it to your current cost per asset.', lko: '컷 한 장에 몇 분, 비용은 크레딧 단위예요. 팀이 직접 돌려보고 지금 단가와 비교해 보세요.' },
-      { id: 'tone', en: 'Brand consistency slips across channels', ko: '채널마다 브랜드 톤이 흔들려요', lean: 'self',
-        len: 'Lock model, background and style in a brand kit, and every channel comes out in the same tone.', lko: '모델·배경·스타일을 브랜드킷으로 고정하면 채널이 달라도 같은 톤으로 나와요.' },
-      { id: 'variants', en: 'Not enough variants to test ads', ko: '광고 테스트할 소재 버전이 부족해요', lean: 'self',
-        len: 'Generate variants of the same product across backgrounds, models and angles. Testing needs volume.', lko: '같은 제품으로 배경·모델·구도를 바꾼 변형을 여러 개 뽑아요. 테스트에 필요한 건 소재의 양이에요.' },
-      { id: 'depend', en: 'Too dependent on agencies and influencers', ko: '대행사·인플루언서 의존도가 너무 높아요', lean: 'ops',
-        len: "Produce first-pass assets in-house and use partners for amplification only. We'll map the sequence together.", lko: '1차 소재는 내부에서 만들고 외부는 증폭에만 쓰는 구조로 바꿀 수 있어요. 순서는 상담에서 같이 잡아요.' },
-      { id: 'local', en: 'Localizing for other markets is a burden', ko: '해외·다국어 콘텐츠가 부담이에요', lean: 'ops',
-        len: 'Take the same cut and swap in market-specific models and backgrounds.', lko: '같은 컷에 시장별 모델·배경 변형을 얹어요.' },
-      { id: 'measure', en: 'Hard to tell which content actually performs', ko: '어떤 콘텐츠가 먹혔는지 알기 어려워요', lean: 'ops',
-        len: 'When assets are built from parameters (model, background, angle), you can compare what actually changed.', lko: '소재를 파라미터(모델·배경·구도)로 만들어두면 무엇이 달랐는지 비교가 가능해져요.' },
-      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
-        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
-      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
-        len: 'Upload one product on a team account and see.', lko: '팀 계정으로 제품 하나만 올려보세요.' }
+      { id: 'volume', en: 'Never enough content for every channel and SKU', ko: '채널·제품은 늘어나는데 콘텐츠가 늘 부족해요', ja: 'チャネルとSKUのすべてに、コンテンツがいつも足りない', lean: 'self',
+        len: 'One product photo becomes a full set of cuts sized for every channel. The bottleneck was never ideas; it was production speed.', lko: '제품 사진 한 장으로 채널별 비율·포맷에 맞춘 컷이 한 번에 나와요. 부족한 건 아이디어가 아니라 생산 속도였을 거예요.', lja: '商品写真1枚が、各チャネル向けにサイズ調整されたカット一式になります。足りなかったのはアイデアではなく、制作スピードです。' },
+      { id: 'launch', en: 'Every launch means another shoot', ko: '신제품 나올 때마다 촬영부터 다시 해요', ja: 'ローンチのたびに撮影をやり直す', lean: 'self',
+        len: 'A single sample photo before launch becomes the cut and video set. Launch content without booking a shoot.', lko: '런칭 전 샘플 사진 한 장으로 컷과 영상 세트를 만들어요. 촬영 일정 없이 런칭 콘텐츠를 준비할 수 있어요.', lja: 'ローンチ前のサンプル写真1枚がカットと動画のセットになります。撮影を手配せずにローンチコンテンツを。' },
+      { id: 'cost', en: 'Production is too slow and expensive', ko: '제작 비용과 시간이 너무 커요', ja: '制作が遅すぎて高すぎる', lean: 'self',
+        len: 'Minutes per cut, priced in credits. Run it yourselves and compare it to your current cost per asset.', lko: '컷 한 장에 몇 분, 비용은 크레딧 단위예요. 팀이 직접 돌려보고 지금 단가와 비교해 보세요.', lja: 'カット1枚に数分、費用はクレジット単位。ご自身で回して、今の素材単価と比べてみてください。' },
+      { id: 'tone', en: 'Brand consistency slips across channels', ko: '채널마다 브랜드 톤이 흔들려요', ja: 'チャネルごとにブランドの一貫性が崩れる', lean: 'self',
+        len: 'Lock model, background and style in a brand kit, and every channel comes out in the same tone.', lko: '모델·배경·스타일을 브랜드킷으로 고정하면 채널이 달라도 같은 톤으로 나와요.', lja: 'モデル・背景・スタイルをブランドキットで固定すれば、どのチャネルでも同じトーンで出てきます。' },
+      { id: 'variants', en: 'Not enough variants to test ads', ko: '광고 테스트할 소재 버전이 부족해요', ja: '広告テスト用のバリエーションが足りない', lean: 'self',
+        len: 'Generate variants of the same product across backgrounds, models and angles. Testing needs volume.', lko: '같은 제품으로 배경·모델·구도를 바꾼 변형을 여러 개 뽑아요. 테스트에 필요한 건 소재의 양이에요.', lja: '同じ商品で背景・モデル・アングルを変えたバリエーションを生成。テストには量が必要です。' },
+      { id: 'depend', en: 'Too dependent on agencies and influencers', ko: '대행사·인플루언서 의존도가 너무 높아요', ja: '代理店やインフルエンサーに依存しすぎている', lean: 'ops',
+        len: "Produce first-pass assets in-house and use partners for amplification only. We'll map the sequence together.", lko: '1차 소재는 내부에서 만들고 외부는 증폭에만 쓰는 구조로 바꿀 수 있어요. 순서는 상담에서 같이 잡아요.', lja: '1次素材は社内で作り、パートナーは増幅だけに使う。順序は一緒に設計します。' },
+      { id: 'local', en: 'Localizing for other markets is a burden', ko: '해외·다국어 콘텐츠가 부담이에요', ja: '他市場向けのローカライズが負担', lean: 'ops',
+        len: 'Take the same cut and swap in market-specific models and backgrounds.', lko: '같은 컷에 시장별 모델·배경 변형을 얹어요.', lja: '同じカットに、市場ごとのモデルと背景を差し替えます。' },
+      { id: 'measure', en: 'Hard to tell which content actually performs', ko: '어떤 콘텐츠가 먹혔는지 알기 어려워요', ja: 'どのコンテンツが効いたのかわかりにくい', lean: 'ops',
+        len: 'When assets are built from parameters (model, background, angle), you can compare what actually changed.', lko: '소재를 파라미터(모델·배경·구도)로 만들어두면 무엇이 달랐는지 비교가 가능해져요.', lja: '素材をパラメータ (モデル・背景・アングル) から作れば、何が変わったのかを比較できます。' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', ja: 'その他 (自由入力)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.', lja: 'ご自身の言葉で書いていただいた内容は、レポートでそのまま扱います。' },
+      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', ja: '特にない', lean: 'both', exclusive: true,
+        len: 'Upload one product on a team account and see.', lko: '팀 계정으로 제품 하나만 올려보세요.', lja: 'チームアカウントで商品をひとつアップロードして、見てみてください。' }
     ]
   };
 
@@ -434,8 +497,9 @@
     return s;
   }
   function t(k, vars) { var s = STR[lang][k]; if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); }); return s; }
-  function label(o) { return lang === 'ko' ? o.ko : o.en; }
-  function sub(o) { return lang === 'ko' ? o.sko : o.sen; }
+  // (2026-10-16) ja — 선택지 필드 ja/sja/lja. 없으면 영어로 떨어진다(빈칸보다 낫다).
+  function label(o) { return lang === 'ko' ? o.ko : (lang === 'ja' ? (o.ja || o.en) : o.en); }
+  function sub(o) { return lang === 'ko' ? o.sko : (lang === 'ja' ? (o.sja || o.sen) : o.sen); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function save(extra) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign({ v: 1, answers: A, track: track(), lang: lang, done: done, sessionId: sessionId, submitted: view === 'done', metrics: M.state === 'ok' || M.state === 'fail' ? M : undefined, ts: Date.now() }, extra || {}))); } catch (e) {} }
 
@@ -573,7 +637,7 @@
       .then(function (d) { M = { link: link, state: d.ok ? 'ok' : 'fail', data: d.metrics || null, reason: d.reason || '' }; save(); paintChannel(); })
       .catch(function (e) { M = { link: link, state: 'fail', data: null, reason: /Too many/i.test(String(e && e.message)) ? 'rate' : 'upstream' }; paintChannel(); });
   }
-  function fmtN(n) { return (Number(n) || 0).toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US'); }
+  function fmtN(n) { return (Number(n) || 0).toLocaleString(lang === 'ko' ? 'ko-KR' : (lang === 'ja' ? 'ja-JP' : 'en-US')); }
   function kv(label, val, flag) { return '<div class="kv' + (flag ? ' ' + flag : '') + '"><b>' + esc(val) + '</b><span>' + esc(label) + '</span></div>'; }
   function channelHtml() {
     var S = STR[lang];
@@ -612,7 +676,7 @@
     var picked = A.q4.map(function (id) { return pool.filter(function (o) { return o.id === id; })[0]; }).filter(Boolean);
     // 메인 버튼은 항상 "진단서 받기" — 운영/셀프 성향(lean)은 진단서 안에서 제안할 때 쓴다
     var chosen = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.id !== 'none'; }).map(label);
-    var today = new Date(), dateStr = lang === 'ko' ? (today.getFullYear() + '. ' + (today.getMonth() + 1) + '. ' + today.getDate()) : today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    var today = new Date(), dateStr = lang === 'ko' ? (today.getFullYear() + '. ' + (today.getMonth() + 1) + '. ' + today.getDate()) : lang === 'ja' ? (today.getFullYear() + '年' + (today.getMonth() + 1) + '月' + today.getDate() + '日') : today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     var html = '<div class="dg-fade">';
     html += '<div class="res-eyebrow">' + esc(S.resEyebrow) + '</div>';
     // 리포트 1쪽 (문서 모양)
@@ -626,7 +690,7 @@
     if (picked.length) {
       html += '<section class="rpt-s"><h2>' + esc(S.secSaid) + '</h2><div class="echo">' + picked.map(function (o) {
         var q = o.id === 'other' && A.q4Other ? A.q4Other : label(o);
-        return '<div class="item"><div class="quote">“' + esc(q) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : o.len) + '</div></div>';
+        return '<div class="item"><div class="quote">“' + esc(q) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : (lang === 'ja' ? (o.lja || o.len) : o.len)) + '</div></div>';
       }).join('') + '</div></section>';
     }
     html += '<section class="rpt-s"><h2>' + esc(S.secScope) + '</h2><div class="scope">' + scopeItems().map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>'
@@ -655,7 +719,7 @@
   function dueDate() {
     // 영업일 10일 뒤 (주말 건너뜀) — 사용자: 7~10일로 잡아 기다리게 한다
     var d = new Date(), n = 0; while (n < 10) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; }
-    return lang === 'ko' ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return lang === 'ko' ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일' : lang === 'ja' ? (d.getMonth() + 1) + '月' + d.getDate() + '日' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
   function renderForm() {
     var S = STR[lang], tr = track();

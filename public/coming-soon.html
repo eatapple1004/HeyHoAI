@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coming soon · Doppia</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=31" defer></script>
+<style>
+/* (2026-10-16) 닫아 둔 기능 페이지 — 서버가 CLOSED_PAGES(nest/pages/pages.controller.ts · src/index.js) 경로에 이 파일을 대신 보낸다 */
+body{background:var(--bg)}
+.cs{min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:40px 16px}
+.cs .ic{font-size:44px}
+.cs h1{margin:0;font-size:28px}
+.cs h1 span{color:var(--lime,#d9ff4a)}
+.cs p{margin:0;color:var(--dim,#aaa);max-width:440px}
+.cs .bt{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;justify-content:center}
+.cs a{padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:600}
+.cs a.p{background:var(--lime,#d9ff4a);color:#000}
+.cs a.s{border:1px solid var(--border2,#333);color:inherit}
+</style>
+</head>
+<body>
+<div class="cs">
+  <div class="ic" id="ic">📦</div>
+  <h1><span id="nm">This feature</span> · <span>Coming soon</span></h1>
+  <p>We are polishing this feature. Meanwhile, try Doppia Lens or Create Image.</p>
+  <div class="bt"><a class="p" href="/lens">Doppia Lens</a><a class="s" href="/image">Create Image</a></div>
+</div>
+<script>
+(function(){var N={pack:['📦','Content Pack']};var k=location.pathname.replace(/^\/|\.html$/g,'').split('/')[0];var v=N[k];if(v){document.getElementById('ic').textContent=v[0];document.getElementById('nm').textContent=v[1];document.title=v[1]+' · Coming soon · Doppia';}})();
+</script>
+</body>
+</html>

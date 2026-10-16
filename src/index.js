@@ -56,6 +56,10 @@ const IMAGES_DIR = path.join(process.cwd(), 'tmp', 'images');
 // /images 파일은 전부 UUID(콘텐츠 주소) = 불변 → 장기 immutable 캐시. 편집/버전전환마다 같은 영상을
 //   다시 받지 않아 즉시 전환됨(프론트가 새 URL을 미리 로드하면 렌더가 브라우저 캐시에서 즉시 서빙). 파일명이 바뀌면 URL도 바뀌므로 스테일 없음.
 const IMG_CACHE_MS = 1000 * 60 * 60 * 24 * 30; // 30일
+// (2026-10-16) 카드용 썸네일 — 이미지는 WebP, 영상은 첫 프레임 JPEG. 원본은 아래 /images/:file 그대로. src/lib/thumbs.js
+app.get('/images/t/:w/:file', require('./lib/thumbs').handler);
+// (2026-10-17) 카드 재생용 가벼운 영상(720·~1.8Mbps·faststart) — 없으면 원본으로 302 하고 뒤에서 만든다
+app.get('/images/v/:file', require('./lib/thumbs').previewHandler);
 app.get('/images/:file', async (req, res, next) => {
   const name = path.basename(req.params.file); // path traversal 방지
   const local = path.join(IMAGES_DIR, name);
@@ -98,8 +102,11 @@ app.get('/store', (_req, res) => res.redirect(302, '/studio'));
 // `/studio` → public/studio.html 서빙, `/studio.html` → 301 `/studio` (쿼리스트링 보존).
 // 단일 세그먼트 GET만 대상이며, 정적 자원(css/js, /css/* 등 다중 세그먼트·확장자)은 건드리지 않는다.
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+// (2026-10-16) 닫아 둔 기능 — 주소로 들어와도 Coming soon (nest/pages/pages.controller.ts 에 같은 목록 — 한쪽만 고치지 말 것)
+const CLOSED_PAGES = new Set(['pack']);
 app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
   const name = req.params[0];
+  if (CLOSED_PAGES.has(name.toLowerCase())) return res.sendFile(path.join(PUBLIC_DIR, 'coming-soon.html'));
   if (req.params[1]) {
     // `.html`로 들어오면 확장자 없는 정규 URL로 영구 리다이렉트
     const q = req.originalUrl.indexOf('?');

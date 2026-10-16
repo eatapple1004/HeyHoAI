@@ -10,11 +10,11 @@
   var IMG = 'assets/img/projects/detail/';
 
   var PROJECTS = [
-    { id: 'gl-plaza', r: 'r2', hero: 'assets/img/projects/track/lg/gl-plaza.jpg',
+    { id: 'gl-plaza', r: 'r2', hero: 'assets/img/projects/track/lg/gl-plaza.jpg?v=20261014',
       desc: {
-        ko: '김포 풍무동 양도로변에 들어선 지하 2층~지상 12층 근린생활시설입니다. 병·의원과 상가를 위한 풍무2지구의 상업 건물로, 2023년 8월 사용승인을 받았습니다.',
-        en: 'A B2–12F neighbourhood commercial building on Yangdo-ro in Pungmu-dong, Gimpo, built for clinics and retail in the Pungmu 2 district. Use approval was granted in August 2023.' },
-      images: [['01.jpg', 'ext']] },
+        ko: '김포 풍무2지구 양도로변의 지하 2층~지상 12층 메디컬 프라자입니다. 4~7층에는 소아청소년과·여성의원 등 병·의원이, 1층에는 약국과 상가가, 10~12층에는 웨딩홀이 들어서 있고 지하 1·2층은 주차장입니다. 2023년 8월 사용승인을 받았습니다.',
+        en: 'A B2–12F medical plaza on Yangdo-ro in the Pungmu 2 district of Gimpo. Clinics occupy floors 4–7, a pharmacy and shops the ground floor and a wedding hall floors 10–12, with parking on B1–B2. Use approval was granted in August 2023.' },
+      images: [['01.jpg', 'ext'], ['02.jpg', 'ext'], ['03.jpg', 'ext'], ['04.jpg', 'ext'], ['05.jpg', 'int'], ['06.jpg', 'int'], ['07.jpg', 'int'], ['08.jpg', 'int'], ['09.jpg', 'area'], ['10.jpg', 'area']] },
 
     { id: 'bongcheon-guggenheim', r: 'r3', hero: 'assets/img/projects/track/lg/bongcheon.jpg?v=20261007',
       desc: {
@@ -75,13 +75,13 @@
     ko: { 'pd.crumb': '프로젝트', 'pd.kicker': 'Project Overview', 'pd.title': '프로젝트 개요',
           'pd.f.loc': '위치', 'pd.f.year': '연도', 'pd.f.scale': '규모', 'pd.f.use': '용도', 'pd.f.role': '역할',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': '전체',
-          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.plan': '평면 · 구성', 'pd.k.land': '조경 · 커뮤니티',
+          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.plan': '평면 · 구성', 'pd.k.land': '조경 · 커뮤니티', 'pd.k.area': '주변 입지',
           'pd.note': '※ 관계사 (주)재인건설과 전신 법인의 실적입니다. 조감도는 분양 자료 기준이며 실제와 다를 수 있습니다.',
           'meta.pd.desc': '재노바 아너스와 뿌리를 같이하는 시공 실적.' },
     en: { 'pd.crumb': 'Projects', 'pd.kicker': 'Project Overview', 'pd.title': 'Overview',
           'pd.f.loc': 'Location', 'pd.f.year': 'Year', 'pd.f.scale': 'Scale', 'pd.f.use': 'Use', 'pd.f.role': 'Role',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': 'All',
-          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.plan': 'Plans · Layout', 'pd.k.land': 'Landscape · Community',
+          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.plan': 'Plans · Layout', 'pd.k.land': 'Landscape · Community', 'pd.k.area': 'Surroundings',
           'pd.note': '※ Record of our affiliate Jaein Construction and its predecessors. Renderings follow sales material and may differ from the built result.',
           'meta.pd.desc': 'Track record sharing its roots with Jaenova Honors.' }
   };

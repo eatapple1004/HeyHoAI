@@ -403,6 +403,44 @@ async function migrate() {
   //   template_data 등이 characters(id)를 FK 참조하므로 characters가 앞서야 함.
   //   (프레시 DB에서 42P01 "relation characters does not exist" 방지. prod는 IF NOT EXISTS라 무영향.)
   await pool.query(CREATE_CHARACTERS_TABLE);
+  // (2026-10-16) Doppia Shoot "Create your model" — src/shoot/shootModel.repository.js
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shoot_models (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id          UUID NOT NULL,
+        team_id          UUID,
+        name             VARCHAR(100) NOT NULL,
+        status           VARCHAR(20) NOT NULL DEFAULT 'training',
+        hf_reference_id  UUID,
+        photos           JSONB NOT NULL DEFAULT '[]'::jsonb,
+        bank             JSONB NOT NULL DEFAULT '[]'::jsonb,
+        avatar           TEXT,
+        error            TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_shoot_models_user ON shoot_models(user_id);
+    CREATE INDEX IF NOT EXISTS idx_shoot_models_team ON shoot_models(team_id);
+  `);
+  await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS charged BOOLEAN NOT NULL DEFAULT false;`); // (10-16) 관리자는 과금이 없으므로 환불도 없어야 한다
+  await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS profile JSONB;`);
+  await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS official BOOLEAN NOT NULL DEFAULT false;`); // (10-16) 공식 로스터 — 모두에게 보이고 누구나 Shoot 할 수 있다(소유자는 관리자). 유나도 이 행으로 // (10-16) 성별·나이대·머리 — Soul ID 는 얼굴만 배우므로 몸·성별은 프롬프트가 정한다(남자 얼굴에 원피스 사고)
+  // (2026-10-16) 다각도 잡 — 메모리에 두면 배포(pm2 restart) 때 날아가 화면이 0/24 로 멈춘다(실측). results = [{i,url}] 각도 번호별 결과, skipped = 막힌 각도 번호.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shoot_angle_jobs (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL,
+        source      TEXT NOT NULL,
+        results     JSONB NOT NULL DEFAULT '[]'::jsonb,
+        skipped     JSONB NOT NULL DEFAULT '[]'::jsonb,
+        error       TEXT,
+        done        BOOLEAN NOT NULL DEFAULT false,
+        charged     BOOLEAN NOT NULL DEFAULT false,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_shoot_angle_jobs_user ON shoot_angle_jobs(user_id);
+  `);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
   await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);
@@ -471,6 +509,60 @@ async function migrate() {
   // 발행 실패 사유 — 실패했는데 'posted'로 적어 화면이 "게시됨"이라 거짓말을 하던 문제(2026-08-19).
   //   이제 아무것도 못 올리면 status='failed' + 여기 사유를 남긴다. 화면이 그대로 보여준다.
   await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS error TEXT;`);
+
+  // ─── 월간 운영 플랜(2026-10-13) ───
+  //   한 달치 인스타 게시 계획을 자동으로 짜고 → Doppia 검수 → 고객 승인 → 발행 큐로 일괄 예약한다.
+  //   사람 손은 두 번의 컨펌뿐(사용자 결정). 1차 채널 = 인스타만.
+  //   status: draft(초안·수정 중) → doppia_approved(내부 검수 끝) → sent(고객 확인 대기)
+  //           → approved(고객 승인) → scheduled(post_queue 등록 완료). 수정 요청 시 draft로 되돌린다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_month_plans (
+        id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        business_id          UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        account_id           UUID REFERENCES social_accounts(id) ON DELETE SET NULL,
+        month                CHAR(7) NOT NULL,
+        posts_per_week       INTEGER NOT NULL DEFAULT 3,
+        reel_ratio           NUMERIC(3,2) NOT NULL DEFAULT 0.33,
+        brief                TEXT,
+        status               VARCHAR(20) NOT NULL DEFAULT 'draft',
+        customer_feedback    TEXT,
+        doppia_approved_at   TIMESTAMPTZ,
+        doppia_approved_by   UUID,
+        sent_at              TIMESTAMPTZ,
+        customer_approved_at TIMESTAMPTZ,
+        scheduled_at         TIMESTAMPTZ,
+        created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (business_id, month)
+    );
+    CREATE INDEX IF NOT EXISTS idx_month_plans_business ON business_month_plans(business_id);
+
+    CREATE TABLE IF NOT EXISTS business_plan_items (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        plan_id     UUID NOT NULL REFERENCES business_month_plans(id) ON DELETE CASCADE,
+        post_at     TIMESTAMPTZ NOT NULL,
+        format      VARCHAR(10) NOT NULL DEFAULT 'image',
+        theme       VARCHAR(200),
+        brief       TEXT,
+        caption     TEXT,
+        hashtags    TEXT[] NOT NULL DEFAULT '{}',
+        media_ids   UUID[] NOT NULL DEFAULT '{}',
+        gen_status  VARCHAR(12) NOT NULL DEFAULT 'planned',
+        gen_error   TEXT,
+        feedback    TEXT,
+        queue_id    UUID REFERENCES post_queue(id) ON DELETE SET NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_plan_items_plan ON business_plan_items(plan_id, post_at);
+  `);
+  // 칸별 콘텐츠 팩 자동 실행(2026-10-15) — 칸의 제작 지시로 팩을 돌려 결과를 칸에 붙인다.
+  //   pack_id: 이 칸 때문에 만든 팩 · video_job_id: 릴스 칸의 광고 영상 잡(ugc_jobs) · gen_stage: 화면용 진행 단계
+  await pool.query(`
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS pack_id      TEXT;
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS video_job_id TEXT;
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS gen_stage    VARCHAR(20);
+  `);
 
   // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
   //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
@@ -949,6 +1041,13 @@ async function migrate() {
   `);
   // 오디오 옵션(비동기 video-to-audio 단계가 잡 완료 후 실행할지) 보존
   await pool.query(`ALTER TABLE video_jobs ADD COLUMN IF NOT EXISTS audio BOOLEAN NOT NULL DEFAULT false;`);
+  // (2026-10-13) 베이스 1차 — 영상 엔진 다중화. engine='kling'(기존 인라인 경로) 외에는 src/videos/providers 어댑터로 제출·폴링.
+  //   ctx = 어댑터가 poll에 다시 받아야 하는 제출 메타(예: Seedance tier) — provider.submit()의 metadata 그대로.
+  await pool.query(`
+    ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS engine VARCHAR(24) NOT NULL DEFAULT 'kling',
+    ADD COLUMN IF NOT EXISTS ctx    JSONB;
+  `);
 
   // 영상 결과 자동공개(P2): 잡이 visibility·출처 템플릿(attribution)을 운반 → finalize가 결과에 그대로 기록.
   // ⚠️ 기본 'private': 컬럼 미지정 잡(과거)은 비공개. 신규는 /video/async가 명시(이미지 경로와 동일 정책).
@@ -1647,6 +1746,36 @@ async function migrateCredits() {
     CREATE INDEX IF NOT EXISTS idx_billing_refunds_user ON billing_refunds(user_id, created_at DESC);
     ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_usd DECIMAL(10,2) NOT NULL DEFAULT 0;
     ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+  `);
+  // (2026-10-16) Doppia Lens — 제작 방식·설정을 묶은 재사용 템플릿(src/lens/lens.service.js). 공식 렌즈는 코드 시드(ensureOfficial).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lenses (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug            VARCHAR(40) UNIQUE NOT NULL,              -- 공유 링크 /lens?l=<slug>
+        owner_id        UUID REFERENCES users(id) ON DELETE CASCADE, -- NULL = 공식(Doppia)
+        title           VARCHAR(80) NOT NULL,
+        description     VARCHAR(300) NOT NULL DEFAULT '',
+        category        VARCHAR(20) NOT NULL DEFAULT 'product',   -- product | on-model | beauty | fashion | food | video
+        config          JSONB NOT NULL DEFAULT '{}',              -- kind·engine·prompt·aspect·count·shots·inputs·refs·extras
+        visibility      VARCHAR(10) NOT NULL DEFAULT 'private',   -- private | link | public
+        cover_url       TEXT,
+        is_official     BOOLEAN NOT NULL DEFAULT false,
+        uses_count      INT NOT NULL DEFAULT 0,
+        from_result_idx INT,
+        status          VARCHAR(10) NOT NULL DEFAULT 'active',    -- active | deleted
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lenses_owner ON lenses(owner_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_lenses_public ON lenses(visibility, status, uses_count DESC);
+    -- (10-16) 폴더 — 내 렌즈를 컴퓨터 폴더처럼 정리. folder = 'A/B' 경로('' = 미분류). 빈 폴더는 lens_folders 에 남긴다
+    ALTER TABLE lenses ADD COLUMN IF NOT EXISTS folder VARCHAR(160) NOT NULL DEFAULT '';
+    CREATE TABLE IF NOT EXISTS lens_folders (
+        owner_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        path       VARCHAR(160) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (owner_id, path)
+    );
   `);
 }
 

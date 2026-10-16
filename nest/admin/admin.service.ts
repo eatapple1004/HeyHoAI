@@ -62,6 +62,11 @@ export class AdminService {
    * 대시보드 통계 — 유저/생성물/기능별 사용량/매출/템플릿·모델/헤비유저/인게이지먼트/14일 시계열.
    * 블록끼리 의존이 없어 **전부 동시에** 실행한다(순차 실행하면 관리자 화면이 눈에 띄게 느려진다).
    */
+  /** 기능·엔진 사용량(결과물 출처 기준) — /admin-usage */
+  getUsage(days: number) {
+    return this.repo.usage([0, 1, 7, 30, 90].includes(days) ? days : 30);
+  }
+
   async getStats() {
     const [
       users, creations, videoJobs, ugcJobs, faceswap, packs, payments,

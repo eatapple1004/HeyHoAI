@@ -275,7 +275,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
+  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null, page = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -305,7 +305,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine, page })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -319,11 +319,37 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
+// ─── (2026-10-16) 진행 표시 — /ad-video 렌더 카드가 "단계 · 씬 n/N" 을 보여 준다(전엔 경과 시간만 있어 잘 되는지 알 수 없었다).
+//   프로세스 메모리(pm2 instances:1). 단계: bake → clips(씬별 image/motion/done) → assemble → save. 파이프라인 로그 콜백에서 씬 단계를 읽는다.
+const PROGRESS = new Map();
+function progressStart(jobId, script) {
+  const scenes = {};
+  for (const s of (script.scenes || [])) if (s.type === 'broll') scenes[s.n] = 'queued';
+  PROGRESS.set(jobId, { stage: 'prepare', scenes, startedAt: Date.now(), updatedAt: Date.now() });
+}
+function progressSet(jobId, patch) { const p = PROGRESS.get(jobId); if (p) Object.assign(p, patch, { updatedAt: Date.now() }); }
+function progressFromLog(jobId, m) {
+  const p = PROGRESS.get(jobId); if (!p) return;
+  const sc = /\[scene (\d+)\] (이미지 렌더|Seedance 모션|Kling 모션)/.exec(m);
+  if (sc && p.scenes[sc[1]] !== undefined && p.scenes[sc[1]] !== 'done') { p.scenes[sc[1]] = sc[2] === '이미지 렌더' ? 'image' : 'motion'; p.updatedAt = Date.now(); }
+}
+function progressView(jobId) {
+  const p = PROGRESS.get(jobId); if (!p) return null;
+  const ids = Object.keys(p.scenes), total = ids.length || 1;
+  const w = { queued: 0, image: 0.25, motion: 0.45, done: 1, failed: 1 };
+  const clipFrac = ids.reduce((a, n) => a + (w[p.scenes[n]] || 0), 0) / total;
+  const base = { prepare: 2, bake: 5, clips: 10 + clipFrac * 75, assemble: 88, save: 97 }[p.stage] || 2;
+  const done = ids.filter((n) => p.scenes[n] === 'done').length;
+  const label = p.stage === 'prepare' ? 'Preparing' : p.stage === 'bake' ? 'Cleaning up the product photo' : p.stage === 'clips' ? `Making scenes · ${done}/${total} done` : p.stage === 'assemble' ? 'Adding music & joining scenes' : 'Saving';
+  return { stage: p.stage, label, pct: Math.min(99, Math.round(base)), scenes: p.scenes, elapsedSec: Math.round((Date.now() - p.startedAt) / 1000) };
+}
+
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null, page = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
     renderWorkDir = path.join(process.cwd(), 'tmp', 'ugc', crypto.randomUUID().slice(0, 8));
+    progressStart(jobId, script);
 
     // P4 음성모드: 클립 생성 前 씬별 VO 합성·측정 → 씬 durationSec을 음성 커버 길이로 세팅(음성>클립 갭 방지).
     //   assemble엔 reuseVo로 넘겨 재합성 0. 음악모드(audio.voice=false)는 스킵=기존 경로 무변경.
@@ -349,6 +375,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     //   팩 refBake 재사용(제품 정체성만 고정 — 씬 배경/구도는 brollPrompt가 결정). 영상당 1회·무과금(인프라).
     //   실패 시 원본 업로드로 폴백(잡 유지). person(모델 전용)·제품 없음이면 스킵.
     if (refKind === 'product' && Array.isArray(productImagePaths) && productImagePaths.length) {
+      progressSet(jobId, { stage: 'bake' });
       try {
         const bakedBuf = await refBake.bakeOne({ sourcePaths: productImagePaths });
         fs.mkdirSync(servedDir, { recursive: true });
@@ -364,14 +391,18 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
     // motionEngine: 'kling'(기본) | 'seedance'. 요청에 없으면 UGC_MOTION_ENGINE env, 그것도 없으면 kling.
     //   ⚠️ seedance를 켜도 **인물 씬은 clipPipeline이 자동으로 kling으로 돌린다**(Seedance가 실존 인물을 거부).
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, motionEngine, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    progressSet(jobId, { stage: 'clips' });
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, motionEngine, concurrency: 2, log: (m) => { log.info(`[${jobId}] ${m}`); progressFromLog(jobId, m); },
+      onSceneDone: (n, ok) => { const p = PROGRESS.get(jobId); if (p && p.scenes[n] !== undefined) { p.scenes[n] = ok ? 'done' : 'failed'; p.updatedAt = Date.now(); } } });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const sceneClips = await persistSceneClips(clips); // 결과 편집(재배치·삭제·재생성)용 씬 클립 영속화
 
     const plan = buildRenderPlan(script, clips);
     plan.meta.aspect = aspect; // 선택 비율을 조립기·결과 메타에 반영
+    progressSet(jobId, { stage: 'assemble' });
     const out = await assemble(plan, { audio, script, aspect, reuseVo, voiceChunks, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
+    progressSet(jobId, { stage: 'save' });
 
     // 서빙 디렉토리로 복사(/images 라우트가 서빙 + mediaStore 영속화)
     fs.mkdirSync(servedDir, { recursive: true });
@@ -404,7 +435,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     const persistedScript = { ...script, _render: {
       audio: audio || {}, aspect, product: productRef, products, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
-      engines: enginesUsed,
+      engines: enginesUsed, quality: quality || null, ...(page ? { page } : {}), // (10-16) 결과물 출처 기록용(어느 페이지에서)
     } };
     // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
     persistedScript._render.composites = [{
@@ -430,6 +461,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
   } finally {
     // 렌더 스크래치 정리 — 서빙본·silentBase·previewBase·오디오·씬클립은 try 안에서 이미 servedDir로 복사됨(finally는 그 뒤 실행). 편집 경로(tryReComposite)와 동일 패턴.
     if (renderWorkDir) { try { fs.rmSync(renderWorkDir, { recursive: true, force: true }); } catch (e) {} }
+    setTimeout(() => PROGRESS.delete(jobId), 60000).unref?.(); // 끝난 잡의 진행 표시는 1분 뒤 정리
   }
 }
 
@@ -1060,6 +1092,7 @@ async function _commitJobImpl(id, userId, batchId) {
     promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
+      origin: { feature: 'ad-video', op: j.output_type || undefined, page: _R.page || undefined, ...(_R.quality ? { quality: _R.quality } : {}) },
       subtitleMode: j.subtitle_mode, clips: nClips,
       // 실제로 쓴 모션 엔진(씬마다 갈릴 수 있다). model은 'ugc-v1' 판별자라 건드리지 않는다.
       ...(Array.isArray(_R.engines) && _R.engines.length ? { engines: _R.engines } : {}),
@@ -1227,6 +1260,7 @@ async function getJob(id, userId) {
   const sc = j.script ? (safeParse(j.script) || {}) : {};
   const R = sc._render || {};
   return {
+    ...(j.status === 'processing' ? { progress: progressView(j.id) } : {}), // (10-16) 렌더 진행(단계·씬) — 편집 재렌더엔 없음(null)
     id: j.id, status: j.status, resultUrl: j.result_url, error: j.error,
     title: j.title, outputType: j.output_type, caption: j.caption, hashtags: j.hashtags,
     durationSec: j.duration_sec, subtitleMode: j.subtitle_mode, cost: j.charge_amount, nClips: j.n_clips,

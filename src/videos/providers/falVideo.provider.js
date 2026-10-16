@@ -1,0 +1,104 @@
+/**
+ * ─── fal.ai 범용 영상 프로바이더 (image-to-video) ───
+ *
+ * (2026-10-13) Seedance 2.5 · Wan 3.0 · Hailuo 2.3 · MiniMax H3 · Grok Imagine Video · HappyHorse · FLUX.3 Video · Gemini Omni Flash 가
+ *   전부 fal 큐 API 한 규약(submit → status_url → response_url, 결과 video.url)이라 어댑터 하나로 돌린다.
+ *   엔드포인트마다 필드 이름·타입이 달라서 registry 의 `falInput` 이 모양을 정한다:
+ *     image:'image_url'|'start_image_url'   video:'video_url'|'video_urls'(영상 입력)   refs:'image_urls'(영상 입력과 함께 쓰는 참조)   duration:'str'|'int'|null   aspect:bool   resolution:bool
+ *     audio:'generate_audio'|'audio'|null    endImage:'end_image_url'|null   extra:{고정 필드}
+ *   허용값(길이·비율·해상도 enum)은 10-13 에 fal 검증 오류로 실측해 registry controls 에 적었다 — 여기선 검사하지 않는다.
+ * 시작 프레임은 data URL 로 받는다(videoJob.sourceFor 기본 경로). 검증은 비동기라 잘못된 값은 poll 에서 failed 로 온다.
+ */
+const { env } = require('../../config');
+
+const FAL_QUEUE = 'https://queue.fal.run';
+
+const authHeaders = () => ({
+  Authorization: `Key ${env.FAL_API_KEY}`,
+  'Content-Type': 'application/json',
+});
+
+/** @type {import('./types').VideoProvider} */
+const falVideoProvider = {
+  name: 'fal',
+  maxDurationSec: 30, // 실제 상한은 registry controls.duration 이 정한다(submitExternal 이 그걸 쓴다)
+
+  isConfigured() { return !!env.FAL_API_KEY; },
+
+  /**
+   * @param {import('./types').VideoGenerationRequest & { model: string, falInput: object, refModel?: string, refInput?: object, t2vModel?: string, referenceImageUrls?: string[], endImageUrl?: string, resolution?: string, audio?: boolean, extras?: object }} req
+   */
+  async submit(req) {
+    if (!env.FAL_API_KEY) {
+      throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+    }
+    if (!req.model) throw Object.assign(new Error('fal video: registry model(엔드포인트) 없음'), { statusCode: 400 });
+    const f = req.falInput || {};
+    const refs = (req.referenceImageUrls || []).filter(Boolean);
+    let model = req.model;
+    const body = { ...(req.motionPrompt ? { prompt: req.motionPrompt } : {}), ...(f.extra || {}) }; // 프롬프트 없는 툴(Topaz Video)은 필드 자체를 뺀다
+    // 입력 모양 셋: ① 레퍼런스 → reference-to-video(refModel) ② 시작 프레임 없음 → text-to-video(t2vModel) ③ 기본 image-to-video
+    if (refs.length && req.refModel) {
+      const ri = req.refInput || {};
+      model = req.refModel;
+      body[ri.refs || 'reference_image_urls'] = refs.slice(0, ri.max || 10);
+    } else if (f.video) {
+      // ④ 영상 입력(편집·연장·모션 전이): video_url 한 개 또는 video_urls 배열. 시작 이미지가 같이 필요한 엔진(Kling Motion Control)은 f.image 도 채운다.
+      body[f.video] = f.video.endsWith('s') ? [req.sourceVideoUrl] : req.sourceVideoUrl;
+      if (f.image && req.sourceImageUrl) body[f.image] = req.sourceImageUrl;
+      if (refs.length && f.refs) body[f.refs] = refs;
+    } else if (!req.sourceImageUrl && req.t2vModel) {
+      model = req.t2vModel;
+    } else {
+      body[f.image || 'image_url'] = req.sourceImageUrl;
+      if (f.endImage && req.endImageUrl) body[f.endImage] = req.endImageUrl;
+    }
+    if (f.duration === 'str') body.duration = String(req.durationSec);
+    else if (f.duration === 'int') body.duration = parseInt(req.durationSec, 10);
+    if ((f.aspect || (refs.length && req.refInput && req.refInput.aspect)) && req.aspectRatio) body.aspect_ratio = req.aspectRatio;
+    if (f.resolution && req.resolution) body.resolution = req.resolution;
+    if (f.audio) body[f.audio] = req.audio === true;
+    if (req.seed != null) body.seed = req.seed;
+    if (req.extras && typeof req.extras === 'object') Object.assign(body, req.extras); // registry controls.extras 키만(라우트가 화이트리스트) — 비트레이트·드래프트 등 엔진 고유 옵션
+    if (body.upscale_factor != null) body.upscale_factor = Number(body.upscale_factor); // Topaz: 숫자
+
+    const res = await fetch(`${FAL_QUEUE}/${model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (!res.ok) {
+      throw new Error(`fal video submit failed (${model}, ${res.status}): ${(await res.text()).slice(0, 300)}`);
+    }
+    const data = await res.json();
+    if (!data.request_id) throw new Error(`fal video submit: request_id 없음 (${model})`);
+    return {
+      providerJobId: data.request_id,
+      metadata: { model, statusUrl: data.status_url, responseUrl: data.response_url, mode: refs.length ? 'reference' : (req.sourceImageUrl ? 'image' : 'text') },
+    };
+  },
+
+  /**
+   * @param {string} providerJobId
+   * @param {{ model?: string, statusUrl?: string, responseUrl?: string }} [ctx] submit 이 돌려준 metadata
+   */
+  async poll(providerJobId, ctx = {}) {
+    const base = `${FAL_QUEUE}/${ctx.model}/requests/${providerJobId}`;
+    const st = await fetch(ctx.statusUrl || `${base}/status`, { headers: authHeaders() });
+    if (!st.ok) throw new Error(`fal video poll failed (${st.status})`);
+    const s = await st.json();
+    const map = { IN_QUEUE: 'queued', IN_PROGRESS: 'processing', COMPLETED: 'completed' };
+    const status = map[s.status] || (s.status === 'FAILED' ? 'failed' : 'processing');
+    if (status === 'failed') return { status: 'failed', error: s.error || 'fal video job failed' };
+    if (status !== 'completed') return { status };
+
+    const rr = await fetch(ctx.responseUrl || base, { headers: authHeaders() });
+    if (!rr.ok) {
+      // 본문에만 사유가 있다(검증 422 · content_policy 등) — seedance.provider 와 같은 이유로 반드시 싣는다.
+      const body = await rr.text().catch(() => '');
+      return { status: 'failed', error: `fal result (${rr.status}): ${body.slice(0, 400)}` };
+    }
+    const out = await rr.json();
+    const video = out.video || (out.videos || [])[0];
+    if (!video || !video.url) return { status: 'failed', error: `fal 응답에 video 가 없습니다 — ${JSON.stringify(out).slice(0, 300)}` };
+    return { status: 'completed', videoUrl: video.url, metadata: { model: ctx.model, seed: out.seed ?? null } };
+  },
+};
+
+module.exports = falVideoProvider;

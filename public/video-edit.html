@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Video Editor</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=31" defer></script>
+<style>
+/* (2026-10-16) Video Editor — omniclip(오픈소스 웹 편집기, REA 캡처: 상단 Export · 툴바 Undo/Redo/Split/Delete/Zoom · 초 눈금 · 트랙) 구조 +
+   힉스필드식 AI 패널. 좌 미디어(내 영상·업로드·텍스트·음악) · 가운데 캔버스 미리보기 · 우 AI 도구/속성 · 아래 타임라인(영상·텍스트·음악 트랙).
+   편집·미리보기는 브라우저, 내보내기는 서버 ffmpeg(POST /api/generate/video-edit/render), AI 는 기존 영상 파이프라인(video-edit/ai → video job). */
+body{background:var(--bg)}
+.ve{display:grid;grid-template-rows:48px minmax(0,1fr) 250px;height:calc(100vh - var(--hdr));overflow:hidden}
+.ve-top{display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.ve-top .t{font-weight:600;margin-right:auto;display:flex;align-items:center;gap:10px}
+.ve-top .t small{color:var(--faint);font-weight:400}
+.ib{height:32px;min-width:32px;padding:0 10px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.ib:disabled{opacity:.35;cursor:default}.ib.on{border-color:var(--lime);color:var(--lime)}
+.ib.lime{background:var(--lime);color:#111;border-color:var(--lime);font-weight:700}
+.sel{height:32px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font:inherit;font-size:13px;padding:0 8px}
+.ve-main{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;min-height:0}
+.ve-left,.ve-right{background:var(--bg2);min-height:0;display:flex;flex-direction:column}
+.ve-left{border-right:1px solid var(--border)}.ve-right{border-left:1px solid var(--border)}
+.ve-tabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--border)}
+.ve-tabs button{flex:1;padding:7px 4px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--dim);cursor:pointer;font:inherit;font-size:12px}
+.ve-tabs button.on{background:var(--surface2);border-color:var(--border2);color:#fff}
+.ve-pane{flex:1;overflow:auto;padding:10px}
+.ve-media{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ve-media .m{position:relative;aspect-ratio:9/12;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000;cursor:pointer}
+.ve-media .m video,.ve-media .m img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.ve-media .m span{position:absolute;left:4px;bottom:4px;font-size:10px;padding:2px 5px;border-radius:6px;background:rgba(0,0,0,.65);color:#fff}
+.ve-media .m b{position:absolute;right:4px;top:4px;font-size:10px;padding:2px 6px;border-radius:6px;background:var(--lime);color:#111;display:none}
+.ve-media .m:hover b{display:block}
+.ve-drop{border:1.5px dashed var(--border2);border-radius:12px;padding:14px;text-align:center;color:var(--faint);font-size:12px;cursor:pointer;margin-bottom:10px}
+.ve-drop:hover,.ve-drop.drag{border-color:var(--lime);color:var(--text)}
+.ve-h{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px}
+.ve-list button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:12.5px;margin-bottom:6px;text-align:left}
+.ve-list button:hover{border-color:var(--accent2)}
+.ve-stage{position:relative;min-width:0;min-height:0;background:#0a0a10 radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/18px 18px;display:flex;flex-direction:column}
+.ve-canvasWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px}
+#cv{background:#000;box-shadow:0 10px 40px rgba(0,0,0,.5);max-width:100%;max-height:100%}
+.ve-ctrl{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;border-top:1px solid var(--border);background:rgba(12,12,20,.6)}
+.ve-ctrl .ve-tc{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;min-width:120px;text-align:center}
+.ve-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--dim);text-align:center;pointer-events:none}
+.ve-empty b{font-size:18px;color:var(--text)}
+.ve-empty .row{display:flex;gap:8px;pointer-events:auto}
+.ve-ai{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:10px;border-bottom:1px solid var(--border)}
+.ve-ai button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font:inherit;font-size:10.5px;text-align:center;line-height:1.2}
+.ve-ai button i{font-style:normal;font-size:15px;color:var(--text)}
+.ve-ai button.on{border-color:var(--lime);color:#fff;background:rgba(217,255,74,.07)}
+.ve-ai button:disabled{opacity:.35;cursor:default}
+.ve-body{flex:1;overflow:auto;padding:12px 14px}
+.ve-body h3{font-size:15px;margin-bottom:3px}.ve-body .d{color:var(--dim);font-size:12.5px;margin-bottom:8px}
+.ve-body textarea.ff{min-height:76px;resize:vertical}
+.ve-eng{margin-top:10px;padding:9px 11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);font-size:12px;color:var(--faint)}
+.ve-eng select{width:100%;background:transparent;color:var(--text);border:0;font:inherit;font-weight:600;font-size:13.5px;outline:none}
+.ve-eng select option{background:var(--surface)}
+.ve-row{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:12px;color:var(--dim)}
+.ve-row label{width:80px}.ve-row input[type=range]{flex:1;accent-color:var(--lime)}.ve-row input[type=number]{width:74px}
+.ve-row input[type=number],.ve-row input[type=text],.ve-row input[type=color]{background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:5px 7px;font:inherit}
+.ve-foot{padding:10px 14px;border-top:1px solid var(--border)}
+.ve-foot .n{font-size:11.5px;color:var(--faint);margin-top:6px;text-align:center}
+.ve-jobs{padding:8px 14px;border-top:1px solid var(--border);max-height:150px;overflow:auto;font-size:12px}
+.ve-jobs div{display:flex;justify-content:space-between;gap:8px;padding:4px 0;color:var(--dim)}
+.ve-jobs div b{color:var(--text);font-weight:500}
+/* 타임라인 */
+.ve-tl{border-top:1px solid var(--border);background:var(--bg2);display:grid;grid-template-rows:40px 1fr;min-height:0}
+.ve-tlbar{display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--border)}
+.ve-tlbar .sp{flex:1}
+.ve-tlbody{position:relative;overflow:auto;min-height:0}
+.ve-tlin{position:relative;min-width:100%;padding-left:64px}
+.ve-ruler{height:22px;position:relative;border-bottom:1px solid var(--border);cursor:pointer}
+.ve-ruler span{position:absolute;top:3px;font-size:10px;color:var(--faint);transform:translateX(-50%)}
+.ve-ruler i{position:absolute;bottom:0;width:1px;height:6px;background:var(--border2)}
+.ve-track{position:relative;height:52px;border-bottom:1px solid var(--border)}
+.ve-track.t{height:34px}.ve-track.a{height:34px}
+.ve-lab{position:absolute;left:-64px;top:0;bottom:0;width:60px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--faint);background:var(--bg2);border-right:1px solid var(--border);z-index:2}
+.ve-clip{position:absolute;top:4px;bottom:4px;border-radius:8px;background:#2a2550;border:1.5px solid #6a40e0;overflow:hidden;cursor:grab;display:flex;align-items:center;font-size:11px;color:#fff;user-select:none}
+.ve-clip .th{position:absolute;inset:0;display:flex;opacity:.55;pointer-events:none}
+.ve-clip .th img{height:100%;width:auto}
+.ve-clip .nm{position:relative;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000}
+.ve-clip.sel{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime)}
+.ve-clip .h{position:absolute;top:0;bottom:0;width:9px;background:rgba(255,255,255,.18);cursor:ew-resize;z-index:2}
+.ve-clip .h.l{left:0}.ve-clip .h.r{right:0}
+.ve-clip.txt{background:#4a3a14;border-color:#ffce7a}.ve-clip.txt.sel{border-color:var(--lime)}
+.ve-clip.aud{background:#123a33;border-color:#5ee0d6}.ve-clip.aud.sel{border-color:var(--lime)}
+.ve-clip.ai{background:repeating-linear-gradient(45deg,#2a2550,#2a2550 8px,#35306a 8px,#35306a 16px)}
+.ve-ph{position:absolute;top:0;bottom:0;width:2px;background:#ff4d6d;z-index:5;pointer-events:none}
+.ve-ph::before{content:'';position:absolute;top:0;left:-5px;border:6px solid transparent;border-top-color:#ff4d6d}
+.ve-sel{position:absolute;top:22px;bottom:0;background:rgba(217,255,74,.08);border-left:1px dashed var(--lime);border-right:1px dashed var(--lime);pointer-events:none;z-index:1}
+.ve-busy{position:fixed;inset:0;z-index:90;background:rgba(7,7,12,.7);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.ve-busy.on{display:flex}.ve-busy .spn{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--lime);animation:spn 1s linear infinite}
+@keyframes spn{to{transform:rotate(360deg)}}
+.ve-modal{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.ve-modal>div{width:min(860px,100%);max-height:84vh;overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:18px}
+.ve-modal h3{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ve-modal video{max-width:100%;max-height:60vh;border-radius:12px;display:block;margin:0 auto 12px;background:#000}
+/* (10-16) 좁은 화면(태블릿·폰): 3단 고정 레이아웃이 잘려 미리보기·도구가 화면 밖이고, 1000px 이하에선 AI 도구(오른쪽)가 아예 숨던 것
+   → 세로로 쌓는다: 상단바 · 미리보기 · 타임라인 · AI 도구 · 미디어(페이지 스크롤) */
+@media (max-width:1000px){
+  .ve{display:flex;flex-direction:column;height:auto;overflow:visible}
+  .ve-main{display:contents}
+  .ve-top{order:0;flex-wrap:wrap;min-height:48px;padding:8px 12px;row-gap:6px}
+  .ve-stage{order:1;height:min(62vh,560px)}
+  .ve-tl{order:2;height:230px}
+  .ve-tlbar{overflow-x:auto;scrollbar-width:none}.ve-tlbar::-webkit-scrollbar{display:none}.ve-tlbar>*{flex-shrink:0}.ve-tlbar #selInfo{display:none}
+  .ve-right{order:3;border-left:0;border-top:1px solid var(--border)}
+  .ve-left{order:4;border-right:0;border-top:1px solid var(--border)}
+  .ve-pane,.ve-body{overflow:visible}
+  .ve-media{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:480px){.ve-ai{grid-template-columns:repeat(3,1fr)}.ve-ctrl .ve-tc{min-width:0}.ve-media{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="ve" id="app">
+  <div class="ve-top">
+    <div class="t">Video Editor <small id="meta">0:00 · 0 clips</small></div>
+    <select class="sel" id="aspect" title="Output frame"><option value="9:16">9:16 Reels</option><option value="4:5">4:5 Feed</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 YouTube</option></select>
+    <select class="sel" id="fit" title="How clips fill the frame"><option value="contain">Fit</option><option value="cover">Fill (crop)</option></select>
+    <select class="sel" id="res"><option value="720">720p</option><option value="1080">1080p</option></select>
+    <button class="ib" id="undo" title="Undo (⌘Z)">↶</button><button class="ib" id="redo" title="Redo (⇧⌘Z)">↷</button>
+    <button class="ib" id="clearAll" title="Start over">New</button>
+    <button class="ib lime" id="export">⤓ Export</button>
+  </div>
+  <div class="ve-main">
+    <aside class="ve-left">
+      <div class="ve-tabs" id="ltabs"><button class="on" data-l="media">Media</button><button data-l="text">Text</button><button data-l="audio">Music</button></div>
+      <div class="ve-pane" id="lpane"></div>
+    </aside>
+    <div class="ve-stage">
+      <div class="ve-canvasWrap" id="cwrap"><canvas id="cv" width="720" height="1280"></canvas></div>
+      <div class="ve-empty" id="empty"><b>Start your edit</b><span>Add videos from your Library or upload — then trim, split, add text and music.<br>AI tools work on the selected clip.</span><div class="row"><button class="ib lime" id="eUp">＋ Upload video</button><button class="ib" id="eLib">From Library</button></div></div>
+      <div class="ve-ctrl"><button class="ib" id="back5" title="Back 5s">⏮</button><button class="ib" id="play" title="Play (Space)" style="min-width:64px">▶ Play</button><button class="ib" id="fwd5" title="Forward 5s">⏭</button><span class="ve-tc" id="tc">00:00.0 / 00:00.0</span></div>
+    </div>
+    <aside class="ve-right">
+      <div class="ve-ai" id="aiTools"></div>
+      <div class="ve-body" id="body"></div>
+      <div class="ve-foot" id="foot"></div>
+      <div class="ve-jobs" id="jobs" hidden></div>
+    </aside>
+  </div>
+  <div class="ve-tl">
+    <div class="ve-tlbar">
+      <button class="ib" id="split" title="Split at playhead (S)">✂ Split</button>
+      <button class="ib" id="scenes" title="Split the selected clip at every scene cut — AI tools work best on one shot">🎬 Split scenes</button>
+      <button class="ib" id="del" title="Delete selected (⌫)">🗑 Delete</button>
+      <button class="ib" id="dup" title="Duplicate selected">⧉ Duplicate</button>
+      <button class="ib" id="mute" title="Mute / unmute clip">🔇 Mute</button>
+      <span class="sp"></span>
+      <span style="font-size:12px;color:var(--faint)" id="selInfo">Click a clip to select · drag edges to trim · drag to reorder</span>
+      <button class="ib" id="zOut" title="Zoom out">−</button><button class="ib" id="zIn" title="Zoom in">＋</button>
+    </div>
+    <div class="ve-tlbody" id="tlbody"><div class="ve-tlin" id="tlin"></div></div>
+  </div>
+</div>
+<input type="file" id="file" accept="video/*,audio/*" multiple hidden>
+<div class="ve-busy" id="busy"><div class="spn"></div><div id="busyT">Working…</div></div>
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const fmt=t=>{t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;return String(m).padStart(2,'0')+':'+s.toFixed(1).padStart(4,'0');};
+const DRAFT='doppia.videoEditor.draft.v1';
+
+// ── 상태 ── clips: 영상 트랙(순서대로 이어짐) · texts: 텍스트 트랙(절대 시간) · audio: 음악 1개
+const st={T:null,clips:[],texts:[],audio:null,clipVolume:1,aspect:'9:16',fit:'contain',res:720,
+  t:0,playing:false,pps:60,sel:null,ltab:'media',tool:'edit',undo:[],redo:[],media:[],jobs:[],thumbs:{},engine:{},upF:2,motionImg:null};
+const AI=[
+  {id:'edit',ic:'✎',name:'Edit',title:'Edit with words',d:'Describe the change for the selected part of the clip — swap the background, change the outfit color, add snow.',prompt:'e.g. change the background to a sunny beach, keep the product the same'},
+  {id:'restyle',ic:'🎨',name:'Restyle',title:'Restyle',d:'One-tap looks for the selected part.',presets:[['Cinematic','cinematic color grade, teal and orange, soft film grain, gentle contrast'],['Golden hour','warm golden-hour sunlight, long soft shadows, glowing highlights'],['Clean studio','clean bright studio look, white seamless background, soft even light'],['Neon night','neon night lighting, pink and blue reflections, moody contrast'],['Vintage film','vintage 35mm film look, faded colors, light leaks, grain'],['Anime','anime illustration style, cel shading, vivid colors']]},
+  {id:'extend',ic:'⧉',name:'Extend',title:'Extend',d:'Continue the shot from the end of the selected part — the new clip is added right after.',prompt:'optional — e.g. camera slowly pushes in on the product'},
+  {id:'upscale',ic:'▲',name:'Upscale',title:'Upscale',d:'Sharper, larger video for the selected part (Topaz).'},
+  {id:'productswap',ic:'⇄',name:'Swap',title:'Product swap',d:'Swap the product in the selected part for yours — hands, motion and camera stay. Add a product photo (upload or Library).'},
+  {id:'reframe',ic:'⤢',name:'Reframe',title:'Reframe',d:'Change the aspect ratio of the selected part — AI generates the new area, so nobody gets cropped out.'},
+  {id:'motion',ic:'↷',name:'Motion',title:'Motion transfer',d:'Put this clip’s movement onto a model photo from your Library. People only — both need a visible upper body.'},
+  {id:'captions',ic:'T',name:'Captions',title:'Auto captions',d:'Transcribe the speech in the selected clip and add timed captions to the text track. Free.'},
+];
+
+// ── 타임라인 계산 ──
+const clipDur=c=>Math.max(0.1,c.out-c.in);
+function starts(){let s=0;return st.clips.map(c=>{const r=s;s+=clipDur(c);return r;});}
+function total(){return st.clips.reduce((a,c)=>a+clipDur(c),0);}
+function clipAt(t){const S=starts();for(let i=0;i<st.clips.length;i++){if(t<S[i]+clipDur(st.clips[i])-1e-6)return{i,c:st.clips[i],start:S[i]};}return st.clips.length?{i:st.clips.length-1,c:st.clips[st.clips.length-1],start:S[S.length-1],end:true}:null;}
+const selClip=()=>st.sel&&st.sel.kind==='clip'?st.clips.find(c=>c.id===st.sel.id):null;
+const selText=()=>st.sel&&st.sel.kind==='text'?st.texts.find(x=>x.id===st.sel.id):null;
+
+// ── 되돌리기·임시저장 ──
+const snap=()=>JSON.stringify({clips:st.clips,texts:st.texts,audio:st.audio,clipVolume:st.clipVolume,aspect:st.aspect,fit:st.fit,res:st.res});
+function commit(){st.undo.push(st._last||snap());if(st.undo.length>60)st.undo.shift();st.redo=[];st._last=snap();save();syncUndo();}
+function restore(s){const o=JSON.parse(s);Object.assign(st,{clips:o.clips||[],texts:o.texts||[],audio:o.audio||null,clipVolume:o.clipVolume==null?1:o.clipVolume,aspect:o.aspect||'9:16',fit:o.fit||'contain',res:o.res||720});st._last=s;$('#aspect').value=st.aspect;$('#fit').value=st.fit;$('#res').value=String(st.res);sizeCanvas();renderAll();save();}
+function doUndo(){if(!st.undo.length)return;st.redo.push(snap());restore(st.undo.pop());syncUndo();}
+function doRedo(){if(!st.redo.length)return;st.undo.push(snap());restore(st.redo.pop());syncUndo();}
+function syncUndo(){$('#undo').disabled=!st.undo.length;$('#redo').disabled=!st.redo.length;}
+function save(){try{localStorage.setItem(DRAFT,snap());}catch(e){}}
+$('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
+
+// ── 미디어(내 영상·업로드) ──
+const vids={};function vidFor(src){if(!vids[src]){const v=document.createElement('video');v.src=src;v.preload='auto';v.playsInline=true;v.crossOrigin='anonymous';v.muted=false;vids[src]=v;v.addEventListener('error',()=>{if(v.crossOrigin){v.removeAttribute('crossorigin');v.src=src;}},{once:true});}return vids[src];}
+function metaOf(src){return new Promise(ok=>{const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=()=>ok({duration:v.duration||0,w:v.videoWidth,h:v.videoHeight});v.onerror=()=>ok({duration:0});v.src=src;});}
+async function loadLibrary(){try{const d=((await(await fetch('/api/generate/results?type=reel&limit=40')).json()).data||[]).filter(r=>r.file_path&&/\.(mp4|webm|mov)$/i.test(r.file_path));
+  const have=new Set(st.media.map(m=>m.src));d.forEach(r=>{const src='/images/'+r.file_path.split('/').pop();if(!have.has(src))st.media.push({src,name:r.template_name||r.model||('#'+r.idx),idx:r.idx,from:'library'});});}catch(e){}renderLeft();}
+async function addClip(src,name,at){const m=await metaOf(src);if(!m.duration){toast('Could not read that video.');return;}
+  commit();const c={id:uid(),src,name:name||'clip',in:0,out:m.duration,srcDur:m.duration,muted:false};if(at==null)st.clips.push(c);else st.clips.splice(at,0,c);
+  st.sel={kind:'clip',id:c.id};thumbsFor(c);renderAll();}
+async function upload(files){for(const f of files){if(f.size>50*1024*1024){toast(`${f.name}: over 50MB`);continue;}busy(true,`Uploading ${f.name}…`);
+  try{const fd=new FormData();fd.append('file',f,f.name);const r=await fetch('/api/generate/video-edit/upload',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.success){toast(j.error||'Upload failed');continue;}const d=j.data;
+    if(d.kind==='audio'){commit();st.audio={src:d.url,name:f.name,start:0,volume:.6,dur:d.duration};st.sel={kind:'audio'};renderAll();}
+    else{st.media.unshift({src:d.url,name:f.name,from:'upload'});await addClip(d.url,f.name);}
+  }catch(e){toast('Upload failed');}finally{busy(false);}}renderLeft();}
+$('#file').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)upload(f);};
+$('#eUp').onclick=()=>$('#file').click();$('#eLib').onclick=()=>{st.ltab='media';renderLeft();};
+document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();const f=[...(e.dataTransfer.files||[])].filter(x=>/^(video|audio)\//.test(x.type));if(f.length)upload(f);});
+
+// 클립 썸네일(타임라인에 깔 프레임 몇 장)
+function thumbsFor(c){if(st.thumbs[c.src])return;st.thumbs[c.src]=[];const v=document.createElement('video');v.muted=true;v.preload='auto';v.crossOrigin='anonymous';v.src=c.src;
+  const shots=6;let k=0;const cvs=document.createElement('canvas');cvs.height=48;
+  v.onloadeddata=()=>{cvs.width=Math.round(48*(v.videoWidth/v.videoHeight||1));next();};
+  function next(){if(k>=shots)return;v.currentTime=Math.min(v.duration-0.05,(v.duration/shots)*k+0.05);}
+  v.onseeked=()=>{try{cvs.getContext('2d').drawImage(v,0,0,cvs.width,cvs.height);st.thumbs[c.src].push(cvs.toDataURL('image/jpeg',.6));}catch(e){}k++;if(k<shots)next();else renderTimeline();};
+  v.onerror=()=>{};}
+
+// ── 왼쪽 패널 ──
+function renderLeft(){$$('#ltabs button').forEach(b=>b.classList.toggle('on',b.dataset.l===st.ltab));const p=$('#lpane');
+  if(st.ltab==='media'){p.innerHTML=`<div class="ve-drop" id="drop">＋ Upload video or music<br><small>MP4 · MOV · MP3 — up to 50MB, or drop files anywhere</small></div><div class="ve-h">My videos</div><div class="ve-media">${st.media.map((m,i)=>`<div class="m" data-i="${i}" title="Click to add to timeline"><video src="${esc(m.src)}#t=0.5" muted preload="metadata" onerror="this.closest('.m').remove()"></video><span>${esc(String(m.name).slice(0,18))}</span><b>＋ Add</b></div>`).join('')||'<div style="grid-column:1/-1;color:var(--faint);font-size:12px">No videos yet — generate one in Create Video or upload.</div>'}</div>`;
+    $('#drop').onclick=()=>$('#file').click();}
+  else if(st.ltab==='text'){p.innerHTML=`<div class="ve-h">Add text</div><div class="ve-list">${[['Title','NEW ARRIVAL',8,.2,true],['Subtitle','Limited stock — order today',5,.82,true],['Price tag','₩29,900',7,.5,false],['Caption','Write your caption',4.5,.88,true]].map((x,i)=>`<button data-tx="${i}"><b style="font-size:${10+x[2]}px">T</b> ${esc(x[0])}</button>`).join('')}</div><div class="ve-h">Tip</div><div style="font-size:12px;color:var(--faint)">Text is placed at the playhead. Use <b>Captions</b> in AI tools to transcribe speech automatically.</div>`;}
+  else{p.innerHTML=`<div class="ve-drop" id="drop2">＋ Upload music (MP3 · WAV · M4A)</div>${st.audio?`<div class="ve-h">On timeline</div><div class="ve-list"><button data-sela>♪ ${esc(st.audio.name||'music')}</button></div>`:''}<div class="ve-h">Music library</div><div class="ve-list" id="bgmList"><span style="color:var(--faint);font-size:12px">loading…</span></div>`;
+    $('#drop2').onclick=()=>$('#file').click();
+    fetch('/api/generate/bgm/list').then(r=>r.json()).then(j=>{const d=(j&&j.data)||[];$('#bgmList').innerHTML=d.map(b=>`<button data-bgm="${esc(b.url)}" data-n="${esc(b.filename)}">♪ ${esc(b.filename)}</button>`).join('')||'<span style="color:var(--faint);font-size:12px">No shared tracks yet — upload one.</span>';}).catch(()=>{$('#bgmList').innerHTML='';});}}
+$('#ltabs').onclick=e=>{const b=e.target.closest('[data-l]');if(b){st.ltab=b.dataset.l;renderLeft();}};
+$('#lpane').addEventListener('click',async e=>{
+  const m=e.target.closest('.m[data-i]');if(m){const x=st.media[+m.dataset.i];await addClip(x.src,x.name);return;}
+  const tx=e.target.closest('[data-tx]');if(tx){const P=[['Title','NEW ARRIVAL',8,.2,true],['Subtitle','Limited stock — order today',5,.82,true],['Price tag','₩29,900',7,.5,false],['Caption','Write your caption',4.5,.88,true]][+tx.dataset.tx];
+    commit();const t={id:uid(),text:P[1],start:st.t,end:Math.min(Math.max(total(),st.t+3),st.t+3),x:.5,y:P[3],size:P[2],color:'#ffffff',bg:P[4]};st.texts.push(t);st.sel={kind:'text',id:t.id};renderAll();return;}
+  const bg=e.target.closest('[data-bgm]');if(bg){const m2=await metaOf(bg.dataset.bgm);commit();st.audio={src:bg.dataset.bgm,name:bg.dataset.n,start:0,volume:.6,dur:m2.duration||60};st.sel={kind:'audio'};renderAll();return;}
+  if(e.target.closest('[data-sela]')){st.sel={kind:'audio'};renderAll();}
+});
+
+// ── 미리보기(캔버스) ──
+const cv=$('#cv'),ctx=cv.getContext('2d');
+function frameWH(){const S=st.res===1080?1080:720;const m={'9:16':[S,S*16/9],'4:5':[S,S*5/4],'1:1':[S,S],'16:9':[S*16/9,S]};return(m[st.aspect]||m['9:16']).map(n=>Math.round(n/2)*2);}
+function sizeCanvas(){const[W,H]=frameWH();const k=640/Math.max(W,H);cv.width=Math.round(W*k);cv.height=Math.round(H*k);fitCanvasCss();draw();}
+function fitCanvasCss(){const w=$('#cwrap'),r=w.getBoundingClientRect(),ar=cv.width/cv.height;let cw=r.width-28,ch=r.height-28;if(cw/ch>ar)cw=ch*ar;else ch=cw/ar;cv.style.width=Math.max(50,cw)+'px';cv.style.height=Math.max(50,ch)+'px';}
+addEventListener('resize',fitCanvasCss);
+function drawVideoFrame(v){const W=cv.width,H=cv.height;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);if(!v||!v.videoWidth)return;
+  const r=v.videoWidth/v.videoHeight,R=W/H;let dw,dh;if((st.fit==='cover')===(r>R)){dh=H;dw=H*r;}else{dw=W;dh=W/r;}ctx.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh);}
+function drawTexts(){const W=cv.width,H=cv.height;st.texts.forEach(t=>{if(st.t<t.start||st.t>t.end)return;const size=Math.max(8,H*(t.size||6)/100);ctx.font=`800 ${size}px 'Noto Sans KR','Apple SD Gothic Neo',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  const lines=String(t.text||'').split('\n'),y0=H*t.y-((lines.length-1)*size*1.2)/2;
+  if(t.bg){ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,y0-size*1.0,W,lines.length*size*1.2+size*0.5);}
+  lines.forEach((l,i)=>{ctx.lineWidth=Math.max(1,size/7);ctx.strokeStyle='rgba(0,0,0,.55)';ctx.strokeText(l,W*t.x,y0+i*size*1.2);ctx.fillStyle=t.color||'#fff';ctx.fillText(l,W*t.x,y0+i*size*1.2);});
+  if(st.sel&&st.sel.kind==='text'&&st.sel.id===t.id){ctx.strokeStyle='#d9ff4a';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(6,y0-size*0.9,W-12,lines.length*size*1.2+size*0.3);ctx.setLineDash([]);}});}
+let curV=null;
+function draw(){const a=clipAt(st.t);const v=a?vidFor(a.c.src):null;drawVideoFrame(v&&v.readyState>=2?v:null);drawTexts();$('#empty').hidden=st.clips.length>0;
+  $('#tc').textContent=fmt(st.t)+' / '+fmt(total());const ph=$('#ph');if(ph)ph.style.left=(64+st.t*st.pps)+'px';}
+// 정지 상태에서 시간 이동 → 그 클립 프레임으로 seek
+function seek(t){st.t=Math.max(0,Math.min(total(),t));const a=clipAt(st.t);if(a){const v=vidFor(a.c.src),local=a.c.in+(st.t-a.start);if(Math.abs(v.currentTime-local)>0.04){v.currentTime=Math.min(local,a.c.srcDur-0.04);v.onseeked=()=>{v.onseeked=null;draw();};}}
+  if(audioEl&&!st.playing)audioEl.pause();draw();}
+// 재생
+let audioEl=null,raf=0,lastTs=0;
+function play(){if(!st.clips.length)return;if(st.t>=total()-0.05)st.t=0;st.playing=true;$('#play').textContent='❚❚ Pause';startClip();
+  if(st.audio){if(!audioEl||audioEl._src!==st.audio.src){audioEl=new Audio(st.audio.src);audioEl._src=st.audio.src;}const at=st.t-st.audio.start;audioEl.volume=Math.min(1,st.audio.volume);if(at>=0){audioEl.currentTime=at%(audioEl.duration||1e9);audioEl.play().catch(()=>{});}}
+  lastTs=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);}
+function pause(){st.playing=false;$('#play').textContent='▶ Play';if(curV)curV.pause();if(audioEl)audioEl.pause();cancelAnimationFrame(raf);draw();}
+function startClip(){const a=clipAt(st.t);if(!a)return;if(curV&&curV!==vidFor(a.c.src))curV.pause();curV=vidFor(a.c.src);curV._clip=a.c.id;curV.muted=a.c.muted;curV.volume=Math.min(1,st.clipVolume);curV.currentTime=a.c.in+(st.t-a.start);curV.play().catch(()=>{});}
+function tick(ts){if(!st.playing)return;const a=clipAt(st.t);
+  if(a&&curV&&curV._clip===a.c.id&&!curV.paused&&curV.readyState>=2){st.t=a.start+(curV.currentTime-a.c.in);}else{st.t+=(ts-lastTs)/1000;}
+  lastTs=ts;
+  if(st.audio&&audioEl&&audioEl.paused&&st.t>=st.audio.start&&st.t<st.audio.start+(st.audio.dur||1e9)){audioEl.currentTime=st.t-st.audio.start;audioEl.play().catch(()=>{});}
+  if(a&&st.t>=a.start+clipDur(a.c)-0.03){if(a.i>=st.clips.length-1){st.t=total();pause();return;}st.t=a.start+clipDur(a.c)+0.001;startClip();}
+  else if(a&&curV&&curV._clip!==a.c.id)startClip();
+  draw();autoscroll();raf=requestAnimationFrame(tick);}
+$('#play').onclick=()=>st.playing?pause():play();
+$('#back5').onclick=()=>{const p=st.playing;pause();seek(st.t-5);if(p)play();};$('#fwd5').onclick=()=>{const p=st.playing;pause();seek(st.t+5);if(p)play();};
+function autoscroll(){const b=$('#tlbody'),x=64+st.t*st.pps;if(x>b.scrollLeft+b.clientWidth-40||x<b.scrollLeft)b.scrollLeft=x-80;}
+
+// ── 타임라인 ──
+function renderTimeline(){const T=Math.max(total(),st.audio?st.audio.start+(st.audio.dur||0):0,...st.texts.map(t=>t.end),10)+5,pps=st.pps,W=T*pps;
+  const step=pps>=120?1:pps>=50?2:pps>=25?5:10;let ruler='';for(let s=0;s<=T;s+=step)ruler+=`<i style="left:${s*pps}px"></i><span style="left:${s*pps}px">${s}s</span>`;
+  const S=starts();
+  const clips=st.clips.map((c,i)=>{const th=(st.thumbs[c.src]||[]).map(u=>`<img src="${u}">`).join('');const ai=st.jobs.some(j=>j.clipId===c.id&&j.status==='running');
+    return `<div class="ve-clip ${st.sel&&st.sel.kind==='clip'&&st.sel.id===c.id?'sel':''} ${ai?'ai':''}" data-k="clip" data-id="${c.id}" style="left:${S[i]*pps}px;width:${Math.max(6,clipDur(c)*pps)}px"><div class="th">${th}</div><span class="nm">${c.muted?'🔇 ':''}${esc(c.name)} · ${clipDur(c).toFixed(1)}s</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;}).join('');
+  const texts=st.texts.map(t=>`<div class="ve-clip txt ${st.sel&&st.sel.kind==='text'&&st.sel.id===t.id?'sel':''}" data-k="text" data-id="${t.id}" style="left:${t.start*pps}px;width:${Math.max(6,(t.end-t.start)*pps)}px"><span class="nm">T ${esc(String(t.text).split('\n')[0])}</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`).join('');
+  const aud=st.audio?`<div class="ve-clip aud ${st.sel&&st.sel.kind==='audio'?'sel':''}" data-k="audio" style="left:${st.audio.start*pps}px;width:${Math.max(6,Math.min(st.audio.dur||30,Math.max(total(),5))*pps)}px"><span class="nm">♪ ${esc(st.audio.name||'music')} · vol ${Math.round(st.audio.volume*100)}%</span></div>`:'';
+  const sc=selClip(),sel=sc?(()=>{const i=st.clips.indexOf(sc);return `<div class="ve-sel" style="left:${64+S[i]*pps}px;width:${clipDur(sc)*pps}px"></div>`;})():'';
+  $('#tlin').style.width=(W+64)+'px';
+  $('#tlin').innerHTML=`<div class="ve-ruler" id="ruler">${ruler}</div><div class="ve-track"><div class="ve-lab">🎬 Video</div>${clips}</div><div class="ve-track t"><div class="ve-lab">T Text</div>${texts}</div><div class="ve-track a"><div class="ve-lab">♪ Music</div>${aud}</div>${sel}<div class="ve-ph" id="ph"></div>`;
+  $('#ph').style.left=(64+st.t*pps)+'px';
+  $('#meta').textContent=`${fmt(total())} · ${st.clips.length} clip${st.clips.length===1?'':'s'}`;}
+function renderAll(){renderTimeline();renderRight();draw();
+  const sc=selClip(),info=$('#selInfo');info.textContent=sc?`${sc.name} · ${sc.in.toFixed(1)}s → ${sc.out.toFixed(1)}s`:selText()?'Text selected — edit on the right':st.sel&&st.sel.kind==='audio'?'Music selected':'Click a clip to select · drag edges to trim · drag to reorder';
+  $('#del').disabled=!st.sel;$('#scenes').disabled=!sc;$('#dup').disabled=!(sc||selText());$('#mute').disabled=!sc;$('#split').disabled=!st.clips.length;}
+
+// 타임라인 포인터: 눈금 클릭=시킹, 클립 클릭=선택, 가장자리=트림, 가운데 드래그=이동(영상은 순서, 텍스트·음악은 시간)
+let tdrag=null;
+$('#tlbody').addEventListener('pointerdown',e=>{
+  const x=e.clientX-$('#tlin').getBoundingClientRect().left-64,t=Math.max(0,x/st.pps);
+  const el=e.target.closest('.ve-clip');
+  if(!el){if(e.target.closest('.ve-ruler')||e.target.closest('.ve-track')){const p=st.playing;pause();seek(t);if(e.target.closest('.ve-ruler'))tdrag={kind:'scrub'};if(p&&!tdrag)play();}if(!e.target.closest('.ve-ruler')){st.sel=null;renderAll();}return;}
+  const k=el.dataset.k,h=e.target.dataset.h;
+  st.sel=k==='audio'?{kind:'audio'}:{kind:k,id:el.dataset.id};
+  const before=snap();
+  if(k==='clip'){const c=st.clips.find(c=>c.id===el.dataset.id);tdrag={kind:h?'trim':'move',side:h,c,x0:e.clientX,in0:c.in,out0:c.out,idx:st.clips.indexOf(c),before};}
+  else if(k==='text'){const tt=st.texts.find(z=>z.id===el.dataset.id);tdrag={kind:h?'ttrim':'tmove',side:h,tt,x0:e.clientX,s0:tt.start,e0:tt.end,before};}
+  else tdrag={kind:'amove',x0:e.clientX,s0:st.audio.start,before};
+  $('#tlbody').setPointerCapture(e.pointerId);pause();renderAll();});
+$('#tlbody').addEventListener('pointermove',e=>{if(!tdrag)return;const dx=(e.clientX-(tdrag.x0||0))/st.pps;
+  if(tdrag.kind==='scrub'){const x=e.clientX-$('#tlin').getBoundingClientRect().left-64;seek(x/st.pps);return;}
+  if(tdrag.kind==='trim'){const c=tdrag.c;if(tdrag.side==='l')c.in=Math.max(0,Math.min(c.out-0.2,tdrag.in0+dx));else c.out=Math.min(c.srcDur,Math.max(c.in+0.2,tdrag.out0+dx));tdrag.moved=true;}
+  else if(tdrag.kind==='move'){const S=starts(),mid=S[tdrag.idx]+dx+clipDur(tdrag.c)/2;let ni=st.clips.length-1;for(let i=0;i<S.length;i++){if(mid<S[i]+clipDur(st.clips[i])/2){ni=i;break;}}
+    const ci=st.clips.indexOf(tdrag.c);if(ni!==ci&&Math.abs(dx)>0.2){st.clips.splice(ci,1);st.clips.splice(ni,0,tdrag.c);tdrag.moved=true;}}
+  else if(tdrag.kind==='ttrim'){const z=tdrag.tt;if(tdrag.side==='l')z.start=Math.max(0,Math.min(z.end-0.2,tdrag.s0+dx));else z.end=Math.max(z.start+0.2,tdrag.e0+dx);tdrag.moved=true;}
+  else if(tdrag.kind==='tmove'){const d=tdrag.e0-tdrag.s0;tdrag.tt.start=Math.max(0,tdrag.s0+dx);tdrag.tt.end=tdrag.tt.start+d;tdrag.moved=true;}
+  else if(tdrag.kind==='amove'){st.audio.start=Math.max(0,tdrag.s0+dx);tdrag.moved=true;}
+  renderTimeline();draw();});
+$('#tlbody').addEventListener('pointerup',()=>{if(tdrag&&tdrag.moved){st.undo.push(tdrag.before);st.redo=[];st._last=snap();save();syncUndo();if(tdrag.kind==='trim')seek(st.t);}tdrag=null;renderAll();});
+$('#zIn').onclick=()=>{st.pps=Math.min(400,st.pps*1.4);renderTimeline();};$('#zOut').onclick=()=>{st.pps=Math.max(8,st.pps/1.4);renderTimeline();};
+
+// 툴바
+function split(){const a=clipAt(st.t);if(!a||a.end)return;const local=a.c.in+(st.t-a.start);if(local-a.c.in<0.15||a.c.out-local<0.15){toast('Move the playhead inside a clip to split.');return;}
+  commit();const b={...a.c,id:uid(),in:local};a.c.out=local;st.clips.splice(a.i+1,0,b);st.sel={kind:'clip',id:b.id};renderAll();}
+function del(){if(!st.sel)return;commit();if(st.sel.kind==='clip')st.clips=st.clips.filter(c=>c.id!==st.sel.id);else if(st.sel.kind==='text')st.texts=st.texts.filter(t=>t.id!==st.sel.id);else st.audio=null;st.sel=null;st.t=Math.min(st.t,total());renderAll();}
+function dup(){const c=selClip(),t=selText();if(!c&&!t)return;commit();if(c){const i=st.clips.indexOf(c);const n={...c,id:uid()};st.clips.splice(i+1,0,n);st.sel={kind:'clip',id:n.id};}else{const n={...t,id:uid(),start:t.end,end:t.end+(t.end-t.start)};st.texts.push(n);st.sel={kind:'text',id:n.id};}renderAll();}
+$('#split').onclick=split;
+// 장면 나누기 — 서버가 장면 전환 시각을 찾아 주면 그 자리마다 자른다(AI 편집은 한 장면 단위가 안전)
+async function splitScenes(c,quiet){busy(true,'Finding scene cuts…');try{const r=await fetch('/api/generate/video-edit/scenes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:c.src,in:c.in,out:c.out})});const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.success){toast(j.error||'Scene detection failed');return 0;}const ts=(j.data.times||[]).filter(t=>t>c.in+0.3&&t<c.out-0.3);if(!ts.length){if(!quiet)toast('One continuous shot — nothing to split.');return 0;}
+    commit();let i=st.clips.indexOf(c),cur=c;ts.forEach(t=>{const n={...cur,id:uid(),in:t};cur.out=t;st.clips.splice(++i,0,n);cur=n;});st.sel={kind:'clip',id:c.id};renderAll();toast(`Split into ${ts.length+1} scenes`);return ts.length;}
+  catch(e){toast('Scene detection failed');return 0;}finally{busy(false);}}
+$('#scenes').onclick=()=>{const c=selClip();if(!c){toast('Select a clip first.');return;}splitScenes(c);};$('#del').onclick=del;$('#dup').onclick=dup;
+$('#mute').onclick=()=>{const c=selClip();if(!c)return;commit();c.muted=!c.muted;renderAll();};
+$('#clearAll').onclick=()=>{if(!st.clips.length&&!st.texts.length&&!st.audio)return;if(!confirm('Start a new edit? (Undo can bring it back)'))return;commit();st.clips=[];st.texts=[];st.audio=null;st.sel=null;st.t=0;renderAll();};
+['aspect','fit','res'].forEach(id=>$('#'+id).onchange=e=>{commit();st[id]=id==='res'?+e.target.value:e.target.value;sizeCanvas();save();});
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?doRedo():doUndo();return;}
+  if(e.code==='Space'){e.preventDefault();st.playing?pause():play();}
+  if(e.key==='s'||e.key==='S')split();if(e.key==='Delete'||e.key==='Backspace')del();
+  if(e.key==='ArrowLeft')seek(st.t-(e.shiftKey?1:1/30));if(e.key==='ArrowRight')seek(st.t+(e.shiftKey?1:1/30));});
+
+// ── 오른쪽: AI 도구 + 속성 ──
+const opCat=op=>((st.T&&st.T.videoEditor)||[]).find(o=>o.op===op);
+function renderRight(){
+  $('#aiTools').innerHTML=AI.map(a=>{const off=a.id!=='captions'&&!opCat(a.id);return `<button class="${st.tool===a.id?'on':''}" data-ai="${a.id}" ${off?'disabled title="Not configured on this server"':''}><i>${a.ic}</i>${esc(a.name)}</button>`;}).join('');
+  const b=$('#body'),f=$('#foot'),c=selClip(),t=selText();
+  // 텍스트·음악이 선택돼 있으면 속성 편집
+  if(t){b.innerHTML=`<h3>Text</h3><textarea class="ff" id="txT" maxlength="300">${esc(t.text)}</textarea>
+    <div class="ve-row"><label>Size</label><input type="range" min="2" max="16" step=".5" value="${t.size}" data-tp="size"></div>
+    <div class="ve-row"><label>Position ↕</label><input type="range" min="0.05" max="0.95" step=".01" value="${t.y}" data-tp="y"></div>
+    <div class="ve-row"><label>Position ↔</label><input type="range" min="0.1" max="0.9" step=".01" value="${t.x}" data-tp="x"></div>
+    <div class="ve-row"><label>Color</label><input type="color" value="${t.color}" data-tp="color"><label style="width:auto"><input type="checkbox" data-tp="bg" ${t.bg?'checked':''}> Background bar</label></div>
+    <div class="ve-row"><label>Start (s)</label><input type="number" step=".1" min="0" value="${t.start.toFixed(1)}" data-tp="start"><label style="width:auto">End</label><input type="number" step=".1" value="${t.end.toFixed(1)}" data-tp="end"></div>`;
+    f.innerHTML=`<div class="n">Text is drawn into the exported video.</div>`;return;}
+  if(st.sel&&st.sel.kind==='audio'&&st.audio){b.innerHTML=`<h3>Music</h3><div class="d">${esc(st.audio.name||'')}</div>
+    <div class="ve-row"><label>Music vol</label><input type="range" min="0" max="1.5" step=".05" value="${st.audio.volume}" data-ap="volume"></div>
+    <div class="ve-row"><label>Clip sound</label><input type="range" min="0" max="1.5" step=".05" value="${st.clipVolume}" data-ap="clipVolume"></div>
+    <div class="ve-row"><label>Starts at</label><input type="number" step=".1" min="0" value="${st.audio.start.toFixed(1)}" data-ap="start"></div>`;f.innerHTML='';return;}
+  const a=AI.find(x=>x.id===st.tool),cat=opCat(a.id);
+  let h=`<h3>${esc(a.title)}</h3><div class="d">${esc(a.d)}</div>`;
+  if(!c)h+=`<div class="ve-eng" style="color:var(--gold)">Select a clip on the timeline first. Split it to work on just part of it.</div>`;
+  else h+=`<div class="ve-eng">Selected: <b style="color:var(--text)">${esc(c.name)}</b> · ${clipDur(c).toFixed(1)}s${cat?` <span style="color:${clipDur(c)<cat.min||clipDur(c)>cat.max?'var(--gold)':'var(--faint)'}">(this tool: ${cat.min}–${cat.max}s)</span>`:''}</div>`;
+  if(a.prompt!==undefined)h+=`<div class="lbl">${a.id==='extend'?'Direction <i>· optional</i>':'Describe the change'}</div><textarea class="ff" id="pr" maxlength="800" placeholder="${esc(a.prompt)}"></textarea>`;
+  if(a.presets)h+=`<div class="lbl">Looks</div><div class="chips">${a.presets.map((p,i)=>`<button class="chip ${st.preset===i?'on':''}" data-ps="${i}">${esc(p[0])}</button>`).join('')}</div>`;
+  if(a.id==='extend')h+=`<div class="ve-row"><label>Add</label><input type="range" min="4" max="15" step="1" value="${st.extSec||5}" id="extSec"><span id="extV">${st.extSec||5}s</span></div>`;
+  if(a.id==='upscale')h+=`<div class="lbl">Factor</div><div class="chips"><button class="chip ${st.upF===2?'on':''}" data-uf="2">×2</button><button class="chip ${st.upF===4?'on':''}" data-uf="4">×4</button></div>`;
+  if(a.id==='motion')h+=`<div class="lbl">Model photo</div><div style="display:flex;gap:8px;align-items:center">${st.motionImg?`<img src="${esc(st.motionImg)}" style="width:54px;height:68px;object-fit:cover;border-radius:8px">`:''}<button class="ib" id="pickImg">${st.motionImg?'Change':'Pick from Library'}</button></div>`;
+  if(a.id==='productswap')h+=`<div class="lbl">Your product</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${st.swapImg?`<img src="${esc(st.swapImg)}" style="width:54px;height:54px;object-fit:contain;background:#fff;border-radius:8px">`:''}<button class="ib" id="pickSwap">${st.swapImg?'Change':'Pick from Library'}</button><button class="ib" id="upSwap">Upload</button><input type="file" id="swapFile" accept="image/*" hidden></div>
+    <div class="lbl">What to replace <i>· optional</i></div><input class="ff" id="swapTarget" maxlength="200" placeholder="e.g. the white bottle in her hand" value="${esc(st.swapTarget||'')}" style="min-height:0">
+    <div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="500" placeholder="e.g. show the label facing the camera"></textarea>`;
+  if(a.id==='reframe'&&cat){const asp=[...new Set(cat.engines.flatMap(e=>e.aspects||[]))],ord=['9:16','4:5','3:4','1:1','5:4','4:3','16:9','21:9'];asp.sort((x,y)=>ord.indexOf(x)-ord.indexOf(y));
+    if(!st.rfAspect||!asp.includes(st.rfAspect))st.rfAspect=st.aspect==='16:9'?'9:16':'16:9';const eng=rfEngine(cat);
+    h+=`<div class="lbl">New ratio</div><div class="chips">${asp.map(x=>`<button class="chip ${st.rfAspect===x?'on':''}" data-rf="${x}">${x}</button>`).join('')}</div>`;
+    if(eng&&(eng.resolutions||[]).length)h+=`<div class="lbl">Quality</div><div class="chips">${eng.resolutions.map(x=>`<button class="chip ${(st.rfRes||eng.resolutions[0])===x?'on':''}" data-rr="${x}">${x}</button>`).join('')}</div>`;
+    if(eng&&!eng.noPrompt)h+=`<div class="lbl">Direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="500" placeholder="e.g. extend the beach and the sky on both sides"></textarea>`;
+    if(eng)h+=`<div class="ve-eng" style="color:var(--faint)">${esc(eng.label)} · up to ${eng.maxSec}s${c&&clipDur(c)>eng.maxSec?` <span style="color:var(--gold)">— only the first ${eng.maxSec}s of this part is used</span>`:''}</div>`;}
+  if(a.id==='captions')h+=`<div class="ve-row"><label>Language</label><select class="sel" id="capLang"><option value="">Auto</option><option>Korean</option><option>English</option><option>Japanese</option></select></div>`;
+  if(cat&&cat.engines.length)h+=`<div class="ve-eng">Engine<select id="engSel">${cat.engines.map((e,i)=>`<option value="${esc(e.id)}" ${(st.engine[a.id]||cat.engines[0].id)===e.id?'selected':''}>${i===0?'Auto · ':''}${esc(e.label)}</option>`).join('')}</select><div style="margin-top:4px">${esc(cat.why)}</div></div>`;
+  b.innerHTML=h;
+  const cost=cat&&cat.engines[0]?cat.engines[0].perDuration:null;
+  let price=cost?(c&&clipDur(c)>5.5&&a.id!=='extend'?cost[10]:cost[5]):null;
+  if(a.id==='reframe'&&cat&&c){const e=rfEngine(cat);if(e){const d=Math.min(clipDur(c),e.maxSec);price=d>10&&e.billPer10s?Math.ceil(d/10)*e.perDuration[10]:(d>5.5?e.perDuration[10]:e.perDuration[5]);}}
+  f.innerHTML=`<button class="gen" id="run" ${!c?'disabled':''}>${esc(a.title)}${a.id==='captions'?' <span class="c">free</span>':price!=null?` <span class="c">◈ ${Number(price).toLocaleString()}</span>`:''}</button><div class="n">${a.id==='captions'?'Captions land on the Text track.':a.id==='extend'?'The new part is added after the clip when it’s ready.':'The result replaces the selected clip when it’s ready (Undo brings the original back).'} Results are also saved to your Library.</div>`;
+}
+$('#aiTools').onclick=e=>{const b=e.target.closest('[data-ai]');if(!b||b.disabled)return;st.tool=b.dataset.ai;if(st.sel&&st.sel.kind!=='clip')st.sel=st.clips[0]?{kind:'clip',id:(selClip()||st.clips[0]).id}:null;renderAll();};
+$('#body').addEventListener('input',e=>{const t=selText();
+  if(t&&e.target.id==='txT'){t.text=e.target.value;renderTimeline();draw();save();return;}
+  if(t&&e.target.dataset.tp){const k=e.target.dataset.tp;t[k]=k==='color'?e.target.value:k==='bg'?e.target.checked:+e.target.value;if(t.end<t.start+0.2)t.end=t.start+0.2;renderTimeline();draw();save();return;}
+  if(st.audio&&e.target.dataset.ap){const k=e.target.dataset.ap;if(k==='clipVolume')st.clipVolume=+e.target.value;else st.audio[k]=+e.target.value;renderTimeline();save();return;}
+  if(e.target.id==='extSec'){st.extSec=+e.target.value;$('#extV').textContent=st.extSec+'s';}
+  if(e.target.id==='swapTarget')st.swapTarget=e.target.value;});
+$('#body').addEventListener('change',e=>{if(e.target.id==='engSel')st.engine[st.tool]=e.target.value;if(e.target.dataset.tp||e.target.id==='txT'||e.target.dataset.ap)commit();});
+// Reframe: 고른 비율을 지원하는 엔진(엔진 선택이 그 비율을 못 하면 지원하는 첫 엔진)
+function rfEngine(cat){const ok=cat.engines.filter(e=>(e.aspects||[]).includes(st.rfAspect));return ok.find(e=>e.id===st.engine.reframe)||ok[0]||null;}
+$('#body').addEventListener('click',e=>{const p=e.target.closest('[data-ps]');if(p){st.preset=+p.dataset.ps;renderRight();return;}
+  const rf=e.target.closest('[data-rf]');if(rf){st.rfAspect=rf.dataset.rf;renderRight();return;}const rr=e.target.closest('[data-rr]');if(rr){st.rfRes=rr.dataset.rr;renderRight();return;}const u=e.target.closest('[data-uf]');if(u){st.upF=+u.dataset.uf;renderRight();return;}
+  if(e.target.id==='pickImg')pickImage();if(e.target.id==='pickSwap')pickImage('swapImg','Pick your product photo');if(e.target.id==='upSwap')$('#swapFile').click();});
+$('#body').addEventListener('change',async e=>{if(e.target.id!=='swapFile')return;const f=e.target.files[0];e.target.value='';if(!f)return;busy(true,'Uploading product photo…');
+  try{const fd=new FormData();fd.append('file',f,f.name||'product.png');const r=await fetch('/api/generate/lens-upload',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(!r.ok||!j.success){toast(j.error||'Upload failed');return;}st.swapImg=j.data.url;renderRight();}
+  catch(err){toast('Upload failed');}finally{busy(false);}});
+async function pickImage(key='motionImg',title='Pick a model photo'){const m=document.createElement('div');m.className='ve-modal';m.innerHTML='<div><h3>'+esc(title)+' <button class="ib" data-x>✕</button></h3><div class="ve-media" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))" id="pg">loading…</div></div>';document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-x]'))m.remove();const g=e.target.closest('[data-u]');if(g){st[key]=g.dataset.u;m.remove();renderRight();}});
+  try{const d=((await(await fetch('/api/generate/results?type=photo&limit=60')).json()).data||[]).filter(r=>r.file_path&&/\.(png|jpe?g|webp)$/i.test(r.file_path));m.querySelector('#pg').innerHTML=d.map(r=>{const u='/images/'+r.file_path.split('/').pop();return `<div class="m" data-u="${esc(u)}"><img src="${esc(u)}" loading="lazy"></div>`;}).join('')||'No photos yet.';}catch(e){}}
+
+// ── AI 실행 ──
+$('#foot').addEventListener('click',e=>{if(e.target.closest('#run'))runAI();});
+async function longJob(url,body){const r=await fetch(url+'?async=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));
+  if(r.status!==202||!j.data||!j.data.jobId)return{status:r.status,ok:r.ok,body:j};const id=j.data.jobId,t0=Date.now();
+  while(Date.now()-t0<20*60*1000){await new Promise(x=>setTimeout(x,3000));let q;try{q=await fetch('/api/generate/jobs/'+encodeURIComponent(id));}catch(e){continue;}const k=await q.json().catch(()=>({}));
+    if(q.status===404)return{status:404,ok:false,body:k};if(k.data&&k.data.status==='done'){const res=k.data.result||{status:500,body:{}};return{status:res.status,ok:res.status<400,body:res.body||{}};}}
+  return{status:504,ok:false,body:{error:'Still running — check your Library later.'}};}
+async function runAI(){const c=selClip(),a=AI.find(x=>x.id===st.tool);if(!c)return;
+  if(a.id==='captions'){busy(true,'Transcribing speech…');try{const r=await longJob('/api/generate/video-edit/captions',{src:c.src,in:c.in,out:c.out,lang:($('#capLang')||{}).value||''});
+      if(!r.ok||!r.body.success){toast(r.body.error||'Captions failed');return;}const lines=r.body.data.lines||[];if(!lines.length){toast('No speech found in this clip.');return;}
+      const S=starts()[st.clips.indexOf(c)];commit();lines.forEach(l=>st.texts.push({id:uid(),text:l.text,start:S+l.start,end:S+l.end,x:.5,y:.86,size:4.5,color:'#ffffff',bg:true}));renderAll();toast(`${lines.length} captions added`);}
+    finally{busy(false);}return;}
+  const body={op:a.id,engine:st.engine[a.id]||undefined,src:c.src,in:c.in,out:c.out,factor:st.upF,extendSec:st.extSec||5};
+  const pr=$('#pr');body.prompt=pr?pr.value.trim():'';
+  if(a.id==='restyle'){if(st.preset==null){toast('Pick a look first.');return;}body.prompt=a.presets[st.preset][1];}
+  if(a.id==='edit'&&!body.prompt){toast('Describe the change.');pr&&pr.focus();return;}
+  if(a.id==='motion'){if(!st.motionImg){toast('Pick a model photo first.');return;}body.imageSrc=st.motionImg;}
+  if(a.id==='reframe'){const e=rfEngine(opCat('reframe'));if(!e){toast('Pick a ratio.');return;}body.aspectRatio=st.rfAspect;body.engine=e.id;if((e.resolutions||[]).length)body.resolution=st.rfRes||e.resolutions[0];}
+  if(a.id==='productswap'){if(!st.swapImg){toast('Add a photo of your product first.');return;}body.imageSrc=st.swapImg;body.target=st.swapTarget=(($('#swapTarget')||{}).value||'').trim();}
+  // 여러 장면이 섞인 구간은 AI 가 한 장면으로 뭉갠다 → 먼저 확인하고 나눌지 묻는다
+  if(a.id!=='upscale'&&!c._sceneChecked){try{const r0=await fetch('/api/generate/video-edit/scenes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:c.src,in:c.in,out:c.out})});const j0=await r0.json().catch(()=>({}));
+    const n=((j0.data&&j0.data.times)||[]).length;c._sceneChecked=true;if(n&&confirm(`This part has ${n+1} different shots. AI tools work on one shot — split it into scenes first? (Recommended)`)){await splitScenes(c,true);toast('Pick the scene you want to edit, then run the tool again.');return;}}catch(e){}}
+  submitAI(body,a,c);}
+async function submitAI(body,a,c){
+  busy(true,'Sending to AI…');
+  try{const r=await fetch('/api/generate/video-edit/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));
+    if(r.status===402){toast(j.error||'Not enough credits.');return;}if(!r.ok||!j.success){toast(j.error||'AI request failed');return;}
+    const job={id:j.data.jobId,op:a.id,label:a.title,engine:j.data.engine.label,engineId:j.data.engine.id,clipId:c.id,status:'running',t0:Date.now(),body,a,c};st.jobs.unshift(job);renderJobs();renderTimeline();
+    toast(`${a.title} started on ${j.data.engine.label} — usually 1–5 minutes. Keep editing.`);if(window.DoppiaNav)DoppiaNav.refreshCredits();pollJob(job);
+  }catch(e){toast('Network error');}finally{busy(false);}}
+async function pollJob(job){while(job.status==='running'){await new Promise(x=>setTimeout(x,8000));try{const r=await fetch('/api/generate/video/jobs/'+encodeURIComponent(job.id));const j=await r.json();const d=j.data||{};
+    if(d.status==='succeeded'&&d.url){job.status='done';job.url=d.url;applyResult(job);}else if(d.status==='failed'){job.status='failed';job.error=d.error||'failed';
+      // 엔진 정책 거절(실제 사람 등)이면 같은 도구의 다음 엔진으로 자동 재시도 — Seedance 는 사람이 나오는 영상을 거절한다(dev 실측), Kling Omni Edit 는 통과
+      const cat=opCat(job.op),next=cat&&cat.engines.map(e=>e.id).filter(id=>id!==job.engineId&&!(job.body.tried||[]).includes(id))[0];
+      if(next&&(/content_policy|likeness|real people|policy|moderation|safety/i.test(job.error)||(job.op==='productswap'&&/unprocessable|invalid|422/i.test(job.error)))){job.error='blocked by '+job.engine+' — retrying';const nb={...job.body,engine:next,tried:[...(job.body.tried||[]),job.engineId]};toast(`${job.engine} won't edit videos with real people — retrying on ${(cat.engines.find(e=>e.id===next)||{}).label||next}`);submitAI(nb,job.a,job.c);}
+      else toast(`${job.label} failed: ${String(job.error).slice(0,140)} (credits refunded)`);}
+  }catch(e){}renderJobs();if(Date.now()-job.t0>20*60*1000&&job.status==='running'){job.status='failed';job.error='timeout — check Library';}}renderTimeline();}
+async function applyResult(job){st.media.unshift({src:job.url,name:`${job.label} result`,from:'ai'});const m=await metaOf(job.url);const i=st.clips.findIndex(c=>c.id===job.clipId);
+  commit();const n={id:uid(),src:job.url,name:`${job.label}`,in:0,out:m.duration||5,srcDur:m.duration||5,muted:false};
+  if(job.op==='extend'||job.op==='motion'||i<0)st.clips.splice(i<0?st.clips.length:i+1,0,n);else st.clips.splice(i,1,n);
+  st.sel={kind:'clip',id:n.id};thumbsFor(n);renderAll();renderLeft();toast(`${job.label} ready on ${job.engine} — ${job.op==='extend'||job.op==='motion'?'added after the clip':'clip replaced'}`);
+  // Reframe 결과 비율이 프로젝트 프레임과 다르면 프레임도 바꿀지 묻는다(편집기 프레임: 9:16·4:5·1:1·16:9)
+  const ar=job.body&&job.body.aspectRatio;if(job.op==='reframe'&&ar&&ar!==st.aspect&&[...$('#aspect').options].some(o=>o.value===ar)&&confirm(`Switch the project frame to ${ar} to match the reframed clip?`)){st.aspect=ar;$('#aspect').value=ar;sizeCanvas();save();}}
+function renderJobs(){const el=$('#jobs');el.hidden=!st.jobs.length;el.innerHTML=st.jobs.slice(0,8).map(j=>`<div><b>${esc(j.label)}</b><span>${esc(j.engine)} · ${j.status==='running'?'⏳ '+Math.round((Date.now()-j.t0)/1000)+'s':j.status==='done'?'✓ ready':'✕ '+esc(j.error||'')}</span></div>`).join('');}
+setInterval(()=>{if(st.jobs.some(j=>j.status==='running'))renderJobs();},1000);
+
+// ── 내보내기 ──
+$('#export').onclick=async()=>{if(!st.clips.length){toast('Add a clip first.');return;}pause();
+  const tl={aspect:st.aspect,fit:st.fit,height:st.res,clips:st.clips.map(c=>({src:c.src,in:+c.in.toFixed(3),out:+c.out.toFixed(3),muted:!!c.muted})),texts:st.texts.map(t=>({text:t.text,start:t.start,end:t.end,x:t.x,y:t.y,size:t.size,color:t.color,bg:t.bg})),audio:st.audio?{src:st.audio.src,start:st.audio.start,volume:st.audio.volume,clipVolume:st.clipVolume}:null};
+  busy(true,`Rendering ${fmt(total())} video…`);
+  try{const r=await longJob('/api/generate/video-edit/render',{timeline:tl});if(!r.ok||!r.body.success){toast(r.body.error||'Export failed');return;}const d=r.body.data;
+    const m=document.createElement('div');m.className='ve-modal';m.innerHTML=`<div><h3>Exported · ${d.width}×${d.height} · ${fmt(d.duration)} <button class="ib" data-x>✕</button></h3><video src="${esc(d.url)}" controls autoplay playsinline></video><div style="display:flex;gap:8px;justify-content:center"><a class="ib lime" href="${esc(d.url)}" download="doppia-edit.mp4">⤓ Download MP4</a><a class="ib" href="/creation?idx=${d.idx}">Open in Library</a></div></div>`;
+    document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-x]'))m.remove();});
+  }catch(e){toast('Export failed');}finally{busy(false);}};
+function busy(on,t){$('#busy').classList.toggle('on',on);$('#busyT').textContent=t||'Working…';}
+
+// ── 부팅 ──
+async function boot(){st.T=window.DoppiaNav?await DoppiaNav.tools():{};
+  try{const d=localStorage.getItem(DRAFT);if(d){restore(d);st.clips.forEach(thumbsFor);}}catch(e){}
+  st._last=snap();syncUndo();sizeCanvas();
+  const q=new URLSearchParams(location.search),v=q.get('video');if(v&&/^\/images\/[\w.-]+\.(mp4|webm|mov)$/i.test(v)){await addClip(v,'From Library');history.replaceState(null,'','/video-edit');}
+  const qt=q.get('tool');if(qt&&AI.some(a=>a.id===qt)&&(qt==='captions'||opCat(qt)))st.tool=qt;
+  if(!opCat(st.tool)){const first=AI.find(a=>a.id==='captions'||opCat(a.id));st.tool=first?first.id:'captions';}
+  renderAll();renderLeft();loadLibrary();
+  new ResizeObserver(fitCanvasCss).observe($('#cwrap'));}
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
+</body>
+</html>

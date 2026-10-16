@@ -1,83 +1,198 @@
+/**
+ * ─── fal.ai 범용 이미지 프로바이더 ───
+ *
+ * (2026-10-13) FLUX dev 전용이던 것을 registry 가 주는 model/editModel/sizing 으로 돌아가게 넓혔다.
+ *   · req.model      = fal 엔드포인트 경로(없으면 FAL_MODEL, 기본 fal-ai/flux/dev)
+ *   · req.editModel  = 레퍼런스가 있을 때 쓰는 편집 엔드포인트(image_urls · editSingle 이면 image_url 한 장). 없으면 텍스트 전용으로 레퍼런스를 무시한다.
+ *   · req.sizing     = 'aspect' 면 aspect_ratio + resolution('1k'|'2k'|'4k') 스키마(FLUX 3), 아니면 image_size:{width,height}(FLUX·Recraft·Z-Image)
+ *   · req.negative   = 스키마에 negative_prompt 가 있을 때만 true(registry controls.negative) — 없는 필드를 보내면 422
+ * 큐 규약은 submit 이 돌려주는 status_url/response_url 을 그대로 따라간다(seedream.provider 와 동일 — 경로 규칙이 바뀌어도 안 깨진다).
+ * Seedream 은 image_size 범위 규칙이 달라 seedream.provider 에 그대로 둔다.
+ */
 const { env } = require('../../config');
 
-const FAL_API = 'https://queue.fal.run';
+const FAL_QUEUE = 'https://queue.fal.run';
+
+const authHeaders = () => ({
+  Authorization: `Key ${env.FAL_API_KEY}`,
+  'Content-Type': 'application/json',
+});
+
+/** imageSize 티어(1K/2K/4K) → FLUX 3 resolution 값 */
+function toResolution(imageSize) {
+  const s = String(imageSize || '1K').toUpperCase();
+  return s === '4K' ? '4k' : s === '2K' ? '2k' : '1k';
+}
+
+async function submitAndWait(model, input, maxWaitMs = 180_000) {
+  const submitRes = await fetch(`${FAL_QUEUE}/${model}`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(input),
+  });
+  if (!submitRes.ok) {
+    const body = await submitRes.text();
+    throw new Error(`fal submit failed (${model}, ${submitRes.status}): ${body.slice(0, 400)}`);
+  }
+  const queued = await submitRes.json();
+  const statusUrl = queued.status_url || `${FAL_QUEUE}/${model}/requests/${queued.request_id}/status`;
+  const responseUrl = queued.response_url || `${FAL_QUEUE}/${model}/requests/${queued.request_id}`;
+
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const st = await fetch(statusUrl, { headers: authHeaders() });
+    const status = await st.json().catch(() => ({}));
+    if (status.status === 'COMPLETED') {
+      const r = await fetch(responseUrl, { headers: authHeaders() });
+      if (!r.ok) throw new Error(`fal result fetch failed (${model}, ${r.status})`);
+      return { result: await r.json(), requestId: queued.request_id };
+    }
+    if (status.status === 'FAILED') {
+      throw new Error(`fal 생성 실패 (${model}): ${JSON.stringify(status).slice(0, 300)}`);
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  throw new Error(`fal 타임아웃 (${model}, ${maxWaitMs}ms)`);
+}
 
 /** @type {import('./types').ImageProvider} */
 const falProvider = {
   name: 'fal',
 
+  isConfigured() { return !!env.FAL_API_KEY; },
+
   /**
-   * fal.ai API로 이미지를 생성한다.
-   * @param {import('./types').ImageGenerationRequest} req
+   * @param {import('./types').ImageGenerationRequest & {
+   *   model?: string, editModel?: string, sizing?: 'aspect', negative?: boolean,
+   *   aspectRatio?: string, imageSize?: string, referenceImageUrls?: string[]
+   * }} req
    * @returns {Promise<import('./types').ImageGenerationResult>}
    */
   async generate(req) {
-    const model = env.FAL_MODEL || 'fal-ai/flux/dev';
+    if (!env.FAL_API_KEY) {
+      throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+    }
+    const refs = (req.referenceImageUrls || []).filter(Boolean);
+    const useEdit = refs.length > 0 && !!req.editModel;
+    const model = useEdit ? req.editModel : (req.model || env.FAL_MODEL || 'fal-ai/flux/dev');
 
-    // 1) 요청 제출
-    const submitRes = await fetch(`${FAL_API}/${model}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Key ${env.FAL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: req.prompt,
-        negative_prompt: req.negativePrompt,
-        image_size: { width: req.width, height: req.height },
-        ...(req.seed != null && { seed: req.seed }),
-        num_images: 1,
-      }),
-    });
-
-    if (!submitRes.ok) {
-      const body = await submitRes.text();
-      throw new Error(`fal submit failed (${submitRes.status}): ${body}`);
+    const input = {
+      prompt: req.prompt,
+      num_images: 1,
+      ...(req.seed != null && { seed: req.seed }),
+      ...(req.negative && req.negativePrompt && { negative_prompt: req.negativePrompt }),
+      ...(useEdit && (req.editSingle ? { image_url: refs[0] } : { image_urls: refs })), // editSingle = Z-Image i2i 처럼 한 장만 받는 스키마
+    };
+    if (req.extras && typeof req.extras === 'object') Object.assign(input, req.extras); // registry controls.extras(라우트 화이트리스트) — seed·guidance·steps·safety 등
+    if (req.sizing === 'aspect') {
+      input.aspect_ratio = req.aspectRatio || '1:1';
+      input.resolution = toResolution(req.imageSize);
+    } else {
+      input.image_size = { width: req.width, height: req.height };
     }
 
-    const { request_id } = await submitRes.json();
-
-    // 2) 완료까지 폴링
-    const result = await pollFalRequest(model, request_id);
-
+    const { result, requestId } = await submitAndWait(model, input);
+    const image = (result.images || [])[0];
+    if (!image || !image.url) {
+      throw new Error(`fal 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+    }
     return {
-      url: result.images[0].url,
+      url: image.url,
       seed: result.seed ?? null,
-      providerJobId: request_id,
-      metadata: {
-        model,
-        timings: result.timings,
-      },
+      providerJobId: requestId,
+      metadata: { model, timings: result.timings, edited: useEdit, referenceCount: useEdit ? refs.length : 0 },
     };
   },
 };
 
-async function pollFalRequest(model, requestId) {
-  const maxWait = 120_000;
-  const interval = 3_000;
-  const start = Date.now();
-
-  while (Date.now() - start < maxWait) {
-    const statusRes = await fetch(`${FAL_API}/${model}/requests/${requestId}/status`, {
-      headers: { Authorization: `Key ${env.FAL_API_KEY}` },
-    });
-    const status = await statusRes.json();
-
-    if (status.status === 'COMPLETED') {
-      const resultRes = await fetch(`${FAL_API}/${model}/requests/${requestId}`, {
-        headers: { Authorization: `Key ${env.FAL_API_KEY}` },
-      });
-      return resultRes.json();
-    }
-
-    if (status.status === 'FAILED') {
-      throw new Error(`fal request ${requestId} failed`);
-    }
-
-    await new Promise((r) => setTimeout(r, interval));
+/**
+ * Topaz 업스케일(fal-ai/topaz/upscale/image). 입력은 이미지 URL(data URI 가능) + 배율. 결과는 result.image.url.
+ * @param {{ model?: string, imageUrl: string, factor?: number }} req
+ * @returns {Promise<import('./types').ImageGenerationResult>}
+ */
+falProvider.upscale = async function upscale(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
   }
+  const model = req.model || 'fal-ai/topaz/upscale/image';
+  const factor = [2, 3, 4].includes(req.factor) ? req.factor : 2; // Topaz 스키마 최대 ×4 — ×8·×16 은 호출부(imageEdit.engine)가 패스를 나눈다
+  const { result, requestId } = await submitAndWait(model, {
+    image_url: req.imageUrl, upscale_factor: factor, model: 'Standard V2', output_format: req.outputFormat === 'jpeg' ? 'jpeg' : 'png',
+  }, 420_000); // 4K 출력은 1~3분, 16K 는 더 걸린다
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 업스케일 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, factor, width: image.width, height: image.height } };
+};
 
-  throw new Error(`fal request ${requestId} timed out after ${maxWait}ms`);
-}
+/**
+ * 배경 제거(fal-ai/birefnet/v2). 제품 누끼 기본값: General Use (Light 2K) · 2048 연산 · PNG(알파). 결과 image.url.
+ * @param {{ model?: string, imageUrl: string }} req
+ */
+falProvider.removeBackground = async function removeBackground(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/birefnet/v2';
+  const { result, requestId } = await submitAndWait(model, {
+    image_url: req.imageUrl, model: 'General Use (Light 2K)', operating_resolution: '2048x2048', output_format: 'png', refine_foreground: true,
+  }, 120_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 배경 제거 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
+/**
+ * (2026-10-16) 마스크 채우기 — FLUX.1 Fill [pro](fal-ai/flux-pro/v1/fill). mask 흰색 = 다시 그릴 곳. Editor 의 Inpaint·Erase·Expand 1순위.
+ * @param {{ model?: string, imageUrl: string, maskUrl: string, prompt: string }} req
+ */
+falProvider.fill = async function fill(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/flux-pro/v1/fill';
+  const { result, requestId } = await submitAndWait(model, {
+    prompt: req.prompt, image_url: req.imageUrl, mask_url: req.maskUrl, output_format: 'png', safety_tolerance: '2', num_images: 1,
+  }, 180_000);
+  const image = (result.images || [])[0] || result.image;
+  if (!image || !image.url) {
+    throw new Error(`fal fill 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: result.seed || null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
+/**
+ * (2026-10-16) 지우기 전용 — Bria Eraser(fal-ai/bria/eraser). 프롬프트 없이 mask 흰색 영역을 배경으로 메운다(글자·물체를 지어내지 않는다).
+ * @param {{ model?: string, imageUrl: string, maskUrl: string }} req
+ */
+falProvider.erase = async function erase(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/bria/eraser';
+  const { result, requestId } = await submitAndWait(model, { image_url: req.imageUrl, mask_url: req.maskUrl, mask_type: 'manual' }, 120_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal eraser 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
+/**
+ * (2026-10-16) 범용 — 입력을 그대로 보내고 결과 이미지 1장 URL. Face swap(Easel·fal face-swap)이 쓴다.
+ * @param {{ model: string, input: object, maxWaitMs?: number }} req
+ */
+falProvider.runImage = async function runImage(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const { result, requestId } = await submitAndWait(req.model, req.input, req.maxWaitMs || 180_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 응답에 이미지가 없습니다 (${req.model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model: req.model, width: image.width, height: image.height } };
+};
 
 module.exports = falProvider;

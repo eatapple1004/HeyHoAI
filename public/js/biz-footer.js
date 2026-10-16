@@ -34,8 +34,10 @@
   //   (billing.html은 lang="en")만 보게 돼, 한국어로 전환해도 사업자정보가 계속 영문으로 나온다.
   //   실제로 그 상태였다 — 링크(mount 안에서 판정)는 국문인데 사업자정보만 영문인 기묘한 푸터.
   //   mount()는 DOMContentLoaded에 불리므로 그때는 i18n이 lang을 이미 정해뒀다.
+  // (2026-10-16) 일본어(ja) 추가 — 법적 문서는 국문·영문 두 벌뿐이라 ja는 영문 쪽으로 보낸다.
+  //   옛 판정("en이 아니면 전부 국문")은 ja를 국문으로 떨어뜨리므로 "ko일 때만 국문"으로 뒤집었다(lang 없음 = 국문, 기존과 동일).
   function isKoDocNow() {
-    return ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
+    return ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('ko') === 0);
   }
   function buildRows() {
   return isKoDocNow() ? [

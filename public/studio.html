@@ -10,9 +10,10 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=27" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=31" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/guide.js?v=2" defer></script>
@@ -196,8 +197,7 @@
     border-radius:20px 20px 0 0;box-shadow:0 -24px 60px -24px #000;
     animation:none!important;transform:translateY(102%)!important;opacity:1!important; /* ⚠️.fade(theme.css:125)=opacity:0+transform 애니메이션 → animation 끄면 opacity:0이 남아 시트가 투명해진다. opacity:1 강제 필수 */
     transition:transform .28s cubic-bezier(.4,0,.2,1)}
-  body.cutui-looksheet.has-rail #templateStep{left:92px} /* 좌측 레일(92px)만큼 비켜 시작 */
-  @media(max-width:700px){body.cutui-looksheet.has-rail #templateStep{left:0}} /* 모바일=레일이 하단바 → 오프셋 없음 */
+  /* (2026-10-13) 좌측 레일→상단 nav 전환으로 레일 오프셋(body.has-rail #templateStep{left:92px}) 제거 — 시트는 bottom 고정이라 헤더와 안 겹친다 */
   body.cutui-looksheet.cutui-looksheet-open #templateStep{transform:none!important}
   /* 시트 제목은 실 DOM 요소(#cutuiSheetTitle) — ::before(CSS content)는 i18n 텍스트노드 치환이 못 잡는다. */
   #cutuiSheetTitle{display:none;font-family:'Sora',sans-serif;font-size:16px;font-weight:750;margin-bottom:14px;color:var(--text)}
@@ -512,7 +512,7 @@
   .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px}
   .rb-failed .rbf-msg{color:var(--dim);font-size:11.5px;line-height:1.5}
   .rb-failed .rbf-del{margin-top:2px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:6px 13px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
-  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:none}.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
+  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:100%;width:100%}/* (10-16) 폭 고정: 결과 사진 원래 폭(460px)으로 늘어나 폰에서 화면 전체가 옆으로 밀리던 것 */.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
   /* ▲▲▲ 결과 피드 블록 끝 ▲▲▲ */
   /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
   /* 이미지 추가 아이콘 버튼 + 툴별 슬롯 팝오버 */
@@ -726,6 +726,9 @@
   .priv-help:hover,.priv-help:focus-visible{color:var(--text)}
   .priv-tip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#15151f;color:var(--text);border:1px solid var(--border2);font-size:12px;font-weight:500;line-height:1.4;padding:7px 11px;border-radius:9px;box-shadow:0 14px 36px -12px rgba(0,0,0,.75);opacity:0;visibility:hidden;transition:opacity .14s ease,visibility .14s;z-index:70;pointer-events:none}
   .priv-tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#15151f}
+  /* (10-16) 오른쪽 끝 도움말이라 가운데 정렬 말풍선(한 줄 300px)이 화면 밖으로 → PC에도 가로 스크롤 53px. 오른쪽 기준·줄바꿈 */
+  .priv-tip{left:auto;right:-10px;transform:none;white-space:normal;width:max-content;max-width:260px}
+  .priv-tip::after{left:auto;right:14px;transform:none}
   .priv-help:hover .priv-tip,.priv-help:focus-visible .priv-tip{opacity:1;visibility:visible}
   .priv-switch{position:relative;width:40px;height:22px;flex-shrink:0;border:none;border-radius:999px;background:rgba(255,255,255,.16);cursor:pointer;padding:0;transition:background .18s}
   .priv-switch .priv-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.5);transition:left .18s}
@@ -1136,7 +1139,7 @@
     /* 필터 칩 탭타깃 ≥44px (기존 7px 16px → 약 36px) */
     .chip{min-height:44px;display:inline-flex;align-items:center;font-size:13px}
     /* 템플릿/결과 그리드 2열 (기존 minmax 192/220px → 모바일서 1열) */
-    .recipe-grid,.results-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .recipe-grid,.results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .recipe-card .preview{font-size:34px}/* 모바일: 높이 고정 제거 — aspect-ratio:4/5 유지 */
     .recipe-card .cost,.recipe-card .rcat{font-size:12px}
     /* Generate / 🧪 1장 탭타깃 ≥44px (기존 ~41px) */
@@ -7799,6 +7802,6 @@ applyPendingTemplate();
   dock(); setTimeout(dock,300);   // 초기 + 푸터 주입/레이아웃 이후 한 번 더
 })();
 </script>
-<script src="/js/biz-footer.js?v=5"></script>
+<script src="/js/biz-footer.js?v=6"></script>
 </body>
 </html>

@@ -16,6 +16,30 @@ const IMG_CREDIT = {
   'pro-4k': [330, 540],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
   'gpt-image-2': [185, 300],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [330, 540],  // 상위 티어 근사
+  'shoot-train': [1500, 1500],     // (2026-10-16) Shoot 내 모델 만들기 1회(자리값). 실원가 ≈ Soul ID 학습 $2.50 + 장면 8장 $0.05 + 다각도 10장 $1.34(사진 1장 경로)
+  // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. 원가 확정 전 pro 근사(placeholder, CLAUDE.md 가격 규칙).
+  //   실원가 참고: Seedream v4.5(fal) $0.03/장 · FLUX dev(fal) $0.025/장 · FLUX 1.1 Pro(Replicate) $0.04/장 → 전부 pro보다 싸서 마진 바닥 위.
+  seedream: [185, 300],
+  flux: [185, 300],
+  replicate: [185, 300],
+  // (2026-10-13) 2차분 — 전부 자리값. 실원가(벤더 공시): Seedream 5 Pro $0.0675~0.135 · FLUX.2 Pro ~$0.03 · FLUX 3 미확인 · Recraft ~$0.04
+  //   · Z-Image ~$0.005 · Grok Imagine 2 $0.04~0.08 · GPT Image 2.5 미확인 · Soul 미확인. 싼 것(flash급)은 flash, 나머지는 pro 근사.
+  'nano-banana-2.1': [55, 90],
+  'gpt-image-2.5-sunburst': [330, 540],
+  'gpt-image-2.5-flare': [185, 300],
+  'seedream-5-pro': [185, 300],
+  'flux-2-pro': [185, 300],
+  'flux-3': [185, 300],
+  recraft: [185, 300],
+  'z-image': [55, 90],
+  'grok-imagine': [185, 300],
+  soul: [185, 300],
+  upscale: [90, 150], // Topaz(fal) 업스케일 1장 — 자리값(실원가 ~$0.05~0.1)
+  removebg: [30, 50], // BiRefNet(fal) 배경 제거 1장 — 자리값(실원가 ~$0.01)
+  faceswap: [90, 150], // (10-16) Face swap(fal Easel/face-swap) 1장 — 자리값. 실원가 ~$0.03~0.05 → 바닥 ~68
+  'bria-eraser': [90, 150], // (10-16) Bria Eraser(fal) 지우기 1장 — 자리값. 실원가 ~$0.04 → 바닥 55
+  'qwen-angles': [110, 180], // (10-16) Editor Angles — Qwen Image Edit 2511 Multiple-Angles(fal) 1장 — 자리값. 실원가 $0.035/MP × 사본 ≤1536(≈1.8MP) ≈ $0.065 → 바닥 ~90
+  'flux-fill': [185, 300], // (10-16) FLUX.1 Fill pro(fal) Editor 마스크 채우기 1장 — 자리값. 실원가 $0.05/MP × 사본 ≤2.4MP(긴 변 1536) ≈ $0.12 → 바닥 163 → pro 동일가
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
@@ -80,7 +104,8 @@ function imageCost(model, count = 4, isTemplate = false) {
 
 /** 비디오(릴스) 생성 1회 비용. isTemplate=템플릿 릴(4~6배)/false=커스텀 릴(2~3배). mode는 Kling Pro 고정이라 현재 미사용(std 연결 시 확장). */
 function videoCost(duration, mode, isTemplate = false) {
-  const tier = VIDEO_CREDIT[parseInt(duration, 10)] || VIDEO_CREDIT[5];
+  const d = parseInt(duration, 10) || 5;
+  const tier = VIDEO_CREDIT[d] || (d > 5 ? VIDEO_CREDIT[10] : VIDEO_CREDIT[5]); // (2026-10-13) 6·8·15초 등 새 엔진 길이 — 5초 넘으면 10초 티어(자리값)
   return isTemplate ? tier[1] : tier[0];
 }
 

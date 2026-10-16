@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
- * build_landing_ko.js — public/landing.html(영문 정본) + src/i18n/landing.ko.json → public/ko.html 생성
+ * build_landing_ko.js — public/landing.html(영문 정본) + src/i18n/landing.<lang>.json → public/<lang>.html 생성
  * ============================================================================
+ * (2026-10-16) 일본어 추가로 --lang 인자를 받는다. 파일명은 그대로 둔다(기존 호출·문서 경로 보존).
+ *   node scripts/build_landing_ko.js            → ko (기본, 옛 동작과 동일)
+ *   node scripts/build_landing_ko.js --lang ja  → src/i18n/landing.ja.json → public/ja.html
+ *   og:locale:alternate 는 원본의 태그를 전부 걷어내고 **자기 언어를 뺀 나머지 두 로케일**로 다시 쓴다.
  * 설계: docs/랜딩_카피확정_및_ko_아키텍처_2026-07-14.md §4
  *
  * 왜 프리렌더인가 (런타임 i18n.js를 랜딩에서 뺀 이유):
@@ -17,16 +21,20 @@
  * 라우팅: index.js:80의 clean URL 정규식 /^\/([a-z0-9-]+)(\.html)?$/i 이 /ko를 이미 매칭한다.
  *   → public/ko.html만 있으면 /ko가 즉시 동작. **index.js 변경 0 · pm2 restart 불필요.**
  *
- * 사용: node scripts/build_landing_ko.js [--check]
+ * 사용: node scripts/build_landing_ko.js [--lang ko|ja] [--check]
  *   --check = 생성하지 않고 검증만(CI/커밋 전). 슬롯 누락·미사용 키가 있으면 exit 1.
  */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const LOCALES = { ko: 'ko_KR', ja: 'ja_JP', en: 'en_US' };
+const li = process.argv.indexOf('--lang');
+const LANG = li >= 0 ? String(process.argv[li + 1] || '') : 'ko';
+if (!LOCALES[LANG] || LANG === 'en') { console.error('✗ --lang 은 ko | ja'); process.exit(1); }
 const SRC = path.join(ROOT, 'public/landing.html');
-const DICT = path.join(ROOT, 'src/i18n/landing.ko.json');
-const OUT = path.join(ROOT, 'public/ko.html');
+const DICT = path.join(ROOT, `src/i18n/landing.${LANG}.json`);
+const OUT = path.join(ROOT, `public/${LANG}.html`);
 const CHECK = process.argv.includes('--check');
 
 const ORIGIN = 'https://doppia.ai';
@@ -54,7 +62,7 @@ html = html.replace(/(<([a-z0-9]+)\b[^>]*\bdata-i18n="([^"]+)"[^>]*>)([\s\S]*?)(
   });
 
 if (missing.length) {
-  fail(`사전에 없는 슬롯 ${missing.length}개 — 그 자리가 한국어 페이지에 **영어로 남는다**:\n` +
+  fail(`사전에 없는 슬롯 ${missing.length}개 — 그 자리가 ${LANG} 페이지에 **영어로 남는다**:\n` +
        missing.map((k) => '    · ' + k).join('\n'));
 }
 const unused = Object.keys(slots).filter((k) => !seen.has(k));
@@ -68,7 +76,7 @@ if (unused.length) {
 // ⚠️ hreflang 3개(en·ko·x-default)는 **자기 자신 포함** 전부 유지 — 한쪽만 선언하면 Google이 세트를 폐기.
 const need = ['title', 'description', 'og_title', 'og_description'];
 const lack = need.filter((k) => !meta[k]);
-if (lack.length) fail('_meta 누락: ' + lack.join(', ') + ' — 한국어 검색 스니펫의 전부다.');
+if (lack.length) fail('_meta 누락: ' + lack.join(', ') + ' — 검색 스니펫의 전부다.');
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const sub = (re, to) => { if (!re.test(html)) fail('head 패턴 불일치(영문 원본이 바뀌었나?): ' + re); html = html.replace(re, to); };
@@ -87,32 +95,40 @@ function setAttr(idAttr, idVal, attr, val, label) {
   html = html.replace(m[0], tag);
 }
 
-sub(/<html lang="en">/, '<html lang="ko">');
+sub(/<html lang="en">/, `<html lang="${LANG}">`);
 sub(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`);
 setAttr('name', 'description', 'content', esc(meta.description), 'meta description');
-setAttr('rel', 'canonical', 'href', `${ORIGIN}/ko`, 'canonical');            // 자기참조 필수
-setAttr('property', 'og:url', 'content', `${ORIGIN}/ko`, 'og:url');
+setAttr('rel', 'canonical', 'href', `${ORIGIN}/${LANG}`, 'canonical');            // 자기참조 필수
+setAttr('property', 'og:url', 'content', `${ORIGIN}/${LANG}`, 'og:url');
 setAttr('property', 'og:title', 'content', esc(meta.og_title), 'og:title');
 setAttr('property', 'og:description', 'content', esc(meta.og_description), 'og:description');
-setAttr('property', 'og:locale', 'content', 'ko_KR', 'og:locale');
-setAttr('property', 'og:locale:alternate', 'content', 'en_US', 'og:locale:alternate');
+setAttr('property', 'og:locale', 'content', LOCALES[LANG], 'og:locale');
+// og:locale:alternate — 원본(en)의 alternate 태그(ko_KR·ja_JP)를 전부 걷고, 자기 언어를 뺀 나머지로 다시 쓴다.
+{
+  const altRe = /[ \t]*<meta\b[^>]*\bproperty="og:locale:alternate"[^>]*>\n?/gi;
+  if (!altRe.test(html)) fail('head에서 og:locale:alternate 를 못 찾음');
+  html = html.replace(altRe, '');
+  const locRe = /(<meta\b[^>]*\bproperty="og:locale"[^>]*>)/i;
+  if (!locRe.test(html)) fail('head에서 og:locale 을 못 찾음');
+  const alts = Object.keys(LOCALES).filter((l) => l !== LANG).map((l) => `<meta property="og:locale:alternate" content="${LOCALES[l]}">`).join('\n');
+  html = html.replace(locRe, (m) => m + '\n' + alts);
+}
 if (meta.og_image) setAttr('property', 'og:image', 'content', esc(meta.og_image), 'og:image');
 
 // ── 3. 언어 스위처 aria-current 이동 ────────────────────────────────────
 // ⚠️ 속성 순서 무관. bs4가 <a href hreflang data-lang> 을 <a data-lang href hreflang> 으로 뒤집는다.
+// (2026-10-16) 스위처가 여러 곳(nav·푸터)이면 전부 옮긴다 — 옛 버전은 첫 번째만 바꿨다.
 function swapCurrent(fromLang, toLang) {
-  const tag = (l) => new RegExp(`<a\\b[^>]*\\bdata-lang="${l}"[^>]*>`, 'i');
-  const mf = html.match(tag(fromLang));
-  if (!mf) fail(`언어 스위처에 data-lang="${fromLang}" 없음`);
-  html = html.replace(mf[0], mf[0].replace(/\s*aria-current="[^"]*"/, ''));
-  const mt = html.match(tag(toLang));
-  if (!mt) fail(`언어 스위처에 data-lang="${toLang}" 없음`);
-  if (!/aria-current/.test(mt[0])) html = html.replace(mt[0], mt[0].replace(/>$/, ' aria-current="true">'));
+  const tag = (l) => new RegExp(`<a\\b[^>]*\\bdata-lang="${l}"[^>]*>`, 'gi');
+  if (!tag(fromLang).test(html)) fail(`언어 스위처에 data-lang="${fromLang}" 없음`);
+  if (!tag(toLang).test(html)) fail(`언어 스위처에 data-lang="${toLang}" 없음`);
+  html = html.replace(tag(fromLang), (m) => m.replace(/\s*aria-current="[^"]*"/, ''));
+  html = html.replace(tag(toLang), (m) => (/aria-current/.test(m) ? m : m.replace(/>$/, ' aria-current="true">')));
 }
-swapCurrent('en', 'ko');
+swapCurrent('en', LANG);
 
 // ── 4. LP-LANG 리다이렉트 스니펫 제거 ───────────────────────────────────
-// /ko에서는 불필요하고, pathname 가드('/' | '/landing')상 발동도 안 하지만 죽은 코드를 남기지 않는다.
+// /ko·/ja에서는 불필요하고, pathname 가드('/' | '/landing')상 발동도 안 하지만 죽은 코드를 남기지 않는다.
 {
   const i = html.indexOf('/*LP-LANG');
   if (i < 0) fail('LP-LANG 스니펫을 못 찾음 — landing.html이 바뀌었나?');
@@ -125,16 +141,16 @@ swapCurrent('en', 'ko');
 // ── 5. 생성 표식 ────────────────────────────────────────────────────────
 html = html.replace(/<head>/,
   '<head>\n<!-- ⚠️ AUTO-GENERATED — 직접 고치지 마라. 고칠 곳은 둘:\n' +
-  '       영문 구조 → public/landing.html · 한국어 카피 → src/i18n/landing.ko.json\n' +
-  '     재생성: node scripts/build_landing_ko.js -->');
+  `       영문 구조 → public/landing.html · ${LANG} 카피 → src/i18n/landing.${LANG}.json\n` +
+  `     재생성: node scripts/build_landing_ko.js --lang ${LANG} -->`);
 
 if (CHECK) {
   const cur = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
-  if (cur !== html) fail('public/ko.html이 최신이 아니다 — node scripts/build_landing_ko.js 를 다시 돌리고 커밋하라.');
+  if (cur !== html) fail(`public/${LANG}.html이 최신이 아니다 — node scripts/build_landing_ko.js --lang ${LANG} 를 다시 돌리고 커밋하라.`);
   console.log(`✓ 최신 · 슬롯 ${seen.size}개`);
   process.exit(0);
 }
 
 fs.writeFileSync(OUT, html);
-console.log(`✓ public/ko.html 생성 — 슬롯 ${seen.size}개 치환${unused.length ? ` · 미사용 키 ${unused.length}개` : ''}`);
-console.log('  배포: git pull + Cloudflare Purge(/ko). index.js 변경 0 · pm2 불필요.');
+console.log(`✓ public/${LANG}.html 생성 — 슬롯 ${seen.size}개 치환${unused.length ? ` · 미사용 키 ${unused.length}개` : ''}`);
+console.log(`  배포: git pull + Cloudflare Purge(/${LANG}). index.js 변경 0 · pm2 불필요.`);

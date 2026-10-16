@@ -1,6 +1,7 @@
 const { env } = require('../../config');
 
 const RUNWAY_API = 'https://api.dev.runwayml.com/v1';
+const RATIO = { '16:9': '1280:720', '9:16': '720:1280', '1:1': '960:960', '4:3': '1104:832', '3:4': '832:1104', '21:9': '1584:672' };
 
 /** @type {import('./types').VideoProvider} */
 const runwayProvider = {
@@ -28,8 +29,10 @@ const runwayProvider = {
         promptImage: req.sourceImageUrl,
         promptText: req.motionPrompt,
         duration: req.durationSec,
-        ratio: `${req.width}:${req.height}`,
+        // (2026-10-13) Runway 검증 실측 허용값 6종 — 비율에서 고른다(전엔 width:height 를 그대로 보내 1:1 이 1024:1024 로 거절됐다)
+        ratio: RATIO[req.aspectRatio] || (Number(req.width) >= Number(req.height) ? '1280:720' : '720:1280'),
         ...(req.seed != null && { seed: req.seed }),
+        ...(req.extras && req.extras.seed != null && { seed: Number(req.extras.seed) }),
       }),
     });
 
