@@ -125,6 +125,37 @@ const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we 
 // 행동: Shoot = Soul 로 "찍기"(새 베이스, 사진 품질) · 나머지 셋 = 현재 버전을 Nano Banana Pro 로 "고치기" (사용자 10-16)
 const ACTS=[['shot','📸','Shoot'],['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
 const SHOT_ASPECTS=['3:4','9:16','1:1','4:3','16:9'];
+// Shoot 템플릿(사용자 10-16: "설명이 어려울 수 있으니 템플릿을, 정말 다양하게"). 누르면 글칸에 들어가고 고쳐 쓸 수 있다. [아이콘, 이름, 프롬프트]
+const SHOT_TPL=[
+ ['🎞','Studio portrait','in a clean grey studio, three-quarter portrait, soft beauty light, black turtleneck, calm gaze into the lens'],
+ ['📸','Fashion editorial','full body in a white studio, oversized black blazer and wide trousers, strong single flash, magazine pose'],
+ ['🏎','Sports car','sitting at the wheel of a red sports car with the door open, sunglasses on the head, city street at golden hour, one hand on the wheel, relaxed grin'],
+ ['🚗','Leaning on a car','leaning on the hood of a black luxury car in an underground garage, leather jacket, cool expression'],
+ ['☕','Cafe window','by a cafe window in a white shirt, holding a coffee, soft smile, morning light'],
+ ['🏙','Street style','walking across a crosswalk in the city, denim jacket and sneakers, candid mid-step, bright daylight'],
+ ['🌃','Night out','on a neon-lit street at night, satin shirt, wet pavement reflections, looking over the shoulder'],
+ ['🍸','Rooftop bar','at a rooftop bar at dusk holding a cocktail, city skyline behind, slip dress or open shirt, easy smile'],
+ ['🏨','Hotel lobby','standing in a marble hotel lobby in an evening outfit, chandeliers behind, poised and unsmiling'],
+ ['🛥','Yacht','on the deck of a yacht in bright sun, linen outfit, sunglasses, wind in the hair, laughing'],
+ ['🏖','Beach','walking along the shoreline at sunset in beachwear and a light shirt, hair blowing, golden backlight'],
+ ['🗼','Paris','in front of Haussmann buildings with a croissant and coffee, trench coat, soft overcast light'],
+ ['🏯','Tokyo night','in a Tokyo alley full of lanterns and signs at night, streetwear, looking at the camera'],
+ ['🏋️','Gym','in a bright gym in a sports top and leggings, mid-workout, light sweat, focused'],
+ ['🏃','Morning run','jogging along a river path at sunrise in running gear, earbuds in, candid'],
+ ['⛳','Golf','on a green golf course in a polo and cap, holding a club, smiling, bright afternoon'],
+ ['🎾','Tennis','on a clay tennis court in a tennis outfit, racket in hand, ready stance'],
+ ['🏄','Surf','holding a surfboard on the beach in a wetsuit, wet hair, big smile'],
+ ['💻','Office','at a desk in a modern office in a smart shirt, laptop open, thoughtful look, window light'],
+ ['🛋','Home sofa','curled up on a sofa in a cozy knit and socks, mug in hand, warm lamp light, relaxed'],
+ ['🍳','Kitchen','cooking in a bright kitchen in an apron over a tee, laughing, steam rising'],
+ ['📚','Bookstore','browsing shelves in a bookstore, cardigan, holding an open book, soft indoor light'],
+ ['💐','Flower market','at an outdoor flower market holding a bouquet, floral dress, morning sun'],
+ ['🪞','Mirror selfie','a mirror selfie in a bright bedroom holding a phone, casual outfit, soft smile'],
+ ['✈️','Airport','walking through an airport terminal pulling a suitcase, comfortable travel outfit, waving'],
+ ['❄️','Snow','in a snowy park in a long wool coat and scarf, snowflakes in the air, cheeks flushed, smiling'],
+ ['🍂','Autumn park','on a park path covered in autumn leaves, camel coat, holding a leaf, soft smile'],
+ ['🎤','On stage','on a concert stage under colored spotlights holding a microphone, sequined outfit, mid-song'],
+];
 // 품목 유형 → 프롬프트의 착용 문구. 란제리는 얼굴-없이-생성→FaceFusion 경로가 서버에 없어 soon.
 // 옷입히기 슬롯(게임처럼 자리가 정해져 있다, 사용자 10-16). 머리→몸→발 순. [key, 라벨, 아이콘, 착용 문구(null = soon)]
 const SLOTS=[['hat','Hat','🧢','worn on the head'],['hair','Hair accessory','🎀','in the hair'],['glasses','Glasses','🕶','worn on the face'],['jewelry','Jewelry','💍','worn'],
@@ -217,12 +248,14 @@ function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.togg
 $('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;setAct(b.dataset.a);});
 function renderPanel(){({shot:panelShot,outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();if(st.act!=='shot')renderSettings();renderGo();}
 // Shoot: 글 → Soul 2 + 내 모델. 엔진 선택 없음(Soul 고정), 장수·비율만
-function panelShot(){$('#panel').innerHTML=`<div class="lbl">Describe the shot <i id="slen">${st.shot.length}</i></div><textarea class="ff" id="shotText" maxlength="1000" placeholder="e.g. by a cafe window in a white shirt, holding a coffee, soft smile">${esc(st.shot)}</textarea>
+function panelShot(){$('#panel').innerHTML=`<div class="lbl">Pick a shot <i>· tap one, then change anything</i></div><div class="chips" id="shotTpl">${SHOT_TPL.map((t,i)=>`<button type="button" class="chip" data-i="${i}">${t[0]} ${esc(t[1])}</button>`).join('')}</div>
+  <div class="lbl">Or describe it <i id="slen">${st.shot.length}</i></div><textarea class="ff" id="shotText" maxlength="1000" placeholder="e.g. by a cafe window in a white shirt, holding a coffee, soft smile">${esc(st.shot)}</textarea>
   <div class="lbl">Count</div><div class="chips" id="shotN">${chipsHtml([1,2,4].map(n=>[n,'× '+n]),st.shotN)}</div>
   <div class="lbl">Aspect ratio</div><div class="chips" id="shotAspect">${chipsHtml(SHOT_ASPECTS.map(v=>[v,v]),st.shotAspect)}</div>
   <div class="lock ${st.priv?'on':''}" id="privLock" style="margin-top:12px"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div>
   <div class="note">Shot with Higgsfield Soul using your model\'s face — a fresh photo, not an edit. Pick a result below and dress it up or move it from there.</div>`;
-  $('#shotText').addEventListener('input',e=>{st.shot=e.target.value;$('#slen').textContent=st.shot.length;renderGo();});chipGroup('#shotN',v=>{st.shotN=+v;renderGo();});chipGroup('#shotAspect',v=>st.shotAspect=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
+  $('#shotText').addEventListener('input',e=>{st.shot=e.target.value;$('#slen').textContent=st.shot.length;renderGo();});
+  $('#shotTpl').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.shot=SHOT_TPL[+b.dataset.i][2];$('#shotText').value=st.shot;$('#slen').textContent=st.shot.length;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderGo();});chipGroup('#shotN',v=>{st.shotN=+v;renderGo();});chipGroup('#shotAspect',v=>st.shotAspect=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
 
 // Outfit: 품목 여러 개(사진 + 유형)
 function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Dress up <i>· tap a slot or drop a photo on it</i></div><div class="slots" id="slots"></div><div class="note">Each item is kept exactly as photographed — color, print, logo. Fill as many slots as you like; layers work (tee under an open outer).</div>`;renderSlots();}
