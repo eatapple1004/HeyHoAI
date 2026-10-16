@@ -1015,7 +1015,7 @@
     document.querySelectorAll('.chm').forEach(function(p){p.classList.toggle('on',p.dataset.ch===b.dataset.ch);});
   });});
   // EN 페이지(문서 언어 기준): 국내 채널 그룹 숨기고 해외만 + 상세페이지 칩을 해외 그룹으로 이동
-  if(!KO){
+  if(LANG!=='ko'){   // (10-17) KO→LANG 전환 때 남은 참조 — ReferenceError 로 랜딩 스크립트 뒷부분이 통째로 안 돌았다
     var dchip=document.querySelector('.e2e-chip[data-ch="detail"]');
     var grps=document.querySelectorAll('.e2e-chg');
     if(dchip&&grps[1]){ grps[1].querySelector('.e2e-chips').prepend(dchip); }
