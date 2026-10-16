@@ -32,6 +32,8 @@ export interface ToolsDto {
   faceswap: ToolDto[];
   /** Face swap 대상 프리셋(우리 모델) */
   faceswapTargets: { id: string; label: string; url: string }[];
+  /** Video Editor AI 도구(op)별 사용 가능 엔진 */
+  videoEditor: { op: string; label: string; why: string; min: number; max: number; engines: { id: string; label: string; provider: string; perDuration: Record<string, number> }[] }[];
 }
 
 /** Image Editor op 1개 — engine = 자동 선택(마스크 있을 때), engineNoMask = 마스크 없을 때 다른 경우만 */

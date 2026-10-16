@@ -75,7 +75,7 @@
       ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
       ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
       ['⇄', 'Product swap', 'Swap the product in any video for yours', 'soon'],
-      ['✎', 'Edit video', 'Upload a video, describe the change', 'auto:videoInput', '/video?tool=seedance-2.5-edit'],
+      ['✎', 'Edit video', 'Timeline editor — trim · text · music · AI edit with words · captions', 'live', '/video-edit', 'new'],
       ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
       ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
       ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
