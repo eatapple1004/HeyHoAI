@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://doppia.ai/">
 <link rel="alternate" hreflang="en" href="https://doppia.ai/">
 <link rel="alternate" hreflang="ko" href="https://doppia.ai/ko">
+<link rel="alternate" hreflang="ja" href="https://doppia.ai/ja">
 <link rel="alternate" hreflang="x-default" href="https://doppia.ai/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://doppia.ai/">
@@ -16,14 +17,16 @@
 <meta property="og:image" content="https://doppia.ai/img/landing/e2e/s-hero.jpg">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ko_KR">
+<meta property="og:locale:alternate" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<script>/*LP-LANG — 명시적 선호(doppia_lang)가 ko면 /ko로. 저장값 없으면 브라우저 언어가 ko일 때만 이동.
+<script>/*LP-LANG — 명시적 선호(doppia_lang)가 ko/ja면 /ko·/ja로. 저장값 없으면 브라우저 언어가 ko/ja일 때만 이동. (2026-10-16 ja 추가)
   Googlebot은 무쿠키·언어중립이라 영향 없음(hreflang으로 /ko 발견).*/
 (function(){try{
   if(location.pathname!=='/'&&location.pathname!=='/landing')return;
   var l=localStorage.getItem('doppia_lang')||(document.cookie.match(/(?:^|;\s*)doppia_lang=([^;]+)/)||[])[1];
-  if(!l&&(navigator.language||'').toLowerCase().slice(0,2)==='ko')l='ko';
-  if(l==='ko'){window.__lpRedirect=1;location.replace('/ko'+location.search+location.hash);return;}
+  var bl=(navigator.language||'').toLowerCase().slice(0,2);
+  if(!l&&(bl==='ko'||bl==='ja'))l=bl;
+  if(l==='ko'||l==='ja'){window.__lpRedirect=1;location.replace('/'+l+location.search+location.hash);return;}
 }catch(e){}})();
 </script>
 <script>/*LP-LANGKEEP — 지금 보고 있는 랜딩의 언어를 선호로 저장한다.
@@ -34,7 +37,7 @@
   저장소·키는 스위치(LP-LANGSW)와 동일 — 두 경로가 같은 값을 쓴다. */
 (function(){try{
   if(window.__lpRedirect)return;   // /ko로 넘어가는 중이면 그쪽에서 쓴다
-  var l=document.documentElement.lang==='ko'?'ko':'en';
+  var dl=document.documentElement.lang; var l=(dl==='ko'||dl==='ja')?dl:'en';   // (2026-10-16) ja.html도 같은 스크립트를 쓴다
   if(localStorage.getItem('doppia_lang')!==l)localStorage.setItem('doppia_lang',l);
   document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
 }catch(e){}})();
@@ -447,7 +450,7 @@
   </div>
   <div class="callout" id="callout"></div>
   <div class="navbg"></div>
-  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">Features</a><a href="#gallery" data-i18n="nav.gallery">Showcase</a><a href="#e2e" data-i18n="nav.e2e">Workflow</a><a href="#works" data-i18n="nav.works">Services</a><a href="#pricing" data-i18n="nav.pricing">Pricing</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en" aria-current="true">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a></span><a href="/saas-login" data-i18n="nav.login">Log in</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">Start free</a></span></nav>
+  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">Features</a><a href="#gallery" data-i18n="nav.gallery">Showcase</a><a href="#e2e" data-i18n="nav.e2e">Workflow</a><a href="#works" data-i18n="nav.works">Services</a><a href="#pricing" data-i18n="nav.pricing">Pricing</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en" aria-current="true">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ja" href="/ja" hreflang="ja">JA</a></span><a href="/saas-login" data-i18n="nav.login">Log in</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">Start free</a></span></nav>
   <div class="cctr">
     <h1 class="giant" data-i18n="hero.title">Your AI photo studio —<br><span class="grad">product shots, model shots and ad video</span>, from one photo.</h1>
     <p class="csub" data-i18n="hero.sub">Doppia Lens shoots the product. Doppia Shoot dresses the model. The Editor fixes anything after — no studio, no prompts.</p>
@@ -793,13 +796,13 @@
 <script>
 // HERO 궤도 캐러셀 (정본 _hero_ring_orbit 이식) — 데스크톱 전용, ≤860px는 정적 그리드(탭=이동)
 (function(){
-  var KO=document.documentElement.lang==='ko';
-  function tt(en,k){return KO?k:en;}
+  var LANG=document.documentElement.lang;   // (2026-10-16) ko·ja 프리렌더가 <html lang>을 바꾼다 — tt(en,ko,ja)
+  function tt(en,k,j){return LANG==='ko'?k:(LANG==='ja'&&j!=null?j:en);}
   var T={
-    shoot:{name:tt('Doppia Shoot · Model shots','Doppia Shoot · 모델컷'),desc:tt('Pick a ready model — or train your own — then dress, move and pose them.','준비된 모델을 고르거나 내 모델을 만들고, 옷·장소·자세를 바꾼다.'),base:'/img/landing/shoot/seoyeon-face.jpg'},
-    macro:{name:tt('Doppia Lens · Detail','Doppia Lens · 상세컷'),desc:tt('Close-up detail cuts in a saved look — drop in your product.','저장된 룩 그대로 뽑는 클로즈업 상세컷 — 제품만 넣으면 된다.'),base:'/img/accessories/jewelry-flat-lay.png'},
-    hero:{name:tt('Doppia Lens · Editorial','Doppia Lens · 화보'),desc:tt('Premium brand editorials on plinths and sets — same concept every time.','배경·플린스 위에 올린 프리미엄 화보 — 매번 같은 콘셉트로.'),base:'/img/producthero/swatch-beside.jpg'},
-    video:{name:tt('Ad Video · 9:16','광고영상 · 9:16'),desc:tt('A vertical ad video from a single product cut.','제품 한 컷으로 만드는 세로 광고 영상.'),base:'/img/producthero/gloss-mirror.jpg'}
+    shoot:{name:tt('Doppia Shoot · Model shots','Doppia Shoot · 모델컷','Doppia Shoot · モデルショット'),desc:tt('Pick a ready model — or train your own — then dress, move and pose them.','준비된 모델을 고르거나 내 모델을 만들고, 옷·장소·자세를 바꾼다.','用意されたモデルを選ぶか自分のモデルを作り、服・場所・ポーズを変える。'),base:'/img/landing/shoot/seoyeon-face.jpg'},
+    macro:{name:tt('Doppia Lens · Detail','Doppia Lens · 상세컷','Doppia Lens · ディテール'),desc:tt('Close-up detail cuts in a saved look — drop in your product.','저장된 룩 그대로 뽑는 클로즈업 상세컷 — 제품만 넣으면 된다.','保存したルックのままのクローズアップ — 商品を入れるだけ。'),base:'/img/accessories/jewelry-flat-lay.png'},
+    hero:{name:tt('Doppia Lens · Editorial','Doppia Lens · 화보','Doppia Lens · エディトリアル'),desc:tt('Premium brand editorials on plinths and sets — same concept every time.','배경·플린스 위에 올린 프리미엄 화보 — 매번 같은 콘셉트로.','台座やセットに載せたプレミアムなエディトリアル — 毎回同じコンセプトで。'),base:'/img/producthero/swatch-beside.jpg'},
+    video:{name:tt('Ad Video · 9:16','광고영상 · 9:16','広告動画 · 9:16'),desc:tt('A vertical ad video from a single product cut.','제품 한 컷으로 만드는 세로 광고 영상.','商品カット1枚から作る縦型の広告動画。'),base:'/img/producthero/gloss-mirror.jpg'}
   };
   // 실배선: Shots류=스튜디오 기본 진입, 광고영상=사이트 전역 딥링크 규약 /studio?mode=ugc (home·rail과 동일)
   var DEST={shoot:'/shoot',macro:'/lens',hero:'/lens',video:'/ad-video'};
@@ -857,7 +860,7 @@
 
   function setCallout(i){
     if(activeCat===cats[i])return; activeCat=cats[i]; var t=T[cats[i]];
-    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ '+tt('One product photo · no prompts','제품 사진 한 장 · 프롬프트 없이')+'</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
+    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ '+tt('One product photo · no prompts','제품 사진 한 장 · 프롬프트 없이','商品写真1枚 · プロンプトなし')+'</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
   }
 
   function physics(dt){
@@ -967,8 +970,8 @@
 })();
 </script>
 <script>
-  var KO=document.documentElement.lang==='ko';
-  function tt(en,k){return KO?k:en;}
+  var LANG=document.documentElement.lang;   // (2026-10-16) ko·ja 프리렌더가 <html lang>을 바꾼다 — tt(en,ko,ja)
+  function tt(en,k,j){return LANG==='ko'?k:(LANG==='ja'&&j!=null?j:en);}
   // tabs
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
   tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
@@ -1043,21 +1046,21 @@
   //   ⚠️ 이 파일은 pricing.js를 쓰지 않고 값을 하드코딩한다 — 가격 변경 시 여기도 고칠 것.
   var SEG={
     personal:[
-      {nm:'Free',pv:'₩0',u:tt(' /mo',' /월'),cr:tt('1,500 credits on sign-up','가입 즉시 1,500 크레딧'),li:[tt('All features · 2K quality','전 기능 · 2K 화질'),tt('Results post to the public feed','결과가 공개 피드에 게시')],cta:tt('Start free','무료로 시작')},
-      {nm:'Starter',pv:'₩31,000',u:tt(' /mo',' /월'),cr:tt('7,300 credits monthly','매달 7,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
-      {nm:'Standard',pv:'₩81,000',u:tt(' /mo',' /월'),cr:tt('20,300 credits monthly','매달 20,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기'),feat:tt('Popular','추천')},
-      {nm:'Pro',pv:'₩164,000',u:tt(' /mo',' /월'),cr:tt('44,000 credits monthly','매달 44,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
-      {nm:'Premium',pv:'₩329,000',u:tt(' /mo',' /월'),cr:tt('95,000 credits monthly','매달 95,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스'),tt('Highest volume','최대 볼륨')],cta:tt('Get started','시작하기')}
+      {nm:'Free',pv:'₩0',u:tt(' /mo',' /월',' /月'),cr:tt('1,500 credits on sign-up','가입 즉시 1,500 크레딧','登録時に1,500クレジット'),li:[tt('All features · 2K quality','전 기능 · 2K 화질','全機能 · 2K画質'),tt('Results post to the public feed','결과가 공개 피드에 게시','結果は公開フィードに投稿')],cta:tt('Start free','무료로 시작','無料で始める')},
+      {nm:'Starter',pv:'₩31,000',u:tt(' /mo',' /월',' /月'),cr:tt('7,300 credits monthly','매달 7,300 크레딧','毎月7,300クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める')},
+      {nm:'Standard',pv:'₩81,000',u:tt(' /mo',' /월',' /月'),cr:tt('20,300 credits monthly','매달 20,300 크레딧','毎月20,300クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める'),feat:tt('Popular','추천','人気')},
+      {nm:'Pro',pv:'₩164,000',u:tt(' /mo',' /월',' /月'),cr:tt('44,000 credits monthly','매달 44,000 크레딧','毎月44,000クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める')},
+      {nm:'Premium',pv:'₩329,000',u:tt(' /mo',' /월',' /月'),cr:tt('95,000 credits monthly','매달 95,000 크레딧','毎月95,000クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス'),tt('Highest volume','최대 볼륨','最大ボリューム')],cta:tt('Get started','시작하기','始める')}
     ],
     enterprise:[
-      {nm:'Team',pv:'₩990,000',u:tt(' /mo',' /월'),cr:tt('362,000 credits monthly','매달 362,000 크레딧'),li:[tt('Shared team credit pool','팀 공유 크레딧 풀'),tt('10 concurrent jobs','동시 작업 10'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),mail:1},
-      {nm:'Enterprise Pro',pv:'₩1,490,000',u:tt(' /mo',' /월'),cr:tt('575,000 credits monthly','매달 575,000 크레딧'),li:[tt('15 concurrent jobs','동시 작업 15'),tt('Priority support','우선 지원'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),feat:tt('Popular','추천'),mail:1},
-      {nm:'Elite',pv:'₩1,990,000',u:tt(' /mo',' /월'),cr:tt('813,000 credits monthly','매달 813,000 크레딧'),li:[tt('20 concurrent jobs','동시 작업 20'),tt('Dedicated support','전담 지원'),tt('Highest volume','최대 볼륨')],cta:tt('Talk to us','상담 신청'),mail:1}
+      {nm:'Team',pv:'₩990,000',u:tt(' /mo',' /월',' /月'),cr:tt('362,000 credits monthly','매달 362,000 크레딧','毎月362,000クレジット'),li:[tt('Shared team credit pool','팀 공유 크레딧 풀','チーム共有クレジットプール'),tt('10 concurrent jobs','동시 작업 10','同時ジョブ10'),tt('All features','전 기능','全機能')],cta:tt('Talk to us','상담 신청','相談する'),mail:1},
+      {nm:'Enterprise Pro',pv:'₩1,490,000',u:tt(' /mo',' /월',' /月'),cr:tt('575,000 credits monthly','매달 575,000 크레딧','毎月575,000クレジット'),li:[tt('15 concurrent jobs','동시 작업 15','同時ジョブ15'),tt('Priority support','우선 지원','優先サポート'),tt('All features','전 기능','全機能')],cta:tt('Talk to us','상담 신청','相談する'),feat:tt('Popular','추천','人気'),mail:1},
+      {nm:'Elite',pv:'₩1,990,000',u:tt(' /mo',' /월',' /月'),cr:tt('813,000 credits monthly','매달 813,000 크레딧','毎月813,000クレジット'),li:[tt('20 concurrent jobs','동시 작업 20','同時ジョブ20'),tt('Dedicated support','전담 지원','専任サポート'),tt('Highest volume','최대 볼륨','最大ボリューム')],cta:tt('Talk to us','상담 신청','相談する'),mail:1}
     ],
     pack:[
-      {nm:'Lite',pv:'₩15,000',u:'',cr:tt('3,000 credits <span class="bo">+400 bonus</span>','3,000 크레딧 <span class="bo">+400 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Credited instantly','결제 즉시 충전')],cta:tt('Top up','충전하기')},
-      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Best value','가장 알찬 구성')],cta:tt('Top up','충전하기'),feat:tt('Popular','추천')},
-      {nm:tt('Larger volume','대량 · 기업'),pv:tt('Contact','문의'),u:'',cr:tt('Set up for your team','팀 단위 · 대량 제작 상담'),li:[tt('Volume pricing','볼륨 단가'),tt('Dedicated support','전담 지원')],cta:tt('Talk to us','상담 신청'),mail:1}
+      {nm:'Lite',pv:'₩15,000',u:'',cr:tt('3,000 credits <span class="bo">+400 bonus</span>','3,000 크레딧 <span class="bo">+400 보너스</span>','3,000クレジット <span class="bo">+400ボーナス</span>'),li:[tt('Valid 12 months','12개월 유효','12か月有効'),tt('Credited instantly','결제 즉시 충전','決済後すぐチャージ')],cta:tt('Top up','충전하기','チャージ')},
+      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>','17,000クレジット <span class="bo">+2,200ボーナス</span>'),li:[tt('Valid 12 months','12개월 유효','12か月有効'),tt('Best value','가장 알찬 구성','いちばんお得')],cta:tt('Top up','충전하기','チャージ'),feat:tt('Popular','추천','人気')},
+      {nm:tt('Larger volume','대량 · 기업','大量 · 企業'),pv:tt('Contact','문의','お問い合わせ'),u:'',cr:tt('Set up for your team','팀 단위 · 대량 제작 상담','チーム単位 · 大量制作の相談'),li:[tt('Volume pricing','볼륨 단가','ボリューム単価'),tt('Dedicated support','전담 지원','専任サポート')],cta:tt('Talk to us','상담 신청','相談する'),mail:1}
     ]
   };
 
