@@ -87,6 +87,34 @@
     });
   });
 
+  // V2 첫 화면 슬라이드: 자동 넘김(6초) · 점/화살표 · 마우스 올리면 멈춤 · 동작 줄이기면 자동 넘김 없음
+  $$('[data-slider]').forEach(function (box) {
+    var slides = $$('.v2-slide', box), dots = $$('.v2-dots button', box), i = 0, timer = null;
+    var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function go(n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function (s, k) { s.classList.toggle('is-on', k === i); s.setAttribute('aria-hidden', k === i ? 'false' : 'true'); });
+      dots.forEach(function (d, k) { d.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
+      restart();
+    }
+    function restart() { clearTimeout(timer); if (!still && !box.classList.contains('is-paused')) timer = setTimeout(function () { go(i + 1); }, 6000); }
+    dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); }); });
+    var pv = $('[data-prev]', box), nx = $('[data-next]', box);
+    if (pv) pv.addEventListener('click', function () { go(i - 1); });
+    if (nx) nx.addEventListener('click', function () { go(i + 1); });
+    box.addEventListener('mouseenter', function () { box.classList.add('is-paused'); clearTimeout(timer); });
+    box.addEventListener('mouseleave', function () { box.classList.remove('is-paused'); restart(); });
+    if (still) box.style.setProperty('--dur', '0s');
+    restart();
+  });
+  // V2 현장 기록: 화살표로 카드 한 장씩 넘김
+  $$('[data-track-slider]').forEach(function (sec) {
+    var tr = $('.v2-st-track', sec);
+    var step = function (d) { var c = $('.v2-st', tr); tr.scrollBy({ left: d * (c ? c.offsetWidth + 16 : 400), behavior: 'smooth' }); };
+    $('[data-prev]', sec).addEventListener('click', function () { step(-1); });
+    $('[data-next]', sec).addEventListener('click', function () { step(1); });
+  });
+
   // 제품 상세 사양 탭 (기본 사양 · 선택 옵션 · 변형 모델)
   $$('[data-tabs]').forEach(function (box) {
     var tabs = $$('[role=tab]', box);
@@ -184,7 +212,7 @@
       ['.custom-copy', 0], ['.tl-h li', 70], ['.ms-list li', 80], ['.proof-grid li', 90], ['.ph-lede', 0]].forEach(function (g) { stagger(g[0], g[1], 'rv'); });
     stagger('.custom-media, .track, .fam-media, .pcard-media', 0, 'rv-img');
     stagger('.g-map', 0, 'rv-map');
-    [['.g-stats li', 90], ['.faq', 50], ['.var', 60]].forEach(function (g) { stagger(g[0], g[1], 'rv'); });
+    [['.g-stats li', 90], ['.faq', 50], ['.var', 60], ['.v2-card', 50], ['.v2-tile', 70], ['.v2-nums li', 90], ['.v2-svc-i', 80], ['.v2-ed-grid', 0]].forEach(function (g) { stagger(g[0], g[1], 'rv'); });
   }
 
   // 수치 카운트업 (−2 → 음수도 그대로 센다)
