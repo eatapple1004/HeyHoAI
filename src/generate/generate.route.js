@@ -1140,7 +1140,8 @@ const VIDEO_EDIT_OPS = {
   // (2026-10-16) Product swap — 힉스필드 Video to Video "AI Object Swap"(REA 캡처) 처럼 영상 + 제품 사진 → 영상 속 제품만 내 제품으로
   productswap: { label: 'Product swap', engines: ['kling-o3-edit', 'seedance-2.5-edit'], slot: 'sourceVideo', min: 3, max: 15, minShort: 720, why: 'Kling 3.0 Omni Edit swaps the product and keeps hands, motion and camera — the same engine Higgsfield uses.' },
   // (2026-10-16) Reframe — 힉스필드 Reframe(REA 캡처). 비율 바꾸고 빈 영역을 AI 로 채움. 엔진별 지원 비율이 달라 비율로 엔진을 고른다
-  reframe: { label: 'Reframe', engines: ['ltx-reframe'], slot: 'sourceVideo', min: 1, max: 60, // (10-16) Luma 뺌 — dev 실측 글자 깨짐·낙서 생성(사용자 결정) why: 'LTX 2.3 Reframe changes the aspect ratio and generates the new area — nothing gets cropped out. Up to 60s.' },
+  // (10-16) Luma 뺌 — dev 실측 글자 깨짐·낙서 생성(사용자 결정). LTX 비율만(9:16·16:9·1:1·4:5·5:4)
+  reframe: { label: 'Reframe', engines: ['ltx-reframe'], slot: 'sourceVideo', min: 1, max: 60, why: 'LTX 2.3 Reframe changes the aspect ratio and generates the new area — nothing gets cropped out. Up to 60s.' },
   motion: { label: 'Motion transfer', engines: ['kling-motion', 'genjutsu'], slot: 'motionVideo', min: 3, max: 15, why: 'Kling Motion Control puts this clip’s movement onto a model photo (people only).' },
 };
 /** Product swap 지시문 — target(바꿀 대상, 비우면 화면의 주 제품) + 덧붙임 */
