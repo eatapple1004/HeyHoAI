@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as path from 'path';
-import { ShootModelDto, CreateShootModelDto } from './dto/shoot.dto';
+import { ShootModelDto, CreateShootModelDto, AngleJobDto } from './dto/shoot.dto';
 
 // 학습·뱅크 파이프라인 재사용(중복 금지) — 힉스필드 호출·러너·과금은 레거시 shootModel.service.js 단일소스.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -10,7 +10,18 @@ const legacy = require(path.join(__dirname, '..', '..', 'src', 'shoot', 'shootMo
 export class ShootService {
   // 사진 파일 경로들 + 이름 → 모델 행 생성(과금 1회) + 백그라운드 러너 시작
   create(user: any, body: CreateShootModelDto, files: string[]): Promise<ShootModelDto> {
-    return legacy.create(user, { name: body && body.name, consent: body && body.consent, files });
+    let photoUrls: string[] = [];
+    try { photoUrls = JSON.parse((body && body.photoUrls) || '[]'); } catch { photoUrls = []; }
+    return legacy.create(user, { name: body && body.name, consent: body && body.consent, files, photoUrls });
+  }
+
+  // 사진 1장 → 다각도 잡 시작(과금 1회). 결과는 getAngles 로 폴링.
+  startAngles(user: any, file: string | undefined): Promise<AngleJobDto> {
+    return legacy.startAngles(user, file);
+  }
+
+  getAngles(user: any, id: string): AngleJobDto {
+    return legacy.getAngles(user, id);
   }
 
   list(user: any): Promise<ShootModelDto[]> {

@@ -65,6 +65,8 @@
 .panel .consent{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim);line-height:1.45;padding:10px;border:1px solid var(--border2);border-radius:10px;cursor:pointer}.panel .consent input{margin-top:2px}
 .panel .gen{width:100%}
 .mc .st{position:absolute;left:8px;top:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff}
+.angles{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:var(--surface);font-size:12.5px;color:var(--dim);line-height:1.45}.angles b{color:var(--text)}.angles .btn2{margin-left:auto;white-space:nowrap}
+.ugrid .u.ai:after{content:'AI';position:absolute;left:5px;top:5px;font-size:9px;padding:2px 5px;border-radius:999px;background:var(--lime);color:#111;font-weight:700}
 @media(max-width:860px){.mk{grid-template-columns:1fr}}
 </style>
 </head>
@@ -110,8 +112,8 @@ const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(temp
 const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'/img/shoot/yuna/avatar.jpg',
   bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
 // 내 모델 — GET /api/shoot/models (Soul ID 학습 + 장면 뱅크, src/shoot/shootModel.service.js). 진행 중이면 6초마다 다시 본다.
-let MINE=[];const BUSY=['angles','training','bank'];const STATUS={angles:'Shooting angles',training:'Training…',bank:'Shooting scenes',failed:'Failed'};
-const TRAIN_COST=1500; // credit.service IMG_CREDIT['shoot-train'] 자리값과 같이 간다
+let MINE=[];const BUSY=['angles','training','bank'];const STATUS={training:'Training…',bank:'Shooting scenes',failed:'Failed'};
+const TRAIN_COST=1500,ANGLES_COST=1850; // credit.service IMG_CREDIT['shoot-train'] 자리값 · 다각도 = pro 185 × 10 장
 const toModel=m=>({id:m.id,name:m.name,tag:'Your model',avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
@@ -139,35 +141,52 @@ function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;$('#create
   $('#mkBtn').onclick=openCreate;
   clearTimeout(pollT);if(MINE.some(m=>BUSY.includes(m.status)))pollT=setTimeout(async()=>{await loadMine();if(!$('#hello').hidden&&$('#create').hidden)renderHello();},6000);}
 $('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id],[data-mine]');if(!b||b.disabled)return;pick(b.dataset.id?MODELS.find(m=>m.id===b.dataset.id):toModel(MINE.find(m=>m.id===b.dataset.mine)));});
-// 만들기: 사진 1~20장 + 이름 + 동의 → POST /api/shoot/models. 한 장이면 서버가 다각도 10장을 먼저 만든다(ANGLES).
-//   오른쪽 패널의 두 게이지 = 힉스필드 캐릭터 화면 참고 — 장수(1장은 Bad 가 아니라 "우리가 각도를 만든다"), 품질(올린 사진 중 가장 작은 변)
-const mk={files:[],consent:false};
+// 만들기: 사진(업로드 + 다각도 결과) + 이름 + 동의 → POST /api/shoot/models. 다각도는 학습 전에 따로: POST /api/shoot/angles(사진 1장) → 폴링 → 그리드에 AI 표시로 추가(지울 수 있다).
+//   오른쪽 패널의 두 게이지 = 힉스필드 캐릭터 화면 참고 — 장수, 품질(올린 사진 중 가장 작은 변). 얼굴 사전검사는 없다(사용자 10-16).
+const mk={files:[],consent:false,job:null}; // files: {file,url,px} 업로드 | {remote:url} 다각도 결과
 const MIN_PX=[[1000,'Good'],[600,'OK'],[0,'Low']];
-function openCreate(){mk.files=[];mk.consent=false;$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
-  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>Photos of one person, clear face, different angles and light. 5–20 is best. One photo works too — we shoot 10 angles first, then train.</p>
-    <div class="ugrid" id="ugrid"></div>
+function openCreate(){mk.files=[];mk.consent=false;mk.job=null;$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
+  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>Photos of one person, clear face, different angles and light. 5–20 is best. Only one photo? Shoot 10 angles from it first, then train.</p>
+    <div class="ugrid" id="ugrid"></div><div class="angles" id="angles"></div>
     <div class="guide"><div><b>✓ Works well</b>One person · clear face · front, side and three-quarter · natural light and indoor light mixed · no heavy filters</div><div><b>✕ Avoid</b>Group shots · sunglasses, masks, hands over the face · duplicates · tiny or blurry photos · screenshots</div></div></div>
     <div class="panel"><div><div class="lbl" style="margin-top:0">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina"></div>
     <div class="gauge" id="gCount"></div><div class="gauge" id="gQual"></div>
     <label class="consent"><input type="checkbox" id="mkConsent"><span>These photos are of me, or of an adult who gave me written permission. I agree to face data being processed to train this model (Higgsfield Soul ID).</span></label>
     <button class="gen" id="mkGo" disabled>Create <span class="c">◈ ${TRAIN_COST.toLocaleString('en-US')}</span></button><button class="btn2" id="mkCancel">Cancel</button></div></div>`;
   renderMk();$('#ugrid').addEventListener('dragover',e=>e.preventDefault());$('#ugrid').addEventListener('drop',e=>{e.preventDefault();mkAdd([...e.dataTransfer.files]);});
-  $('#mkConsent').addEventListener('change',e=>{mk.consent=e.target.checked;renderMk();});$('#mkCancel').onclick=renderHello;$('#mkGo').onclick=mkSubmit;}
-function renderMk(){const n=mk.files.length;
-  $('#ugrid').innerHTML=`<button type="button" class="up" id="mkUp"><b>+</b>${n?'Upload more':'Upload photos'}</button>`+mk.files.map((f,i)=>`<div class="u"><img src="${f.url}" alt=""><button type="button" class="x" data-x="${i}">×</button></div>`).join('');
+  $('#mkConsent').addEventListener('change',e=>{mk.consent=e.target.checked;renderMk();});$('#mkCancel').onclick=()=>{mk.job=null;renderHello();};$('#mkGo').onclick=mkSubmit;}
+function renderMk(){const n=mk.files.length,up=mk.files.filter(f=>f.file),j=mk.job;
+  $('#ugrid').innerHTML=`<button type="button" class="up" id="mkUp"><b>+</b>${n?'Upload more':'Upload photos'}</button>`+mk.files.map((f,i)=>`<div class="u ${f.remote?'ai':''}"><img src="${f.url}" alt=""><button type="button" class="x" data-x="${i}">×</button></div>`).join('');
   $('#mkUp').onclick=()=>$('#pfile').click();$$('#ugrid [data-x]').forEach(b=>b.onclick=()=>{mk.files.splice(+b.dataset.x,1);renderMk();});
-  const cnt=n===0?['—','Add photos','var(--border)']:n===1?['1','We shoot 10 angles first','#8ec5ff']:n<5?[n,'OK · 5+ is better','#f5c542']:[n,'Good','var(--lime)'];
+  // 다각도 행: 업로드 사진이 있고 잡이 없을 때 제안 → 진행 중엔 n/10 → 끝나면 결과 수
+  const a=$('#angles');if(j&&!j.done)a.innerHTML=`<span><b>Shooting angles ${j.urls.length}/${j.total}</b> — same person, camera moves only. About ${Math.max(1,Math.round((j.total-j.urls.length)*0.35))} min left.</span>`;
+  else if(j&&j.done)a.innerHTML=`<span><b>${j.urls.length} angles added</b>${j.error?' · stopped: '+esc(j.error):''} — remove any you don't like, then Create.</span><button class="btn2" id="mkAngles">Shoot again</button>`;
+  else if(up.length)a.innerHTML=`<span><b>Only ${up.length===1?'one photo':up.length+' photos'}?</b> We can shoot 10 more angles from the first one — same face, clothes and light, only the camera moves.</span><button class="btn2" id="mkAngles">Shoot 10 angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
+  else a.innerHTML='<span>Add a photo, then shoot 10 angles from it if you have only one.</span>';
+  const ab=$('#mkAngles');if(ab)ab.onclick=mkAngles;
+  const cnt=n===0?['—','Add photos','var(--border)']:n<5?[n,'OK · 5+ is better','#f5c542']:[n,'Good','var(--lime)'];
   $('#gCount').innerHTML=`<i style="--v:${Math.min(100,n*5)};--c:${cnt[2]}"><span>${cnt[0]}/20</span></i><div class="t"><b>Photos</b>${cnt[1]}</div>`;
-  const px=n?Math.min(...mk.files.map(f=>f.px||0)):0;const q=MIN_PX.find(([m])=>px>=m);
-  $('#gQual').innerHTML=`<i style="--v:${n?Math.min(100,Math.round(px/14)):0};--c:${q[1]==='Good'?'var(--lime)':q[1]==='OK'?'#f5c542':'#e5533d'}"><span>${n?px+'px':'—'}</span></i><div class="t"><b>Quality</b>${n?q[1]+' · shortest side of the smallest photo':'Shortest side ≥ 1000px is best'}</div>`;
-  $('#mkGo').disabled=!n||!mk.consent;}
+  const px=up.length?Math.min(...up.map(f=>f.px||0)):0;const q=MIN_PX.find(([m])=>px>=m);
+  $('#gQual').innerHTML=`<i style="--v:${up.length?Math.min(100,Math.round(px/14)):0};--c:${q[1]==='Good'?'var(--lime)':q[1]==='OK'?'#f5c542':'#e5533d'}"><span>${up.length?px+'px':'—'}</span></i><div class="t"><b>Quality</b>${up.length?q[1]+' · shortest side of the smallest upload':'Shortest side ≥ 1000px is best'}</div>`;
+  $('#mkGo').disabled=!n||!mk.consent||!!(j&&!j.done);}
 function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,20-mk.files.length).forEach(f=>{const it={file:f,url:URL.createObjectURL(f),px:0};mk.files.push(it);const im=new Image();im.onload=()=>{it.px=Math.min(im.naturalWidth,im.naturalHeight);renderMk();};im.src=it.url;});renderMk();}
 $('#pfile').addEventListener('change',e=>{mkAdd([...e.target.files]);e.target.value='';});
-async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());fd.append('consent','true');mk.files.forEach(f=>fd.append('photos',f.file,f.file.name));
+async function mkAngles(){const src=mk.files.find(f=>f.file);if(!src)return;const fd=new FormData();fd.append('photo',src.file,src.file.name);
+  try{const res=await fetch('/api/shoot/angles',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
+    if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
+    if(!res.ok||!d.success)throw new Error(d.error||'Could not start');
+    mk.job=d.data;DoppiaNav.refreshCredits();renderMk();pollAngles();}
+  catch(e){toast(e.message||'failed')}}
+async function pollAngles(){const j=mk.job;if(!j||$('#create').hidden)return;
+  try{const d=(await(await fetch('/api/shoot/angles/'+j.id)).json()).data;if(!d)return;const seen=new Set(mk.files.filter(f=>f.remote).map(f=>f.url));
+    d.urls.filter(u=>!seen.has(u)).forEach(u=>mk.files.push({remote:true,url:u}));mk.job=d;renderMk();if(!d.done)setTimeout(pollAngles,4000);}
+  catch(e){setTimeout(pollAngles,6000);}}
+async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());fd.append('consent','true');
+  fd.append('photoUrls',JSON.stringify(mk.files.filter(f=>f.remote).map(f=>f.url)));mk.files.filter(f=>f.file).forEach(f=>fd.append('photos',f.file,f.file.name));
   try{const res=await fetch('/api/shoot/models',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
     if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
     if(!res.ok||!d.success)throw new Error(d.error||'Could not start training');
-    toast((d.data.status==='angles'?'Shooting angles first, then training — ':'Training started — ')+'a few minutes');DoppiaNav.refreshCredits();await loadMine();renderHello();}
+    toast('Training started — a few minutes');DoppiaNav.refreshCredits();mk.job=null;await loadMine();renderHello();}
   catch(e){toast(e.message||'failed');b.disabled=false;}}
 
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──

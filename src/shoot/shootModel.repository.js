@@ -1,7 +1,7 @@
 /**
  * ─── Shoot 모델(내 캐릭터) 저장소 ───
  * (2026-10-16) shoot_models — Doppia Shoot 의 "Create your model". 힉스필드 Soul ID(custom reference) 한 건 + 장면 뱅크.
- *   status: angles(사진 1장 → 다각도 생성 중) · training(Soul ID 학습 중) · bank(장면 생성 중) · ready · failed
+ *   status: training(Soul ID 학습 중) · bank(장면 생성 중) · ready · failed  (다각도는 학습 전 별도 잡 — service angleJobs)
  *   photos = 학습에 넣은 공개 URL들 · bank = [{url,label}] (우리 /images 경로) · avatar = 얼굴 클로즈업
  */
 const { query } = require('../db/client');

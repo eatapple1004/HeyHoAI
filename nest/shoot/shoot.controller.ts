@@ -4,7 +4,7 @@ import { ShootService } from './shoot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { GENERATE_UPLOAD_OPTIONS } from '../generate/generate.service';
-import { ShootModelDto, CreateShootModelDto } from './dto/shoot.dto';
+import { ShootModelDto, CreateShootModelDto, AngleJobDto } from './dto/shoot.dto';
 
 // /api/shoot — Doppia Shoot 내 모델(Soul ID 학습 + 장면 뱅크). 전 엔드포인트 인증 필요.
 //   404·400·503 등 도메인 에러는 서비스가 statusCode 로 throw → LegacyErrorFilter 가 레거시와 동일 형식으로 응답.
@@ -13,7 +13,21 @@ import { ShootModelDto, CreateShootModelDto } from './dto/shoot.dto';
 export class ShootController {
   constructor(private readonly shoot: ShootService) {}
 
-  // POST /api/shoot/models — multipart photos(1~20) + name. 사진 1장이면 다각도부터 만든다.
+  // POST /api/shoot/angles — multipart photo 1장 → 다각도 잡(학습 전, 선택)
+  @Post('angles')
+  @HttpCode(200)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'photo', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  async startAngles(@Req() req: any, @UploadedFiles() files: { photo?: Array<{ path: string }> }): Promise<ApiResponse<AngleJobDto>> {
+    return { success: true, data: await this.shoot.startAngles(req.user, files && files.photo && files.photo[0] && files.photo[0].path) };
+  }
+
+  // GET /api/shoot/angles/:id — 진행·결과 URL
+  @Get('angles/:id')
+  getAngles(@Req() req: any, @Param('id') id: string): ApiResponse<AngleJobDto> {
+    return { success: true, data: this.shoot.getAngles(req.user, id) };
+  }
+
+  // POST /api/shoot/models — multipart photos(0~20) + photoUrls(JSON) + name + consent → Soul ID 학습
   @Post('models')
   @HttpCode(200) // 레거시 res.json=200
   @UseInterceptors(FileFieldsInterceptor([{ name: 'photos', maxCount: 20 }], GENERATE_UPLOAD_OPTIONS))
