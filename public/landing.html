@@ -200,6 +200,8 @@
   .sv-stack{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px}
   .sv-in{margin:0;text-align:center;width:104px}
   .sv-in img{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-in video{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-big video{width:100%;height:auto;max-height:585px;display:block;background:#000}
   .sv-in figcaption{margin-top:7px;font-size:12px;color:var(--dim)}
   .sv-plus{color:var(--faint);font-size:15px;line-height:1;margin:4px 0}
   /* 룩북 모델 토글: 얼굴 2개 나란히, 클릭 시 결과 스왑 */
@@ -440,13 +442,14 @@
 <section class="wrap" id="features">
   <div class="eyebrow">ALL-IN-ONE</div>
   <h2 data-i18n="sec2.title">What a studio team used to do,<br>now behind <em>one tab</em>.</h2>
-  <p class="lead" data-i18n="sec2.lead">One product photo gives you detail cuts, on-model shots, editorials and ad videos. Tap a tab below and see exactly what comes out.</p>
+  <p class="lead" data-i18n="sec2.lead">One product photo gives you detail cuts, on-model shots, editorials and ad videos — and Lenses, the Editor and the Video Editor take it further. Tap a tab below and see exactly what comes out.</p>
   <div class="exp">
     <div class="tabs">
       <button class="tab on" data-k="shots"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></span><span class="tt"><b>Shots</b><span data-i18n="tab.shots.sub">Catalog essentials</span></span></button>
+      <button class="tab" data-k="lens"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z"/></svg></span><span class="tt"><b>Doppia Lens</b><span>Your look, any product</span></span><span class="star">TOP</span></button>
       <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">One photo, one line</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="pack"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span class="tt"><b data-i18n="tab.pack">Content Pack</b><span data-i18n="tab.pack.sub">A full set at once</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b data-i18n="tab.edit">Edit</b><span data-i18n="tab.edit.sub">Say it, fix it</span></span></button>
+      <button class="tab" data-k="vedit"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 6v4M16 6v4"/></svg></span><span class="tt"><b>Video Editor</b><span>Swap · Reframe · Extend</span></span><span class="star">NEW</span></button>
+      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>Editor</b><span>Relight · Angles · Erase</span></span></button>
     </div>
     <div class="pane">
       <div class="panel on" data-k="shots">
@@ -517,6 +520,21 @@
           <a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
         </div>
       </div>
+      <div class="panel" data-k="lens">
+        <div class="demo">
+          <div class="dpills"><span class="dpill on">Same product, every Lens</span></div>
+          <div class="sv on">
+            <div class="sv-stack">
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/product.jpg" alt=""><figcaption>My product photo</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""><figcaption>Lens · Glacier Ice</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <div class="sv-grid" style="flex:1;min-width:0"><figure><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/gummy.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/marble.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/holiday.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/plinth.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/linen.webp" alt=""></figure></div>
+          </div>
+        </div>
+        <div class="desc"><h3>Doppia Lens</h3><div class="tl">Save a look once. Drop in any product — same concept, every time.</div><p>A Lens remembers how a shot is made — concept, light, framing, engine. Pick an official Lens (best-selling templates and trending looks) or save your own from any result, then just drop in a new product photo. Share it by link or publish it to the community.</p><ul><li>Official Lenses: best-sellers &amp; trending looks</li><li>Save your own from any result — with folders</li><li>Share by link or publish to the community</li></ul><a class="btn btn-p cta" href="/lens" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
+      </div>
       <div class="panel" data-k="video">
         <div class="demo">
           <div class="dpills"><span class="dpill on" data-i18n="dp.video">9:16 · Reels/TikTok</span></div>
@@ -534,12 +552,31 @@
         </div>
         <div class="desc"><h3 data-i18n="video.h3">Ad Video</h3><div class="tl" data-i18n="video.tl">Script written for you, straight to video.</div><p data-i18n="video.p">A photo and one line is enough — Doppia plans the concept and every shot, then renders a 9:16 ad with music, ready for TikTok and Reels. Want control? Write the shot list yourself — how many shots and how long each one runs.</p><ul data-i18n="video.ul"><li>Shot list written for you — or write it yourself</li><li>9:16 · 1:1 · 16:9 with music — upload-ready</li><li>Pay only for what renders, failures auto-refund</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
-      <div class="panel" data-k="pack">
+      <div class="panel" data-k="vedit">
         <div class="demo">
-          <div class="dpills"><span class="dpill on" data-i18n="dp.pack">One photo → full set</span></div>
-          <div class="flow" style="gap:14px"><div class="inp inp-photo" style="align-self:center"><img loading="lazy" decoding="async" src="/img/landing/pack2/src.jpg" alt=""><span data-i18n="cap.onephoto">One product photo</span></div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/pdp_front_clean.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hero_threequarter.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hero_sunlit.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/macro_label_detail.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/ingredient_grape.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/picnic_blanket.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/desk_hot_day.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cooler_ice.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cvs_fridge.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/poolside_table.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/colorblock_lime_split.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/levitation_grapes.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/splash_frozen.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hard_shadow_geo.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/pedestal_editorial.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/crushed_ice_bed.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/wet_stone_slab.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/marble_luxe.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/warm_linen.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/sand_ripples.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/midsummer_poolglow.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/gift_holiday_styling.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/claim_copyspace_card.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cozy_autumn_warm.jpg" alt=""></div></div></div>
+          <div class="dpills"><button class="dpill on" data-s="swap">Product swap</button><button class="dpill" data-s="reframe">Reframe</button></div>
+          <div class="sv on" data-v="swap">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>My video</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/vedit/swap-product.jpg" alt=""><figcaption>My product photo</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big" style="flex-basis:380px"><video src="/img/landing/vedit/swap-after.mp4" poster="/img/landing/vedit/swap-after.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>Generated · product swapped</figcaption></figure>
+          </div>
+          <div class="sv" data-v="reframe">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>My video · 4:5</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><video src="/img/landing/vedit/reframe-169.mp4" poster="/img/landing/vedit/reframe-169.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>Reframed · 16:9</figcaption></figure>
+          </div>
         </div>
-        <div class="desc"><h3 data-i18n="pack.h3">Content Pack</h3><div class="tl" data-i18n="pack.tl">You bring the photo. Doppia does the planning.</div><p data-i18n="pack.p">Write one line of mood — or nothing at all. Doppia looks at your product, plans which cuts to make and how many, and delivers a full set. Whatever you sell.</p><ul data-i18n="pack.ul"><li>Concept and lineup planned automatically</li><li>Apparel or food — whatever you sell</li><li>As many as you want, pay only for results</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
+        <div class="desc">
+          <div class="sd on" data-v="swap"><h3>Product swap</h3><div class="tl">Swap the product in any video for yours.</div><p>Upload a clip and a photo of your product — the product in the video becomes yours, while hands, motion and camera stay exactly as shot. Then trim, add text and music in the timeline editor.</p><ul><li>Same motion, new product — up to 15s per swap</li><li>Timeline editor: trim · text · music · captions</li><li>Extend · Upscale · Restyle · Motion transfer</li></ul></div>
+          <div class="sd" data-v="reframe"><h3>Reframe</h3><div class="tl">Any aspect ratio — nobody gets cropped out.</div><p>Turn a vertical clip into 16:9 (or the other way) and AI generates the missing area instead of cropping. 9:16, 16:9, 1:1, 4:5 and 5:4 — up to 60 seconds.</p><ul><li>AI fills the new area — no bars, no blur</li><li>9:16 · 16:9 · 1:1 · 4:5 · 5:4</li><li>Up to 60s, 1080p</li></ul></div>
+          <a class="btn btn-p cta" href="/video-edit" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
+        </div>
       </div>
       <div class="panel" data-k="edit">
         <div class="demo">
@@ -551,9 +588,9 @@
             <span class="cmp-lb" style="left:12px" data-i18n="ed.after">After</span><span class="cmp-lb" style="right:12px" data-i18n="ed.before">Before</span>
             <div class="cmp-hd"><span>↔</span></div>
           </div>
-          <div class="ed-chips"><span data-i18n="ed.c1">“Warmer lighting”</span><span data-i18n="ed.c2">“Remove the props”</span><span data-i18n="ed.c3">“Make her smile a little”</span><span data-i18n="ed.c4">“More like this one”</span></div>
+          <div class="ed-chips"><span>Relight</span><span>Angles</span><span>Replace background</span><span>Erase</span><span>Expand</span><span>Upscale ×16</span><span>Remove background</span><span>Fix label text</span></div>
         </div>
-        <div class="desc"><h3 data-i18n="edit.h3">Edit</h3><div class="tl" data-i18n="edit.tl">No reshoots. Just say it.</div><p data-i18n="edit.p">"Change the background", "a bit brighter" — fix what you don't like in plain words. Product details stay intact, iterate as much as you want.</p><ul data-i18n="edit.ul"><li>Edit people, background, props</li><li>The product itself is preserved</li><li>Unlimited retries — "more like this one"</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
+        <div class="desc"><h3>Editor</h3><div class="tl">Fix any shot — no reshoot.</div><p>Relight with a light pad, turn the camera to a new angle, swap the background, erase or expand, and upscale up to ×16. Or just say what to change — the product itself stays intact.</p><ul><li>Relight · Angles · Replace background · Erase · Inpaint · Expand</li><li>Upscale up to ×16 · Remove background · Fix label text</li><li>Say it in words — the product is preserved</li></ul><a class="btn btn-p cta" href="/image-edit" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
     </div>
   </div>
@@ -905,13 +942,13 @@
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
   tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
   // shots 서브탭(제품샷·룩북·화보·템플릿): 데모(.sv)와 설명(.sd)을 같이 전환
-  var sp=document.getElementById('sp');
-  sp.querySelectorAll('.dpill').forEach(function(b){b.addEventListener('click',function(){
-    sp.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
+  // 서브탭(Shots: 제품샷·룩북·화보·템플릿 / Video Editor: 제품 교체·리프레임): 같은 패널 안의 데모(.sv)와 설명(.sd)만 전환
+  document.querySelectorAll('.panel .dpills').forEach(function(g){var panel=g.closest('.panel');g.querySelectorAll('button.dpill[data-s]').forEach(function(b){b.addEventListener('click',function(){
+    g.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
     var v=b.dataset.s;
-    document.querySelectorAll('.sv').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
-    document.querySelectorAll('.sd').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
-  });});
+    panel.querySelectorAll('.sv[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+    panel.querySelectorAll('.sd[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+  });});});
   // Ad Video 릴스 플레이어 — 5초 클립 5편, ended(+5.6s 안전타이머) 시 아래→위 슬라이드 전환
   (function(){
     var wrap=document.getElementById('figReel'); if(!wrap) return;
