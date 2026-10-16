@@ -348,7 +348,7 @@
     'Use this template': '이 템플릿 사용', 'Tap to change template': '탭하여 템플릿 변경', 'Template selected': '템플릿 선택됨',
     'Select a face and a template to start.': '얼굴과 템플릿을 선택해 시작하세요.', 'Add image': '이미지 추가',
     'This is a Premium Feature. Subscribe to access it.': '프리미엄 기능입니다. 구독하면 사용할 수 있습니다.',
-    'Premium template': '프리미엄 템플릿', 'Premium': '프리미엄', 'Purchased': '구매됨', 'Unlock': '잠금 해제',
+    'Premium template': '프리미엄 템플릿', 'Premium': 'Premium', 'Purchased': '구매됨', 'Unlock': '잠금 해제',
     'Select a category…': '카테고리 선택…', 'Description (optional)': '설명 (선택)',
     'See all plans →': '모든 요금제 보기 →', 'View all in Library →': '라이브러리에서 전체 보기 →', 'Open Studio →': '스튜디오 열기 →',
     'Your Library': '내 라이브러리', 'Your library is waiting': '라이브러리가 기다리고 있어요',
@@ -421,7 +421,7 @@
     'Template updated': '템플릿이 업데이트됨', 'Template deleted': '템플릿이 삭제됨', 'Delete this template? This cannot be undone.': '이 템플릿을 삭제할까요? 되돌릴 수 없습니다.',
     'Affiliate program': '제휴 프로그램', 'Your referral link': '내 추천 링크', '⧉ Copy link': '⧉ 링크 복사', 'Clicks': '클릭 수',
     'Sign-ups': '가입 수', 'Commission': '수수료', 'Share your link': '링크 공유', 'Commission rate': '수수료율', 'Tracking window': '추적 기간',
-    'For teams & brands': '팀 & 브랜드용', 'API access': 'API 접근', 'Team': '팀', 'White-label': '화이트라벨', 'Reveal': '표시', 'Regenerate': '재생성',
+    'For teams & brands': '팀 & 브랜드용', 'API access': 'API 접근', 'Team': 'Team', 'White-label': '화이트라벨', 'Reveal': '표시', 'Regenerate': '재생성',
     'Shopify app': 'Shopify 앱', 'Install on Shopify': 'Shopify에 설치', 'No team yet': '아직 팀이 없습니다', '+ Create team': '+ 팀 만들기',
     'Team members': '팀 멤버', '+ Invite member': '+ 멤버 초대', 'Shared credit pool': '공유 크레딧 풀', 'Amount': '금액', 'Transfer →': '이체 →',
     'White-label for agencies': '에이전시용 화이트라벨', 'Request white-label': '화이트라벨 문의', 'Posts published': '게시된 포스트',
@@ -1774,7 +1774,7 @@
     //    Private Mode(일본어에서도 그대로). 플랫폼명은 일본 관례: Instagram/TikTok/Coupang/Naver Smart Store/Amazon/カカオトーク.
     // ✅ 기능명은 번역한다(ko와 같은 결정): Ad Video→広告動画 · Shots→ショット · Content Pack→コンテンツパック ·
     //    Editor→エディター · Library→ライブラリ · Explore→探索 · Upscale→アップスケール · Remove background→背景を削除.
-    // ⚠️ 'Premium'·'Team'은 ko가 번역했지만(プレミアム·팀) ja는 글로서리대로 플랜명으로 남긴다 — 보고서에 기록.
+    // (10-17 사용자) 'Premium'·'Team'은 플랜명 — ko·ja 모두 영어 그대로.
     // 문체: 본문·버튼은 です/ます, UI 칩은 짧은 명사형. 일본어 구두점은 전각(、。).
 
     // ── 홈 · 공통(2026-07-17 누락분과 같은 묶음) ──
