@@ -32,16 +32,14 @@
 .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
 .acts button{padding:9px 4px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--dim);font:inherit;font-size:12px;cursor:pointer}
 .acts button.on{border-color:var(--lime);color:var(--text)}.acts button[disabled]{opacity:.5;cursor:default}.acts button i{display:block;font-style:normal;font-size:16px;margin-bottom:2px}
-.dress{display:grid;grid-template-columns:96px auto 96px;gap:14px;align-items:center;justify-content:center;max-width:100%}.dress img{max-width:min(100%,520px)}
-.slots{display:grid;grid-template-columns:1fr;gap:8px;width:96px}
-@media(max-width:860px){.dress{grid-template-columns:1fr}.slots{grid-template-columns:repeat(4,1fr);width:100%}}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .slot{position:relative;aspect-ratio:1;border:1px dashed var(--border2);border-radius:12px;background:var(--surface);display:grid;place-items:center;align-content:center;gap:2px;cursor:pointer;color:var(--faint);font-size:11px;text-align:center;padding:4px;overflow:hidden}
 .slot i{font-style:normal;font-size:22px;line-height:1}.slot.on{border-style:solid;border-color:var(--lime)}.slot.on img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .slot.on span{position:absolute;left:0;right:0;bottom:0;padding:3px;background:rgba(0,0,0,.6);color:#fff;font-size:10px}.slot .x{position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:0;cursor:pointer;font-size:11px;display:grid;place-items:center;z-index:1}
 .slot.soon{opacity:.45;cursor:default}.slot.over{border-color:var(--lime);background:var(--bg2)}
 .drop{display:grid;place-items:center;min-height:84px;border:1px dashed var(--border2);border-radius:12px;background:var(--surface);color:var(--faint);text-align:center;padding:10px;cursor:pointer;font-size:12px;line-height:1.5;margin-top:8px}.drop b{display:block;color:var(--text);font-size:13px}
 .stage{padding:16px 22px 60px}
-.stage .cur{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}.stage .cur img{max-height:70vh}
+.stage .cur{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}
 .stage .cur img{max-height:70vh;max-width:100%;border-radius:14px;border:1px solid var(--border);background:var(--bg2)}
 .stage .cur .pend{display:grid;place-items:center;width:min(100%,420px);aspect-ratio:3/4;border-radius:14px;border:1px dashed var(--border2);color:var(--faint)}
 .strip{display:flex;gap:8px;overflow:auto;padding:12px 0 4px}
@@ -212,22 +210,19 @@ function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}
   $('#swap').onclick=()=>{st.intro++;$('#bubble').hidden=true;renderHello();};
   $('#acts').innerHTML=ACTS.map(([k,ic,n])=>`<button type="button" data-a="${k}" class="${k===st.act?'on':''}" ${k==='video'?'disabled title="Coming soon"':''}><i>${ic}</i>${n}</button>`).join('');
   renderPanel();renderStage();}
-function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x.dataset.a===a));renderPanel();renderStage();say(SAY[a]);} // 스테이지도 — Outfit 만 사진 옆에 슬롯
+function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x.dataset.a===a));renderPanel();say(SAY[a]);}
 $('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;setAct(b.dataset.a);});
 function renderPanel(){({outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();renderSettings();renderGo();}
 
 // Outfit: 품목 여러 개(사진 + 유형)
-function panelOutfit(){$('#panel').innerHTML=`<div class="note" style="margin-top:0">Tap a slot beside the photo, or drop a photo on it. Each item is kept exactly as photographed — color, print, logo. Fill as many slots as you like; layers work (tee under an open outer).</div>`;renderStage();}
-// 슬롯은 사진 좌우에(사용자 10-16 "게임처럼"): 왼쪽 = 머리·상체, 오른쪽 = 하체·발·가방
-const SIDE_L=SLOTS.slice(0,6),SIDE_R=SLOTS.slice(6);
-function renderSlots(){const el=$('#slotsL');if(!el)return;
-  const html=list=>list.map(([k,n,ic,p])=>{const it=st.slots[k];return `<div class="slot ${it?'on':''} ${p?'':'soon'}" data-s="${k}" title="${esc(n)}${p?'':' · coming soon'}">${it?`<img src="${it.url}" alt=""><button type="button" class="x" data-x="${k}">×</button><span>${esc(n)}</span>`:`<i>${ic}</i>${esc(n)}${p?'':'<small>soon</small>'}`}</div>`;}).join('');
-  el.innerHTML=html(SIDE_L);$('#slotsR').innerHTML=html(SIDE_R);
-  $$('#cur .slot:not(.soon)').forEach(d=>{const k=d.dataset.s;
+function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Dress up <i>· tap a slot or drop a photo on it</i></div><div class="slots" id="slots"></div><div class="note">Each item is kept exactly as photographed — color, print, logo. Fill as many slots as you like; layers work (tee under an open outer).</div>`;renderSlots();}
+function renderSlots(){const el=$('#slots');if(!el)return;
+  el.innerHTML=SLOTS.map(([k,n,ic,p])=>{const it=st.slots[k];return `<div class="slot ${it?'on':''} ${p?'':'soon'}" data-s="${k}" title="${esc(n)}${p?'':' · coming soon'}">${it?`<img src="${it.url}" alt=""><button type="button" class="x" data-x="${k}">×</button><span>${esc(n)}</span>`:`<i>${ic}</i>${esc(n)}${p?'':'<small>soon</small>'}`}</div>`;}).join('');
+  el.querySelectorAll('.slot:not(.soon)').forEach(d=>{const k=d.dataset.s;
     d.addEventListener('click',e=>{if(e.target.closest('[data-x]'))return;st.slotTarget=k;$('#file').click();});
     d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('over');});d.addEventListener('dragleave',()=>d.classList.remove('over'));
     d.addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(f=>/^image\//.test(f.type));if(f)setSlot(k,f);});});
-  $$('#cur [data-x]').forEach(b=>b.addEventListener('click',()=>{delete st.slots[b.dataset.x];renderSlots();}));renderGo();}
+  el.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{delete st.slots[b.dataset.x];renderSlots();}));renderGo();}
 function setSlot(k,f){st.slots[k]={file:f,url:URL.createObjectURL(f)};renderSlots();}
 const filled=()=>SLOTS.filter(([k,,,p])=>p&&st.slots[k]); // 채워진 슬롯, 몸 순서
 $('#file').addEventListener('change',e=>{const f=e.target.files[0];if(f&&st.slotTarget)setSlot(st.slotTarget,f);e.target.value='';});
@@ -256,9 +251,7 @@ function ready(){return st.act==='outfit'?filled().length>0:st.act==='scene'?!!(
 function renderGo(){const t=tool(),L={outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act];$('#go').disabled=st.busy||!ready()||!t;$('#go').firstChild.textContent=L+' ';$('#cost').textContent=t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
-function renderStage(anim){const v=cur();const pic=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
-  $('#cur').innerHTML=st.act==='outfit'&&!st.busy?`<div class="dress"><div class="slots" id="slotsL"></div>${pic}<div class="slots" id="slotsR"></div></div>`:pic;
-  if(st.act==='outfit'&&!st.busy)renderSlots();
+function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
   $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${x.url}" alt=""><small>${esc(x.label)}</small></button>`).join('');
   $('#note').textContent=st.versions.length>1?`${st.versions.length} versions · pick one to continue from it`:'';}
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.intro++;st.cur=+b.dataset.i;renderStage();});
