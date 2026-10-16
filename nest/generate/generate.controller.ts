@@ -198,6 +198,60 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postVideoEditScenes', req));
   }
 
+  // ── Doppia Lens (2026-10-16) — 고정 경로를 :slug 보다 먼저 ──
+  // GET /api/generate/lens?scope=all|mine|official&category=&q=
+  @Get('lens')
+  async getLensList(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLensList', req));
+  }
+
+  // POST /api/generate/lens — 렌즈 만들기(JSON)
+  @Post('lens')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLens', req));
+  }
+
+  // POST /api/generate/lens-upload — 렌즈 스타일 참고 이미지 업로드
+  @UseInterceptors(FileInterceptor('file', GENERATE_UPLOAD_OPTIONS))
+  @Post('lens-upload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensUpload(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLensUpload', req));
+  }
+
+  // GET /api/generate/lens-draft/:idx — 내 결과물 → 렌즈 초안
+  @Get('lens-draft/:idx')
+  async getLensDraft(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLensDraft', req));
+  }
+
+  // GET /api/generate/lens/:slug
+  @Get('lens/:slug')
+  async getLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getLens', req));
+  }
+
+  // PATCH /api/generate/lens/:slug
+  @Patch('lens/:slug')
+  async patchLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('patchLens', req));
+  }
+
+  // DELETE /api/generate/lens/:slug
+  @Delete('lens/:slug')
+  async deleteLens(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('deleteLens', req));
+  }
+
+  // POST /api/generate/lens/:slug/run — 내 제품·인물 이미지로 렌즈 실행(?async=1 권장)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'product', maxCount: 1 }, { name: 'person', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  @Post('lens/:slug/run')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensRun(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postLensRun', req));
+  }
+
   // GET /api/generate/jobs/:id — ?async=1 로 시작한 긴 작업(edit·face-swap) 상태 { status:'running'|'done', result:{status,body} }
   @Get('jobs/:id')
   async getAsyncJob(@Req() req: any, @Res({ passthrough: true }) res: any) {

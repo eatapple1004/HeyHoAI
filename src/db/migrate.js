@@ -1709,6 +1709,28 @@ async function migrateCredits() {
     ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_usd DECIMAL(10,2) NOT NULL DEFAULT 0;
     ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
   `);
+  // (2026-10-16) Doppia Lens — 제작 방식·설정을 묶은 재사용 템플릿(src/lens/lens.service.js). 공식 렌즈는 코드 시드(ensureOfficial).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lenses (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug            VARCHAR(40) UNIQUE NOT NULL,              -- 공유 링크 /lens?l=<slug>
+        owner_id        UUID REFERENCES users(id) ON DELETE CASCADE, -- NULL = 공식(Doppia)
+        title           VARCHAR(80) NOT NULL,
+        description     VARCHAR(300) NOT NULL DEFAULT '',
+        category        VARCHAR(20) NOT NULL DEFAULT 'product',   -- product | on-model | beauty | fashion | food | video
+        config          JSONB NOT NULL DEFAULT '{}',              -- kind·engine·prompt·aspect·count·shots·inputs·refs·extras
+        visibility      VARCHAR(10) NOT NULL DEFAULT 'private',   -- private | link | public
+        cover_url       TEXT,
+        is_official     BOOLEAN NOT NULL DEFAULT false,
+        uses_count      INT NOT NULL DEFAULT 0,
+        from_result_idx INT,
+        status          VARCHAR(10) NOT NULL DEFAULT 'active',    -- active | deleted
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lenses_owner ON lenses(owner_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_lenses_public ON lenses(visibility, status, uses_count DESC);
+  `);
 }
 
 /**

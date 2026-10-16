@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Lens</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=27" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=24" defer></script>
+<style>
+/* (2026-10-16) Doppia Lens — 힉스필드 Apps(REA 캡처: 히어로·검색·카테고리 탭·카드 Try now → 앱 안 1 Upload·2 Generate·3 Pick) 구성.
+   렌즈 = 제작 방식(엔진·콘셉트 프롬프트·비율·컷 목록·스타일 참고) 묶음 → 내 제품/인물 사진만 넣으면 같은 콘셉트로 반복 제작 · 링크/갤러리로 공유.
+   API: /api/generate/lens(목록·만들기) · /lens/:slug(보기·수정·삭제) · /lens/:slug/run(?async=1) · /lens-draft/:idx(결과물 → 초안) · /lens-upload */
+body{background:var(--bg)}
+.ln{max-width:1280px;margin:0 auto;padding:26px 22px 80px}
+.ln-hero{margin-bottom:22px}
+.ln-hero .ic{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--lime),#7dffcf);display:flex;align-items:center;justify-content:center;color:#111;font-size:22px;font-weight:800;margin-bottom:12px}
+.ln-hero h1{font-family:'Sora';font-size:40px;line-height:1.05;letter-spacing:-.5px;text-transform:uppercase}
+.ln-hero h1 span{color:var(--lime)}
+.ln-hero p{color:var(--dim);margin-top:8px;max-width:640px}
+.ln-bar{display:flex;gap:10px;align-items:center;margin:18px 0 8px;flex-wrap:wrap}
+.ln-search{flex:0 0 260px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:0 12px;height:42px}
+.ln-search input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font:inherit}
+.ln-cats{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;overflow-x:auto;flex:1}
+.ln-cats button{border:0;background:transparent;color:var(--dim);padding:7px 13px;border-radius:9px;cursor:pointer;font:inherit;font-size:13.5px;white-space:nowrap}
+.ln-cats button.on{background:var(--surface2);color:#fff}
+.ln-new{height:42px;padding:0 16px;border-radius:12px;border:0;background:var(--lime);color:#111;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+.ln-sec{margin-top:28px}
+.ln-sec h2{font-family:'Sora';font-size:22px;text-transform:uppercase}
+.ln-sec .sub{color:var(--dim);font-size:13.5px;margin:2px 0 12px}
+.ln-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.ln-card{border:1px solid var(--border);border-radius:18px;background:var(--bg2);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .15s,border-color .15s}
+.ln-card:hover{transform:translateY(-2px);border-color:var(--border2)}
+.ln-cover{position:relative;aspect-ratio:4/4.4;background:linear-gradient(135deg,#1d1b33,#2c2350 55%,#3e2a4f);overflow:hidden}
+.ln-cover img,.ln-cover video{width:100%;height:100%;object-fit:cover;display:block}
+.ln-cover .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-size:22px;color:rgba(255,255,255,.75);text-align:center;padding:16px;text-transform:uppercase}
+.ln-badges{position:absolute;left:10px;top:10px;display:flex;gap:5px}
+.ln-badges span{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;text-transform:uppercase}
+.ln-badges span.of{background:var(--lime);color:#111}.ln-badges span.vid{background:#6a40e0}
+.ln-meta{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.ln-meta b{font-size:15.5px}.ln-meta small{color:var(--dim);font-size:12.5px;line-height:1.4;min-height:34px}
+.ln-meta .ft{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11.5px;color:var(--faint)}
+.ln-try{border:0;background:#fff;color:#111;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.ln-empty{border:1px dashed var(--border2);border-radius:16px;padding:30px;text-align:center;color:var(--faint);font-size:13px}
+/* 렌즈 화면 */
+.lv-crumb{font-size:13px;color:var(--faint);margin-bottom:12px}.lv-crumb a{color:var(--dim)}
+.lv-steps{display:flex;gap:16px;font-size:12.5px;color:var(--faint);margin-bottom:12px}
+.lv-steps span.on{color:var(--lime);font-weight:600}
+.lv{display:grid;grid-template-columns:minmax(0,440px) 1fr;gap:18px}
+.lv-l{border:1px solid var(--border);border-radius:20px;background:var(--bg2);padding:18px}
+.lv-l h1{font-family:'Sora';font-size:28px;text-transform:uppercase;line-height:1.05}
+.lv-l .d{color:var(--dim);margin:6px 0 10px;font-size:14px}
+.lv-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.lv-tags span{font-size:11.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--border2);color:var(--dim)}
+.lv-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lv-slot{position:relative;aspect-ratio:1;border:1.5px dashed var(--border2);border-radius:16px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:10px;overflow:hidden;color:var(--text);font:inherit}
+.lv-slot:hover,.lv-slot.drag{border-color:var(--lime)}
+.lv-slot.on{border-style:solid;padding:0}
+.lv-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lv-slot small{color:var(--faint);font-size:11.5px}
+.lv-slot .chg{position:absolute;left:8px;bottom:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;z-index:2}
+.lv-slot .lib{position:absolute;right:8px;bottom:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;z-index:2;border:0;cursor:pointer}
+.lv-r{border:1px solid var(--border);border-radius:20px;background:#0b0b12 radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/18px 18px;padding:14px;min-height:520px;position:relative}
+.lv-res{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.lv-res .it{position:relative;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--border)}
+.lv-res .it img,.lv-res .it video{width:100%;display:block}
+.lv-res .it .acts{position:absolute;right:8px;top:8px;display:flex;gap:5px;opacity:0;transition:opacity .15s}
+.lv-res .it:hover .acts{opacity:1}
+.lv-res .it .tag{position:absolute;left:8px;top:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff}
+.ib{height:30px;min-width:30px;padding:0 9px;border-radius:9px;border:1px solid var(--border2);background:rgba(19,19,29,.88);color:var(--text);cursor:pointer;font:inherit;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.lv-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--faint);text-align:center;padding:20px}
+.lv-ph img{max-width:60%;max-height:60%;border-radius:16px;opacity:.85}
+.lv-busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(7,7,12,.6);z-index:5;border-radius:20px}
+.lv-busy.on{display:flex}
+.lv-busy .sp{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--lime);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lv-own{margin-top:14px;padding:12px;border-radius:14px;border:1px solid var(--border2);background:var(--surface);font-size:12.5px;color:var(--dim)}
+.lv-own pre{white-space:pre-wrap;font:inherit;color:var(--text);margin:6px 0;max-height:120px;overflow:auto}
+/* 만들기 */
+.ln-modal{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.ln-modal>div{width:min(760px,100%);max-height:90vh;overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:20px}
+.ln-modal h3{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:18px}
+.ln-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ln-refs{display:flex;gap:8px;flex-wrap:wrap}
+.ln-refs .r{width:74px;height:74px;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--border2)}
+.ln-refs .r img{width:100%;height:100%;object-fit:cover}
+.ln-refs .r button{position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;cursor:pointer;font-size:11px}
+.ln-refs .add{width:74px;height:74px;border-radius:10px;border:1.5px dashed var(--border2);background:var(--surface);color:var(--dim);cursor:pointer;font:inherit;font-size:12px}
+.ln-shot{display:flex;gap:6px;margin-bottom:6px}.ln-shot input:first-child{width:120px;flex:none}
+.ln-pick .ln-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+.ln-pick .pk{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--border)}.ln-pick .pk img{width:100%;height:100%;object-fit:cover}
+@media (max-width:900px){.lv{grid-template-columns:1fr}.ln-hero h1{font-size:28px}.ln-search{flex:1 1 100%}.ln-two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="ln" id="root"></div>
+<input type="file" id="file" accept="image/*" hidden>
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+const CATS=[['all','All'],['product','Product'],['beauty','Beauty'],['fashion','Fashion'],['on-model','On-model'],['food','Food'],['video','Video'],['mine','My lenses']];
+const st={T:null,lenses:[],cat:'all',q:'',lens:null,slots:{},results:[],busy:false,note:''};
+const api=async(u,o)=>{const r=await fetch(u,o);const j=await r.json().catch(()=>({}));return{ok:r.ok&&j.success!==false,status:r.status,j};};
+
+// ── 갤러리 ──
+async function loadList(){const scope=st.cat==='mine'?'mine':'all';const qs=new URLSearchParams({scope});if(st.cat!=='all'&&st.cat!=='mine')qs.set('category',st.cat);if(st.q)qs.set('q',st.q);
+  const r=await api('/api/generate/lens?'+qs);st.lenses=r.ok?r.j.data:[];renderGallery();}
+function card(l){const cov=l.coverUrl?(/\.(mp4|webm)$/i.test(l.coverUrl)?`<video src="${esc(l.coverUrl)}#t=1" muted playsinline preload="metadata"></video>`:`<img src="${esc(l.coverUrl)}" loading="lazy" alt="">`):`<div class="ph">${esc(l.title)}</div>`;
+  return `<div class="ln-card" data-slug="${esc(l.slug)}"><div class="ln-cover">${cov}<div class="ln-badges">${l.isOfficial?'<span class="of">Official</span>':''}${l.kind==='video'?'<span class="vid">Video</span>':''}${!l.isOfficial&&l.mine?`<span>${esc(l.visibility)}</span>`:''}</div></div>
+    <div class="ln-meta"><b>${esc(l.title)}</b><small>${esc(l.description||'')}</small><div class="ft"><span>${esc(l.creator||'You')} · ${l.uses||0} uses</span><button class="ln-try">▶ Try lens</button></div></div></div>`;}
+function renderGallery(){const off=st.lenses.filter(l=>l.isOfficial),mine=st.lenses.filter(l=>l.mine&&!l.isOfficial),comm=st.lenses.filter(l=>!l.isOfficial&&!l.mine);
+  $('#root').innerHTML=`<div class="ln-hero"><div class="ic">◎</div><h1>Doppia <span>Lens</span></h1><p>A lens is a saved way of making content — engine, look, framing and shot list. Drop in your product or model photo and get the same concept every time. Make your own and share it.</p></div>
+  <div class="ln-bar"><label class="ln-search">⌕<input id="q" placeholder="Search lenses" value="${esc(st.q)}"></label><div class="ln-cats" id="cats">${CATS.map(c=>`<button class="${st.cat===c[0]?'on':''}" data-c="${c[0]}">${c[1]}</button>`).join('')}</div><button class="ln-new" id="newLens">＋ Create lens</button></div>
+  ${st.cat==='mine'?'':`<div class="ln-sec"><h2>Official lenses</h2><div class="sub">Made by Doppia for product pages, Instagram and reels.</div><div class="ln-grid">${off.map(card).join('')||'<div class="ln-empty">No lenses in this category.</div>'}</div></div>`}
+  <div class="ln-sec"><h2>My lenses</h2><div class="sub">Private by default — share by link or publish to the gallery.</div><div class="ln-grid">${mine.map(card).join('')||'<div class="ln-empty">No lenses yet. Click <b>＋ Create lens</b>, or open any image in your Library and choose <b>✦ Make a lens</b>.</div>'}</div></div>
+  ${comm.length?`<div class="ln-sec"><h2>Community</h2><div class="sub">Public lenses from other creators.</div><div class="ln-grid">${comm.map(card).join('')}</div></div>`:''}`;
+  $('#cats').onclick=e=>{const b=e.target.closest('[data-c]');if(b){st.cat=b.dataset.c;loadList();}};
+  let t;$('#q').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value.trim();loadList().then(()=>{const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length);});},300);};
+  $('#newLens').onclick=()=>openBuilder();
+  $$('.ln-card').forEach(c=>c.onclick=()=>go(c.dataset.slug));}
+function go(slug){history.pushState(null,'','/lens?l='+encodeURIComponent(slug));route();}
+addEventListener('popstate',route);
+
+// ── 렌즈 화면 ──
+async function openLens(slug){const r=await api('/api/generate/lens/'+encodeURIComponent(slug));if(!r.ok){toast(r.j.error||'Lens not found');history.replaceState(null,'','/lens');return route();}
+  st.lens=r.j.data;st.slots={};st.results=[];renderLens();loadPast();}
+function costText(l){const t=((st.T&&(l.kind==='video'?st.T.video:st.T.image))||[]).find(x=>x.id===l.engine);if(!t||!t.pricing)return'—';
+  if(l.kind==='video'){const p=t.pricing.perDuration||{};return p['5']||Object.values(p)[0]||'—';}
+  const n=(l.shots&&l.shots.length)||l.count||1;return (t.pricing.perImage||0)*n+(l.mine?'':'+');}
+function renderLens(){const l=st.lens,hasRes=st.results.length>0;
+  $('#root').innerHTML=`<div class="lv-crumb"><a href="/lens" id="back">Lens</a> / ${esc(l.title)}</div>
+  <div class="lv-steps"><span class="${Object.keys(st.slots).length?'':'on'}">1 Upload</span><span class="${st.busy?'on':''}">2 Generate</span><span class="${hasRes?'on':''}">3 Pick</span></div>
+  <div class="lv"><div class="lv-l"><h1>${esc(l.title)}</h1><div class="d">${esc(l.description||'')}</div>
+    <div class="lv-tags"><span>${l.kind==='video'?'▶ Video · '+(l.duration||5)+'s':'▣ Image'}</span><span>${esc(l.engineLabel)}</span><span>${esc(l.aspect)}</span>${l.shots&&l.shots.length?`<span>${l.shots.length} shots: ${l.shots.map(s=>esc(s.name)).join(' · ')}</span>`:`<span>${l.count} per run</span>`}${l.refsCount?`<span>${l.refsCount} style refs</span>`:''}<span>${esc(l.creator||'You')}</span></div>
+    <div class="lv-slots">${l.inputs.map(i=>{const s=st.slots[i.key];return `<div class="lv-slot ${s?'on':''}" data-slot="${i.key}">${s?`<img src="${esc(s.preview)}" alt=""><span class="chg">${esc(i.label)} · change</span>`:`<span style="font-size:22px">${i.key==='person'?'☺':'▣'}</span><b>${esc(i.label)}</b><small>${i.key==='person'?'Front-facing, one adult':'Clear photo, label visible'}${i.required?'':' · optional'}</small>`}<button class="lib" data-lib="${i.key}">Library</button></div>`;}).join('')}</div>
+    <div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="note" maxlength="400" placeholder="e.g. use spring colors, add cherry blossoms">${esc(st.note)}</textarea>
+    <button class="gen" id="run" style="margin-top:12px" ${st.busy?'disabled':''}>${l.kind==='video'?'Make the reel':'Use this lens'} <span class="c">◈ ${costText(l)}</span></button>
+    <div class="note" style="font-size:11.5px;color:var(--faint);text-align:center;margin-top:6px">Results are saved to your Library.${l.mine?'':' Uses of others’ lenses are billed at template rate.'}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="ib" id="share">🔗 Share</button>${l.mine?`<button class="ib" id="edit">✎ Edit lens</button>`:''}${l.mine&&!l.isOfficial?`<button class="ib" id="delLens">🗑 Delete</button>`:''}</div>
+    ${l.mine?`<div class="lv-own"><b>Recipe</b> · visible only to you<pre>${esc(l.prompt||'')}</pre>${l.refs&&l.refs.length?`<div class="ln-refs">${l.refs.map(u=>`<div class="r"><img src="${esc(u)}"></div>`).join('')}</div>`:''}</div>`:''}
+  </div><div class="lv-r" id="right">${hasRes?`<div class="lv-res">${st.results.map(x=>`<div class="it">${/\.(mp4|webm)$/i.test(x.url)?`<video src="${esc(x.url)}" controls playsinline></video>`:`<img src="${esc(x.url)}" alt="">`}${x.shot?`<span class="tag">${esc(x.shot)}</span>`:''}<div class="acts"><a class="ib" href="${esc(x.url)}" download>⤓</a>${x.idx?`<a class="ib" href="/image-edit?idx=${x.idx}&u=${encodeURIComponent(x.url)}">✎ Edit</a>`:''}${x.idx&&!/\.(mp4|webm)$/i.test(x.url)?`<a class="ib" href="/video?start=${encodeURIComponent(x.url)}">▶</a>`:''}</div></div>`).join('')}</div>`
+    :`<div class="lv-ph">${l.coverUrl?(/\.(mp4|webm)$/i.test(l.coverUrl)?`<video src="${esc(l.coverUrl)}" autoplay muted loop playsinline style="max-height:60%;border-radius:16px"></video>`:`<img src="${esc(l.coverUrl)}" alt="">`):''}<div>Add your ${l.inputs.map(i=>esc(i.label.toLowerCase())).join(' and ')} — results show up here.</div></div>`}
+    <div class="lv-busy ${st.busy?'on':''}"><div class="sp"></div><div id="busyT">${esc(st.busyT||'Working…')}</div></div></div></div>`;
+  $('#back').onclick=e=>{e.preventDefault();history.pushState(null,'','/lens');route();};
+  $$('.lv-slot').forEach(s=>s.onclick=e=>{if(e.target.closest('[data-lib]'))return;st.pending=s.dataset.slot;$('#file').click();});
+  $$('[data-lib]').forEach(b=>b.onclick=e=>{e.stopPropagation();pickFromLibrary(img=>{st.slots[b.dataset.lib]={src:img,preview:img};renderLens();});});
+  $$('.lv-slot').forEach(s=>{['dragenter','dragover'].forEach(ev=>s.addEventListener(ev,e=>{e.preventDefault();s.classList.add('drag');}));['dragleave','drop'].forEach(ev=>s.addEventListener(ev,()=>s.classList.remove('drag')));
+    s.addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(x=>/^image\//.test(x.type));if(f){st.slots[s.dataset.slot]={file:f,preview:URL.createObjectURL(f)};renderLens();}});});
+  $('#note').oninput=e=>st.note=e.target.value;
+  $('#run').onclick=run;$('#share').onclick=share;if($('#edit'))$('#edit').onclick=()=>openBuilder(st.lens);if($('#delLens'))$('#delLens').onclick=delLens;}
+$('#file').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f&&st.pending){st.slots[st.pending]={file:f,preview:URL.createObjectURL(f)};renderLens();}};
+async function loadPast(){try{const d=((await(await fetch('/api/generate/results?limit=60')).json()).data||[]).filter(r=>r.template_name==='Lens · '+st.lens.title&&r.file_path).slice(0,12);
+  if(!st.results.length&&d.length){st.results=d.map(r=>({url:'/images/'+r.file_path.split('/').pop(),idx:r.idx}));st.past=true;renderLens();}}catch(e){}}
+async function pickFromLibrary(cb){const m=document.createElement('div');m.className='ln-modal ln-pick';m.innerHTML='<div><h3>Pick from Library <button class="ib" data-x>✕</button></h3><div class="ln-grid" id="pg">loading…</div></div>';document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-x]'))m.remove();const p=e.target.closest('[data-u]');if(p){m.remove();cb(p.dataset.u);}});
+  try{const d=((await(await fetch('/api/generate/results?type=photo&limit=60')).json()).data||[]).filter(r=>r.file_path&&/\.(png|jpe?g|webp)$/i.test(r.file_path));
+    m.querySelector('#pg').innerHTML=d.map(r=>{const u='/images/'+r.file_path.split('/').pop();return `<div class="pk" data-u="${esc(u)}"><img src="${esc(u)}" loading="lazy"></div>`;}).join('')||'<div class="ln-empty">No images yet.</div>';}catch(e){}}
+async function longJob(url,fd){const r=await fetch(url+'?async=1',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+  if(r.status!==202||!j.data||!j.data.jobId)return{status:r.status,ok:r.ok,body:j};const id=j.data.jobId,t0=Date.now();
+  while(Date.now()-t0<20*60*1000){await new Promise(x=>setTimeout(x,3000));let q;try{q=await fetch('/api/generate/jobs/'+encodeURIComponent(id));}catch(e){continue;}const k=await q.json().catch(()=>({}));
+    if(q.status===404)return{status:404,ok:false,body:k};if(k.data&&k.data.status==='done'){const res=k.data.result||{status:500,body:{}};return{status:res.status,ok:res.status<400,body:res.body||{}};}}
+  return{status:504,ok:false,body:{error:'Still running — check your Library later.'}};}
+async function run(){const l=st.lens;for(const i of l.inputs){if(i.required&&!st.slots[i.key]){toast(`Add ${i.label.toLowerCase()} first.`);return;}}
+  const fd=new FormData();Object.entries(st.slots).forEach(([k,s])=>{if(s.file)fd.append(k,s.file,k+'.jpg');else if(s.src)fd.append(k+'Src',s.src);});if(st.note.trim())fd.append('note',st.note.trim());
+  st.busy=true;st.busyT=l.kind==='video'?'Starting the reel…':`Making ${(l.shots&&l.shots.length)||l.count} image${((l.shots&&l.shots.length)||l.count)>1?'s':''} — about 20–60s`;if(st.past){st.results=[];st.past=false;}renderLens();
+  try{const r=await longJob('/api/generate/lens/'+encodeURIComponent(l.slug)+'/run',fd);
+    if(r.status===402){toast(r.body.error||'Not enough credits');return;}if(!r.ok||!r.body.success){toast(r.body.error||'Lens failed');return;}const d=r.body.data;
+    if(d.kind==='video'){st.busyT=`Rendering on ${d.engine.label} — 1–5 minutes`;renderLens();const v=await pollVideo(d.jobId);if(v.url){st.results.unshift({url:v.url,idx:v.resultIdx});toast('Reel ready · saved to Library');}else toast('Reel failed: '+(v.error||'')+' (refunded)');}
+    else{st.results=[...d.results,...st.results];toast(`${d.results.length} image${d.results.length>1?'s':''} on ${d.engine.label} · saved to Library${d.partialError?' (some shots failed)':''}`);}
+    if(window.DoppiaNav)DoppiaNav.refreshCredits();
+  }catch(e){toast('Network error');}finally{st.busy=false;renderLens();}}
+async function pollVideo(id){const t0=Date.now();while(Date.now()-t0<15*60*1000){await new Promise(x=>setTimeout(x,8000));try{const j=await(await fetch('/api/generate/video/jobs/'+encodeURIComponent(id))).json();const d=j.data||{};if(d.status==='succeeded')return d;if(d.status==='failed')return d;}catch(e){}}return{error:'timeout — check Library'};}
+async function share(){const l=st.lens;const url=location.origin+'/lens?l='+encodeURIComponent(l.slug);
+  if(l.mine&&!l.isOfficial&&l.visibility==='private'){if(!confirm('This lens is private. Make it shareable by link? (Anyone with the link can use it — your recipe stays hidden.)'))return;const r=await api('/api/generate/lens/'+encodeURIComponent(l.slug),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:'link'})});if(r.ok)st.lens=r.j.data;}
+  try{await navigator.clipboard.writeText(url);toast('Link copied — '+url);}catch(e){prompt('Copy this link',url);}renderLens();}
+async function delLens(){if(!confirm('Delete this lens? Results in your Library stay.'))return;const r=await api('/api/generate/lens/'+encodeURIComponent(st.lens.slug),{method:'DELETE'});if(r.ok){toast('Lens deleted');history.pushState(null,'','/lens');route();}else toast(r.j.error||'Delete failed');}
+
+// ── 만들기·수정 ──
+function openBuilder(edit,draft){const T=st.T||{},src=edit||draft||{};const kind=src.kind||'image';
+  const b={title:src.title||'',description:src.description||'',category:src.category||'product',kind,engine:src.engine||(kind==='video'?'seedance-2.5':'nano-banana-pro'),prompt:src.prompt||'',negative:src.negative||'',aspect:src.aspect||'4:5',count:src.count||2,duration:src.duration||5,
+    inputs:(src.inputs&&src.inputs.length?src.inputs:[{key:'product',label:'Your product',required:true}]).map(i=>i.key),shots:(src.shots||[]).filter(s=>s.prompt),refs:[...(src.refs||[])],visibility:src.visibility||'private',coverUrl:src.coverUrl||null,fromResultIdx:src.fromResultIdx||null};
+  const m=document.createElement('div');m.className='ln-modal';document.body.appendChild(m);
+  const engines=()=>((b.kind==='video'?T.video:T.image)||[]).filter(t=>b.kind==='video'||(t.imageSlots||[]).length);
+  const aspects=()=>{const t=engines().find(x=>x.id===b.engine);return (t&&t.controls&&t.controls.aspectRatio)||['4:5','1:1','9:16','3:4','16:9'];};
+  function draw(){m.innerHTML=`<div><h3>${edit?'Edit lens':'Create a lens'} <button class="ib" data-x>✕</button></h3><div style="color:var(--dim);font-size:13px;margin-bottom:8px">Save how you make a look once — anyone you share it with just drops in their product.</div>
+    <div class="ln-two"><div><div class="lbl">Name</div><input class="ff" id="bTitle" maxlength="60" value="${esc(b.title)}" placeholder="e.g. Cherry Nail Spring"></div><div><div class="lbl">Category</div><select class="ff" id="bCat">${CATS.filter(c=>!['all','mine'].includes(c[0])).map(c=>`<option value="${c[0]}" ${b.category===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
+    <div class="lbl">Short description</div><input class="ff" id="bDesc" maxlength="200" value="${esc(b.description)}" placeholder="What it makes and where to use it">
+    <div class="ln-two"><div><div class="lbl">Type</div><div class="chips"><button class="chip ${b.kind==='image'?'on':''}" data-k="image">▣ Image</button><button class="chip ${b.kind==='video'?'on':''}" data-k="video">▶ Video</button></div></div>
+      <div><div class="lbl">Engine</div><select class="ff" id="bEng">${engines().map(t=>`<option value="${esc(t.id)}" ${b.engine===t.id?'selected':''}>${esc(t.label)}</option>`).join('')}</select></div></div>
+    <div class="lbl">What goes in</div><div class="chips"><button class="chip ${b.inputs.includes('product')?'on':''}" data-in="product">▣ Product photo</button><button class="chip ${b.inputs.includes('person')?'on':''}" data-in="person">☺ Model photo</button></div>
+    <div class="lbl">The look <i>· the concept prompt — the user's product is added automatically</i></div><textarea class="ff" id="bPrompt" maxlength="3000" style="min-height:110px" placeholder="e.g. The product on a pink velvet cushion, cherry blossoms falling, soft spring daylight, dreamy pastel mood">${esc(b.prompt)}</textarea>
+    ${b.kind==='image'?`<div class="lbl">Avoid <i>· optional</i></div><input class="ff" id="bNeg" maxlength="800" value="${esc(b.negative)}" placeholder="text, watermark, extra hands">`:''}
+    <div class="lbl">Aspect ratio</div><div class="chips">${aspects().map(a=>`<button class="chip ${b.aspect===a?'on':''}" data-a="${a}">${a}</button>`).join('')}</div>
+    ${b.kind==='video'?`<div class="lbl">Length</div><div class="chips">${[5,8,10].map(d=>`<button class="chip ${b.duration===d?'on':''}" data-d="${d}">${d}s</button>`).join('')}</div>`
+      :`<div class="lbl">Shots <i>· optional — one image per shot, e.g. a detail-page set</i></div>${b.shots.map((s,i)=>`<div class="ln-shot"><input class="ff" data-sn="${i}" value="${esc(s.name)}" placeholder="Name"><input class="ff" data-sp="${i}" value="${esc(s.prompt)}" placeholder="What this shot shows"><button class="ib" data-sx="${i}">✕</button></div>`).join('')}<button class="ib" id="addShot" ${b.shots.length>=8?'disabled':''}>＋ Add shot</button>
+      ${b.shots.length?'':`<div class="lbl">Images per run</div><div class="chips">${[1,2,3,4].map(n=>`<button class="chip ${b.count===n?'on':''}" data-n="${n}">${n}</button>`).join('')}</div>`}
+      <div class="lbl">Style references <i>· optional, up to 4 — the look to follow (not copied)</i></div><div class="ln-refs">${b.refs.map((u,i)=>`<div class="r"><img src="${esc(u)}"><button data-rx="${i}">✕</button></div>`).join('')}${b.refs.length<4?'<button class="add" id="refUp">＋ Upload</button><button class="add" id="refLib">＋ Library</button>':''}</div>`}
+    <div class="lbl">Who can use it</div><div class="chips">${[['private','🔒 Only me'],['link','🔗 Anyone with the link'],['public','🌐 Public gallery']].map(v=>`<button class="chip ${b.visibility===v[0]?'on':''}" data-v="${v[0]}">${v[1]}</button>`).join('')}</div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:6px">Others can use your lens but never see your prompt or reference images.</div>
+    <button class="gen" id="bSave" style="margin-top:16px">${edit?'Save changes':'Create lens'}</button></div>`;}
+  const sync=()=>{const g=id=>m.querySelector(id);if(g('#bTitle'))b.title=g('#bTitle').value;if(g('#bDesc'))b.description=g('#bDesc').value;if(g('#bCat'))b.category=g('#bCat').value;if(g('#bPrompt'))b.prompt=g('#bPrompt').value;if(g('#bNeg'))b.negative=g('#bNeg').value;
+    m.querySelectorAll('[data-sn]').forEach(x=>b.shots[+x.dataset.sn].name=x.value);m.querySelectorAll('[data-sp]').forEach(x=>b.shots[+x.dataset.sp].prompt=x.value);};
+  draw();
+  m.addEventListener('change',e=>{if(e.target.id==='bEng'){b.engine=e.target.value;sync();draw();}});
+  m.addEventListener('click',async e=>{const t=e.target;if(t===m||t.closest('[data-x]')){m.remove();return;}sync();
+    if(t.dataset.k){b.kind=t.dataset.k;b.engine=(engines()[0]||{}).id;b.aspect=b.kind==='video'?'9:16':'4:5';return draw();}
+    if(t.dataset.in){const k=t.dataset.in;b.inputs=b.inputs.includes(k)?b.inputs.filter(x=>x!==k):[...b.inputs,k];if(!b.inputs.length)b.inputs=['product'];if(b.kind==='video')b.inputs=[k];return draw();}
+    if(t.dataset.a){b.aspect=t.dataset.a;return draw();}if(t.dataset.d){b.duration=+t.dataset.d;return draw();}if(t.dataset.n){b.count=+t.dataset.n;return draw();}if(t.dataset.v){b.visibility=t.dataset.v;return draw();}
+    if(t.id==='addShot'){b.shots.push({name:'Shot '+(b.shots.length+1),prompt:''});return draw();}if(t.dataset.sx){b.shots.splice(+t.dataset.sx,1);return draw();}if(t.dataset.rx){b.refs.splice(+t.dataset.rx,1);return draw();}
+    if(t.id==='refLib'){pickFromLibrary(u=>{b.refs.push(u);draw();});return;}
+    if(t.id==='refUp'){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const fd=new FormData();fd.append('file',f);const r=await api('/api/generate/lens-upload',{method:'POST',body:fd});if(r.ok){b.refs.push(r.j.data.url);draw();}else toast(r.j.error||'Upload failed');};inp.click();return;}
+    if(t.id==='bSave'){if(!b.title.trim()){toast('Give it a name.');return;}if(!b.prompt.trim()&&!b.shots.some(s=>s.prompt.trim())){toast('Describe the look.');return;}
+      const labels={product:b.kind==='video'?'Product photo (start frame)':'Your product',person:'Model photo'};
+      const config={kind:b.kind,engine:b.engine,prompt:b.prompt,negative:b.negative,aspect:b.aspect,count:b.count,duration:b.duration,shots:b.shots.filter(s=>s.prompt.trim()),inputs:b.inputs.map(k=>({key:k,label:labels[k],required:true})),refs:b.refs};
+      const payload={title:b.title,description:b.description,category:b.kind==='video'?'video':b.category,visibility:b.visibility,config,coverUrl:b.coverUrl,fromResultIdx:b.fromResultIdx};
+      const r=edit?await api('/api/generate/lens/'+encodeURIComponent(edit.slug),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+                   :await api('/api/generate/lens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(!r.ok){toast(r.j.error||'Save failed');return;}m.remove();toast(edit?'Lens saved':'Lens created — try it with your product');go(r.j.data.slug);}
+  });}
+
+// ── 라우팅 ──
+async function route(){const q=new URLSearchParams(location.search);
+  if(q.get('from')){const r=await api('/api/generate/lens-draft/'+encodeURIComponent(q.get('from')));history.replaceState(null,'','/lens');await loadList();if(r.ok)openBuilder(null,r.j.data);else toast(r.j.error||'Could not read that result');return;}
+  if(q.get('l'))return openLens(q.get('l'));st.lens=null;loadList();}
+async function boot(){st.T=window.DoppiaNav?await DoppiaNav.tools():{};route();}
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
+</body>
+</html>

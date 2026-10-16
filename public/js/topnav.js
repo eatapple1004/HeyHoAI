@@ -11,7 +11,7 @@
     { h: '/explore', l: 'Explore', m: ['/explore'] },
     { h: '/image', l: 'Image', m: ['/image'], mega: 'image' },
     { h: '/video', l: 'Video', m: ['/video'], mega: 'video' },
-    { h: '/studio', l: 'Doppia Lens', m: ['/studio'], bd: 'soon' },
+    { h: '/lens', l: 'Doppia Lens', m: ['/lens'], bd: 'top' }, // (10-16) Lens 오픈 — 스타일룸 대신 재사용 템플릿(src/lens)
     { h: '/pack', l: 'Content Pack', m: ['/pack'], bd: 'soon' },
     { h: '/gallery', l: 'Library', m: ['/gallery', '/library', '/creation'] },
     { h: null, l: 'KakaoTalk', m: [], bd: 'soon' }
@@ -64,7 +64,7 @@
   var FEAT = {
     image: [
       ['✎', 'Create Image', 'Text · references · edit with words — every engine', 'live', '/image'],
-      ['✦', 'Doppia Lens', 'Product shots · model shots — label kept. Product ID inside', 'soon', null, 'top'],
+      ['✦', 'Doppia Lens', 'Saved looks — drop in your product, get the same concept every time. Share yours', 'live', '/lens', 'top'],
       ['◈', 'Doppia Shoot', 'Pick a model — dress up · change scene · strike a pose', 'live', '/shoot'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — opens in the Editor', 'auto:editor', '/image-edit?tool=upscale'],
       ['✂', 'Remove background', 'Transparent PNG — opens in the Editor', 'auto:editor', '/image-edit?tool=removebg'],
