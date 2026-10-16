@@ -68,7 +68,7 @@ async function build(dir) {
     if (a.urls.length < 12) return { name, error: `only ${a.urls.length} angles` };
     const r = await trainIn(() => train(name, a.urls));
     log(`${name}: ${r.status}${r.error ? ` — ${r.error}` : ''} ${r.id}`);
-    if (r.status === 'ready') await repo.update(r.id, { official: true });
+    if (r.status === 'ready') await repo.update(r.id, { official: true, avatar: `/images/${path.basename(a.source)}` }); // 대표사진 = 앵커 원본(뱅크 포트레이트는 밋밋·이상한 컷이 섞인다, 사용자 10-16)
     return { name, id: r.id, status: r.status, error: r.error };
   });
   console.log(JSON.stringify(results, null, 1));
