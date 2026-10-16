@@ -75,7 +75,7 @@ function pub(row) {
   return {
     id: row.id, name: row.name, status: row.status, error: row.error || null,
     avatar: row.avatar || null, bank: row.bank || [], photos: row.photos || [],
-    progress: row.status === 'bank' ? `${(row.bank || []).length}/${SCENES.length}` : null,
+    progress: row.status === 'bank' ? `${(row.bank || []).length}/${SCENES.length}` : row.status === 'angles' ? `${Math.max(0, (row.photos || []).length - 1)}/${ANGLES.length}` : null,
     createdAt: row.created_at,
   };
 }
@@ -85,14 +85,13 @@ async function stepAngles(row) {
   // eslint-disable-next-line global-require
   const nano = require('../images/providers/nanoBanana.provider');
   const src = path.join(process.cwd(), 'tmp', 'images', String(row.photos[0]).split('/').pop());
-  const urls = [];
-  for (const angle of ANGLES) {
+  for (const angle of ANGLES.slice(row.photos.length - 1)) { // 재개하면 남은 각도만
     const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle}`, references: [{ path: src, kind: 'person' }], model: 'gemini-3-pro-image-preview', width: 768, height: 1024, imageSize: '1K' });
     const file = out.url.replace('file://', '');
     await mediaStore.putFile(file).catch(() => {});
-    urls.push(publicUrl(path.basename(file)));
+    row = await repo.update(row.id, { photos: row.photos.concat(publicUrl(path.basename(file))) }); // 한 장씩 저장 → 진행률
   }
-  return repo.update(row.id, { photos: row.photos.concat(urls), status: 'training' });
+  return repo.update(row.id, { status: 'training' });
 }
 
 async function stepTrain(row) {
@@ -151,8 +150,9 @@ function kick(id) {
 }
 
 // ── API ──
-async function create(user, { name, files }) {
+async function create(user, { name, files, consent }) {
   if (!env.HIGGSFIELD_API_KEY) throw httpError(503, 'Model training is not configured on this server');
+  if (String(consent) !== 'true') throw httpError(400, 'Please confirm the photos are yours (or of an adult who gave permission)'); // 힉스필드 Soul ID 와 같은 생체정보·초상 동의
   if (!env.PUBLIC_URL) throw httpError(400, 'Model training needs PUBLIC_URL (Higgsfield fetches the photos by URL)');
   if (!files || !files.length) throw httpError(400, 'Add at least one photo');
   const clean = String(name || '').trim().slice(0, 100) || 'My model';

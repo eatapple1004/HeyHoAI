@@ -51,10 +51,21 @@
 .bubble .b:before{content:'';position:absolute;left:-7px;top:16px;border:7px solid transparent;border-right-color:var(--border2);border-left:0}
 .bubble .q{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bubble .q button{font-size:12px;padding:5px 10px}
 .stage .cur img.intro{animation:pop .35s ease}@keyframes pop{from{opacity:.2;transform:scale(.97)}to{opacity:1;transform:none}}
-.mk{max-width:640px}.mk h2{font-family:'Sora',sans-serif;font-size:24px;margin:0 0 6px}.mk p{color:var(--dim);margin:0 0 16px;line-height:1.5}
-.mk .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.mk .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
-.mk .row{display:flex;gap:8px;align-items:center;margin-top:16px}.mk .row .gen{width:auto;padding:0 20px}
+.mk{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.mk h2{font-family:'Sora',sans-serif;font-size:24px;margin:0 0 4px}.mk p{color:var(--dim);margin:0 0 14px;line-height:1.5}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.ugrid .u{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}.ugrid .u img{width:100%;height:100%;object-fit:cover;display:block}
+.ugrid .u .x{position:absolute;right:5px;top:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:0;cursor:pointer;font-size:12px;display:grid;place-items:center}
+.ugrid .up{aspect-ratio:1;border:1px dashed var(--border2);border-radius:12px;display:grid;place-items:center;color:var(--faint);font-size:12px;cursor:pointer;background:var(--surface);text-align:center;line-height:1.4}.ugrid .up b{display:block;font-size:22px;color:var(--text)}
+.guide{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.guide div{padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:12.5px;line-height:1.55;color:var(--dim)}.guide b{display:block;color:var(--text);margin-bottom:4px}
+.panel{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:12px}
+.gauge{display:flex;align-items:center;gap:12px}.gauge i{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:13px;background:conic-gradient(var(--c,var(--lime)) calc(var(--v,0)*1%),var(--border) 0);position:relative}
+.gauge i:after{content:'';position:absolute;inset:6px;border-radius:50%;background:var(--surface)}.gauge i span{position:relative;z-index:1}
+.gauge .t{font-size:12px;color:var(--dim);line-height:1.45}.gauge .t b{display:block;color:var(--text);font-size:13px}
+.panel .consent{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim);line-height:1.45;padding:10px;border:1px solid var(--border2);border-radius:10px;cursor:pointer}.panel .consent input{margin-top:2px}
+.panel .gen{width:100%}
 .mc .st{position:absolute;left:8px;top:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff}
+@media(max-width:860px){.mk{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -99,7 +110,7 @@ const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(temp
 const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'/img/shoot/yuna/avatar.jpg',
   bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
 // 내 모델 — GET /api/shoot/models (Soul ID 학습 + 장면 뱅크, src/shoot/shootModel.service.js). 진행 중이면 6초마다 다시 본다.
-let MINE=[];const BUSY=['angles','training','bank'];const STATUS={angles:'Shooting 10 angles…',training:'Training…',bank:'Shooting scenes',failed:'Failed'};
+let MINE=[];const BUSY=['angles','training','bank'];const STATUS={angles:'Shooting angles',training:'Training…',bank:'Shooting scenes',failed:'Failed'};
 const TRAIN_COST=1500; // credit.service IMG_CREDIT['shoot-train'] 자리값과 같이 간다
 const toModel=m=>({id:m.id,name:m.name,tag:'Your model',avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
@@ -122,38 +133,42 @@ const chipsHtml=(arr,cur)=>arr.map(([v,n])=>`<button type="button" class="chip $
 let pollT=null;
 async function loadMine(){try{MINE=((await(await fetch('/api/shoot/models')).json()).data)||[];}catch(e){MINE=[];}}
 function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;$('#create').hidden=true;$('#mgrid').hidden=false;
-  const mine=MINE.map(m=>{const img=m.avatar||(m.bank[0]&&m.bank[0].url)||m.photos[0]||'';const st=m.status==='bank'?`${STATUS.bank} ${m.progress}`:STATUS[m.status]||'';
+  const mine=MINE.map(m=>{const img=m.avatar||(m.bank[0]&&m.bank[0].url)||m.photos[0]||'';const st=m.progress?`${STATUS[m.status]} ${m.progress}`:STATUS[m.status]||'';
     return `<button type="button" class="mc" data-mine="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(img)}" alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):'Your model'}</small></span></button>`;}).join('');
   $('#mgrid').innerHTML=MODELS.map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.bank[0].url}" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.tag)}</small></span></button>`).join('')+mine+`<button type="button" class="mc add" id="mkBtn">Create your model<br><small>from your photos — trained once, then every scene and outfit · ◈ ${TRAIN_COST.toLocaleString('en-US')}</small></button>`;
   $('#mkBtn').onclick=openCreate;
   clearTimeout(pollT);if(MINE.some(m=>BUSY.includes(m.status)))pollT=setTimeout(async()=>{await loadMine();if(!$('#hello').hidden&&$('#create').hidden)renderHello();},6000);}
 $('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id],[data-mine]');if(!b||b.disabled)return;pick(b.dataset.id?MODELS.find(m=>m.id===b.dataset.id):toModel(MINE.find(m=>m.id===b.dataset.mine)));});
-// 만들기: 사진 1~20장 + 이름 → POST /api/shoot/models. 한 장이면 서버가 다각도 10장을 먼저 만든다.
-const mk={files:[]};
-function openCreate(){mk.files=[];$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
-  c.innerHTML=`<div class="mk"><h2>Create your model</h2><p>Upload 5–20 photos of one person — different angles and light work best. One photo is enough too: we shoot 10 angles first, then train.</p>
-  <div class="lbl">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina">
-  <div class="lbl">Photos</div><div class="drop" id="mkDrop"><b>Drop photos</b>or click to upload · JPG · PNG</div><div class="thumbs" id="mkThumbs"></div>
-  <div class="note">Trained once as a Soul ID character, then every scene, outfit and pose is yours. Takes a few minutes.</div>
-  <div class="row"><button class="btn2" id="mkCancel">Cancel</button><button class="gen" id="mkGo" disabled>Create <span class="c">◈ ${TRAIN_COST.toLocaleString('en-US')}</span></button></div></div>`;
-  $('#mkDrop').onclick=()=>$('#pfile').click();$('#mkDrop').addEventListener('dragover',e=>e.preventDefault());$('#mkDrop').addEventListener('drop',e=>{e.preventDefault();mkAdd([...e.dataTransfer.files]);});
-  $('#mkCancel').onclick=renderHello;$('#mkGo').onclick=mkSubmit;}
-function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,20-mk.files.length).forEach(f=>mk.files.push(f));$('#mkThumbs').innerHTML=mk.files.map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join('');$('#mkGo').disabled=!mk.files.length;}
+// 만들기: 사진 1~20장 + 이름 + 동의 → POST /api/shoot/models. 한 장이면 서버가 다각도 10장을 먼저 만든다(ANGLES).
+//   오른쪽 패널의 두 게이지 = 힉스필드 캐릭터 화면 참고 — 장수(1장은 Bad 가 아니라 "우리가 각도를 만든다"), 품질(올린 사진 중 가장 작은 변)
+const mk={files:[],consent:false};
+const MIN_PX=[[1000,'Good'],[600,'OK'],[0,'Low']];
+function openCreate(){mk.files=[];mk.consent=false;$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
+  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>Photos of one person, clear face, different angles and light. 5–20 is best. One photo works too — we shoot 10 angles first, then train.</p>
+    <div class="ugrid" id="ugrid"></div>
+    <div class="guide"><div><b>✓ Works well</b>One person · clear face · front, side and three-quarter · natural light and indoor light mixed · no heavy filters</div><div><b>✕ Avoid</b>Group shots · sunglasses, masks, hands over the face · duplicates · tiny or blurry photos · screenshots</div></div></div>
+    <div class="panel"><div><div class="lbl" style="margin-top:0">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina"></div>
+    <div class="gauge" id="gCount"></div><div class="gauge" id="gQual"></div>
+    <label class="consent"><input type="checkbox" id="mkConsent"><span>These photos are of me, or of an adult who gave me written permission. I agree to face data being processed to train this model (Higgsfield Soul ID).</span></label>
+    <button class="gen" id="mkGo" disabled>Create <span class="c">◈ ${TRAIN_COST.toLocaleString('en-US')}</span></button><button class="btn2" id="mkCancel">Cancel</button></div></div>`;
+  renderMk();$('#ugrid').addEventListener('dragover',e=>e.preventDefault());$('#ugrid').addEventListener('drop',e=>{e.preventDefault();mkAdd([...e.dataTransfer.files]);});
+  $('#mkConsent').addEventListener('change',e=>{mk.consent=e.target.checked;renderMk();});$('#mkCancel').onclick=renderHello;$('#mkGo').onclick=mkSubmit;}
+function renderMk(){const n=mk.files.length;
+  $('#ugrid').innerHTML=`<button type="button" class="up" id="mkUp"><b>+</b>${n?'Upload more':'Upload photos'}</button>`+mk.files.map((f,i)=>`<div class="u"><img src="${f.url}" alt=""><button type="button" class="x" data-x="${i}">×</button></div>`).join('');
+  $('#mkUp').onclick=()=>$('#pfile').click();$$('#ugrid [data-x]').forEach(b=>b.onclick=()=>{mk.files.splice(+b.dataset.x,1);renderMk();});
+  const cnt=n===0?['—','Add photos','var(--border)']:n===1?['1','We shoot 10 angles first','#8ec5ff']:n<5?[n,'OK · 5+ is better','#f5c542']:[n,'Good','var(--lime)'];
+  $('#gCount').innerHTML=`<i style="--v:${Math.min(100,n*5)};--c:${cnt[2]}"><span>${cnt[0]}/20</span></i><div class="t"><b>Photos</b>${cnt[1]}</div>`;
+  const px=n?Math.min(...mk.files.map(f=>f.px||0)):0;const q=MIN_PX.find(([m])=>px>=m);
+  $('#gQual').innerHTML=`<i style="--v:${n?Math.min(100,Math.round(px/14)):0};--c:${q[1]==='Good'?'var(--lime)':q[1]==='OK'?'#f5c542':'#e5533d'}"><span>${n?px+'px':'—'}</span></i><div class="t"><b>Quality</b>${n?q[1]+' · shortest side of the smallest photo':'Shortest side ≥ 1000px is best'}</div>`;
+  $('#mkGo').disabled=!n||!mk.consent;}
+function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,20-mk.files.length).forEach(f=>{const it={file:f,url:URL.createObjectURL(f),px:0};mk.files.push(it);const im=new Image();im.onload=()=>{it.px=Math.min(im.naturalWidth,im.naturalHeight);renderMk();};im.src=it.url;});renderMk();}
 $('#pfile').addEventListener('change',e=>{mkAdd([...e.target.files]);e.target.value='';});
-async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());mk.files.forEach(f=>fd.append('photos',f,f.name));
+async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());fd.append('consent','true');mk.files.forEach(f=>fd.append('photos',f.file,f.file.name));
   try{const res=await fetch('/api/shoot/models',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
     if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
     if(!res.ok||!d.success)throw new Error(d.error||'Could not start training');
     toast((d.data.status==='angles'?'Shooting angles first, then training — ':'Training started — ')+'a few minutes');DoppiaNav.refreshCredits();await loadMine();renderHello();}
   catch(e){toast(e.message||'failed');b.disabled=false;}}
-function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
-// 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
-async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
-  for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
-  if(st.intro!==run)return;st.cur=0;renderStage(true);
-  say(SAY.hello(st.model),[['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
-function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${st.model.avatar}" alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
-  b.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>setAct(x.dataset.a));}
 
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
 function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.tag)}</small></div><button class="btn2" id="swap">Change</button>`;

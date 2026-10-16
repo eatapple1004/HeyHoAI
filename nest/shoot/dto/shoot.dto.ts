@@ -15,4 +15,6 @@ export interface ShootModelDto {
 
 export class CreateShootModelDto {
   name?: string;
+  /** 'true' 여야 한다 — 사진 속 인물(본인 또는 동의한 성인)·생체정보 처리 동의 */
+  consent?: string;
 }

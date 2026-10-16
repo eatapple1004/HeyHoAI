@@ -18,7 +18,7 @@ export class ShootController {
   @HttpCode(200) // 레거시 res.json=200
   @UseInterceptors(FileFieldsInterceptor([{ name: 'photos', maxCount: 20 }], GENERATE_UPLOAD_OPTIONS))
   async create(@Req() req: any, @UploadedFiles() files: { photos?: Array<{ path: string }> }, @Body() body: CreateShootModelDto): Promise<ApiResponse<ShootModelDto>> {
-    return { success: true, data: await this.shoot.create(req.user, body && body.name, ((files && files.photos) || []).map((f) => f.path)) };
+    return { success: true, data: await this.shoot.create(req.user, body, ((files && files.photos) || []).map((f) => f.path)) };
   }
 
   // GET /api/shoot/models — 내(또는 활성 팀) 모델 전부. 멈춘 진행 건은 여기서 재개된다.
