@@ -140,7 +140,7 @@ function describeLight(light) {
 }
 
 // ── 프롬프트 ── 사용자 입력은 "무엇을"만, 보존 규칙은 여기서 붙인다.
-function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null, patched = false } = {}) {
+function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null, patched = false, guide = false } = {}) {
   const p = String(prompt || '').trim();
   const keep = 'Keep everything else exactly identical — same product shape, colors, logo, label text, proportions, framing and position.';
   const area = patched ? 'the softly blurred patch in the photo' : 'the masked area';
@@ -163,8 +163,14 @@ function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null
         ? `This photo was placed on a larger canvas; the blurred border is empty space. Extend the existing scene into it naturally — same lighting, perspective, surfaces, background and photographic style. Do not add new products, people or text.${p ? ` ${p}.` : ''} Do not change the original photo area.`
         : `${p ? `${p}. ` : ''}Seamless natural continuation of the surrounding scene, same lighting, perspective, surfaces and photographic style, no new objects, no text`;
     case 'relight': {
+      // (10-16) 사용자 피드백 "relight 가 저장물에서 안 보인다" — 예전 문구는 '색까지 완전히 동일 유지'를 강하게 요구해서
+      //   Nano Banana 가 조명을 거의 안 바꿨다(dev 실측 평균 픽셀 차 4.4). 이제 조명 변화를 분명히 요구하고, 유지는 형태·디자인·글자로만 한정.
       const l = describeLight(light);
-      return `Relight this photo. ${l}${p ? ` Extra direction: ${p}.` : ''} Change only the lighting — light direction, shadows, highlights, reflections and color temperature. ${keep}`;
+      return `RELIGHT this photograph with a clearly different lighting setup. ${l}${p ? ` Extra direction: ${p}.` : ''}\n`
+        + 'The new lighting must be obvious at a glance compared to the original: the lit side noticeably brighter, the opposite side noticeably darker, '
+        + 'new shadow directions and lengths, new highlight placement on glossy surfaces, and the overall color temperature shifted to match. Re-light the background and surfaces too, not only the product.\n'
+        + (guide ? 'Image 2 is a rough lighting GUIDE painted over the same photo — match its light direction, brightness falloff and color, but render it as realistic photographic light (no flat painted gradients, no color wash).\n' : '')
+        + 'Keep the product exactly the same object — same shape, design, proportions, printed text, logo and position, same framing. Only light, shadows, reflections and the resulting brightness/color of surfaces change.';
     }
     case 'fix_text': {
       const t = String(text || '').trim();
@@ -231,14 +237,14 @@ async function download(url) {
 const dataUrl = (buf, mime) => `data:${mime};base64,${buf.toString('base64')}`;
 
 // ── 엔진 호출 ──
-async function runGemini(tool, image, text, aspectRatio) {
+async function runGemini(tool, image, text, aspectRatio) { // image = Buffer | Buffer[](둘째부터 가이드·참고)
   // eslint-disable-next-line global-require
   const { GoogleGenAI } = require('@google/genai');
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   const imageSize = (tool.controls && (tool.controls.imageSize || []).includes('2K')) ? '2K' : undefined;
   const response = await ai.models.generateContent({
     model: tool.model,
-    contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: image.toString('base64') } }, { text }] }],
+    contents: [{ role: 'user', parts: [...(Array.isArray(image) ? image : [image]).map((b) => ({ inlineData: { mimeType: 'image/jpeg', data: b.toString('base64') } })), { text }] }],
     config: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio, ...(imageSize ? { imageSize } : {}) } },
   });
   const cand = response.candidates && response.candidates[0];
@@ -322,7 +328,7 @@ async function runExternal(tool, image, text, W, H) {
  * 편집 실행. original = 지금 캔버스(아무 포맷), mask = 같은 비율 PNG(흰색=편집) | null.
  * @returns {Promise<{ buffer: Buffer, ext: 'png'|'jpg', engine: object, prompt: string, passes?: number }>}
  */
-async function runEdit({ op, tool, original, mask, prompt, text, factor, light }) {
+async function runEdit({ op, tool, original, mask, prompt, text, factor, light, guide }) {
   const meta = await sharp(original).metadata();
   const W = meta.width, H = meta.height;
 
@@ -353,7 +359,8 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light }
   const hasMask = !!(m && m.some((v) => v > 0));
   const trueMask = hasMask && (tool.provider === 'openai' || tool.id === 'flux-fill' || tool.id === 'bria-eraser');
   const patched = hasMask && !trueMask && (op === 'erase' || op === 'inpaint' || op === 'expand');
-  const text2 = buildPrompt(op, { prompt, text, hasMask, light, patched });
+  const useGuide = op === 'relight' && !!guide && tool.provider === 'gemini';
+  const text2 = buildPrompt(op, { prompt, text, hasMask, light, patched, guide: useGuide });
 
   let raw;
   if (tool.id === 'bria-eraser') raw = await runBriaEraser(tool, original, m, W, H);
@@ -363,7 +370,8 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light }
     const [w, h] = fitSide(W, H);
     const img = patched ? await patchedCopy(original, m, W, H, w, h)
       : await sharp(original).removeAlpha().resize(w, h, { fit: 'fill' }).jpeg({ quality: 92 }).toBuffer();
-    raw = tool.provider === 'gemini' ? await runGemini(tool, img, text2, nearestAspect(W, H)) : await runExternal(tool, img, text2, W, H);
+    const guideImg = useGuide ? await sharp(guide).removeAlpha().resize(w, h, { fit: 'fill' }).jpeg({ quality: 88 }).toBuffer() : null; // 조명 가이드 = 화면 미리보기(같은 크기)
+    raw = tool.provider === 'gemini' ? await runGemini(tool, guideImg ? [img, guideImg] : img, text2, nearestAspect(W, H)) : await runExternal(tool, img, text2, W, H);
   }
 
   // 크기를 원본에 맞추고(비율은 가장 가까운 지원 비율이라 cover 로 미세 크롭), 마스크가 있으면 원본 위에 합성

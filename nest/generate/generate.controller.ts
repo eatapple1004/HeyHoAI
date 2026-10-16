@@ -155,7 +155,7 @@ export class GenerateController {
   }
 
   // POST /api/generate/edit — Image Editor: 캔버스(+마스크) → op 별 자동 엔진 편집 → 새 creation
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }], EDIT_UPLOAD_OPTIONS))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }, { name: 'guide', maxCount: 1 }], EDIT_UPLOAD_OPTIONS))
   @Post('edit')
   @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postEdit(@Req() req: any, @Res({ passthrough: true }) res: any) {
