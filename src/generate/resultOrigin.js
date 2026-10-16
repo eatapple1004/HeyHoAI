@@ -56,14 +56,14 @@ function deriveOrigin({ model, metadata, templateSource, templateName, filePath 
   const tn = String(templateName || '');
   const isVideo = md.type === 'video' || /\.(mp4|webm|mov)$/i.test(String(filePath || ''));
   let feature; let op;
-  if (/^editor-/.test(mdl) || tn === 'Editor' || md.editor) { feature = 'editor'; op = (md.editor && md.editor.op) || mdl.replace(/^editor-/, '') || undefined; }
+  if (tn === 'Video Editor' || mdl === 'video-editor') { feature = 'video-editor'; op = mdl === 'video-editor' ? 'export' : undefined; } // 영상 편집기 내보내기도 metadata.editor 를 쓴다 → Editor 보다 먼저
+  else if (/^editor-/.test(mdl) || tn === 'Editor' || md.editor) { feature = 'editor'; op = (md.editor && md.editor.op) || mdl.replace(/^editor-/, '') || undefined; }
   else if (mdl === 'ugc-v1' || md.source === 'ugc') feature = 'ad-video';
   else if (templateSource === 'pack' || md.source === 'pack') feature = 'pack';
   else if (templateSource === 'lens' || /^Lens · /.test(tn)) feature = 'lens';
   else if (tn === 'Doppia Shoot' || md.shoot_model) feature = 'shoot';
   else if (tn === 'Face swap' || /^faceswap:/.test(mdl)) feature = 'face-swap';
   else if (tn === 'Product swap') feature = 'product-swap';
-  else if (tn === 'Video Editor' || mdl === 'video-editor') { feature = 'video-editor'; op = mdl === 'video-editor' ? 'export' : undefined; }
   else if (templateSource === 'marketplace' || templateSource === 'recipe') feature = 'template';
   else if (templateSource === 'creation') feature = 'remix';
   else feature = isVideo ? 'create-video' : 'create-image';
