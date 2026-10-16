@@ -30,8 +30,8 @@
     </a>
     <!-- (2026-10-13) Doppia Works — 3번째 카드(사용자: 잘 보이되 1등은 아니게). 사진 없이 타일 4장. (10-16) Doppia × USAsia Journal 로 — 단골 타일 자리에 저널 노출. -->
     <a class="shc" href="/works">
-      <div class="shv"><div class="engmosaic"><div><b>6</b>questions · free</div><div><b>📣</b>Promotion</div><div><b>🎯</b>Ads</div><div><b>📰</b>USAsia Journal</div></div><span class="tg y">we run it for you</span></div>
-      <h3>DOPPIA × USASIA JOURNAL <span class="bd new">new</span></h3><p>Free marketing check-up in six questions. Doppia runs your promotion and ads — and lists you in USAsia Journal.</p>
+      <div class="shv"><div class="engmosaic"><div><b>6</b>questions</div><div><b>📣</b>Promotion</div><div><b>🎯</b>Ads</div><div><b>📰</b>USAsia Journal</div></div><span class="tg y">we run it for you</span></div>
+      <h3>DOPPIA × USASIA JOURNAL <span class="bd new">new</span></h3><p>Marketing check-up in six questions. Doppia runs your promotion and ads — and lists you in USAsia Journal.</p>
     </a>
     <a class="shc" href="/image">
       <div class="shv"><div class="engmosaic" id="engmosaic"></div><span class="tg y" id="engTag">engines live on this server</span></div>
@@ -73,7 +73,7 @@ const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
 const car=$('#car');const step=()=>car.querySelector('.shc').getBoundingClientRect().width+16;
 $('#carL').addEventListener('click',()=>car.scrollBy({left:-step(),behavior:'smooth'}));$('#carR').addEventListener('click',()=>car.scrollBy({left:step(),behavior:'smooth'}));
 // 툴 카드
-const TC=[['🖼','Image','top','Every image engine · reference + prompt','/image'],['▶','Video','new','Kling · Veo · Runway · Seedance · Wan · Hailuo','/video'],['📚','Library','','Results · products · sets','/gallery'],['✦','Doppia Lens','top','Saved looks · official & trending · share yours','/lens'],['📦','Content Pack','soon','Platform-ready listing → ZIP','#'],['💬','KakaoTalk','soon','Send a photo, get the shot back','#'],['✳','Doppia MCP','soon','Generate from Claude','#'],['🩺','Doppia × USAsia Journal','new','Free check-up · we run it · listed in USAsia Journal','/works'],['🏢','Business','','For teams & brands','/business'],['🤝','Affiliate','','Earn with Doppia','/affiliate'],['💳','Billing','','Credits · plans','/billing']]; // (2026-10-13) Works·Business·Affiliate 카드 추가 — 다 살아 있는 페이지(dev 200)
+const TC=[['🖼','Image','top','Every image engine · reference + prompt','/image'],['▶','Video','new','Kling · Veo · Runway · Seedance · Wan · Hailuo','/video'],['📚','Library','','Results · products · sets','/gallery'],['✦','Doppia Lens','top','Saved looks · official & trending · share yours','/lens'],['📦','Content Pack','soon','Platform-ready listing → ZIP','#'],['💬','KakaoTalk','soon','Send a photo, get the shot back','#'],['✳','Doppia MCP','soon','Generate from Claude','#'],['🩺','Doppia × USAsia Journal','new','Six-question check-up · we run it · listed in USAsia Journal','/works'],['🏢','Business','','For teams & brands','/business'],['🤝','Affiliate','','Earn with Doppia','/affiliate'],['💳','Billing','','Credits · plans','/billing']]; // (2026-10-13) Works·Business·Affiliate 카드 추가 — 다 살아 있는 페이지(dev 200)
 $('#tcards').innerHTML=TC.map(c=>`<a class="tc ${c[2]==='soon'?'soon':''}" href="${c[4]}" ${c[4]==='#'?'onclick="return false"':''}><span class="ic">${c[0]}</span><b>${esc(c[1])}${c[2]?` <span class="bd ${c[2]}">${c[2]}</span>`:''}</b><small>${esc(c[3])}</small></a>`).join('');
 // 엔진 카드 = 카탈로그(키 있는 것만)
 const ICON={topaz:'▲','seedance-2.5':'S','wan-3':'W','hailuo-2.3':'M','minimax-h3':'M','grok-video':'X',happyhorse:'A','flux-3-video':'F','gemini-omni':'G',gemini:'🍌',openai:'G',seedream:'S',fal:'F',replicate:'R',xai:'X',higgsfield:'H',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S'}; // topnav.js ICON 과 같은 표 — 프로바이더가 늘면 둘 다
