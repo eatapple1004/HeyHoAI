@@ -32,7 +32,8 @@ const videoProviders = {
 const NEEDS_PUBLIC_URL = new Set(['runway', 'minimax', 'higgsfieldVideo']); // (10-14) 힉스필드도 이미지를 URL 로 받아간다
 
 const POLL_INTERVAL_MS = 15000;   // 15초마다 폴링 틱
-const MAX_ATTEMPTS = 48;          // 48 * 15s = 12분 후 타임아웃
+const MAX_ATTEMPTS = 48;          // 48 * 15s = 12분 후 타임아웃 (Kling 직결 경로)
+const EXTERNAL_TIMEOUT_MS = 40 * 60 * 1000; // (10-16) 외부 엔진(fal·힉스필드 등) — 생성 후 40분
 const outputDir = path.join(process.cwd(), 'tmp', 'images');
 
 function klingToken() {
@@ -281,7 +282,10 @@ async function pollExternal(job) {
     log.warn(`Job ${job.id} failed: ${msg}`);
   } else {
     const attempts = job.attempts + 1;
-    if (attempts >= MAX_ATTEMPTS) {
+    // (10-16) 외부 엔진은 시도 횟수가 아니라 경과 시간으로 끊는다 — 즉석 폴링(pollJobNow)이 횟수를 빨리 올리고,
+    //   Kling O3 Edit 15초는 fal 에서만 ~13분 걸린다(dev 실측: 12분 한도에 걸려 성공작을 timeout 처리)
+    const ageMs = Date.now() - new Date(job.created_at).getTime();
+    if (ageMs > EXTERNAL_TIMEOUT_MS) {
       await refundJob(job);
       await query(`UPDATE video_jobs SET status='failed', error='timeout', attempts=$1, updated_at=now() WHERE id=$2`, [attempts, job.id]);
       log.warn(`Job ${job.id} timed out`);
