@@ -497,7 +497,7 @@ $('#run').onclick=async()=>{
     if(v.idx)fd.append('sourceIdx',v.idx);
   }catch(e){toast('Could not read this image in the browser.');return;}
   const eng=engineFor(t.id);busy(true,`${t.title} · ${eng?eng.label:''}…`);
-  try{const r=await fetch('/api/generate/edit',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+  try{const r=await longJob('/api/generate/edit',fd);const j=r.body||{};
     if(r.status===402){toast((j&&(j.error||j.message))||'Not enough credits.');return;}
     if(!r.ok||!j.success){toast((j&&(j.error||j.message))||('Edit failed ('+r.status+')'));return;}
     const d=j.data,img=await loadAny(d.url);
@@ -521,6 +521,14 @@ async function boot(){
   if(q.get('u')&&/^\/images\/[\w.-]+$/.test(q.get('u')))openUrl(q.get('u'),+q.get('idx')||null,'Library');else loadRecent();
   new ResizeObserver(()=>{if(!$('#app').hidden)resize();}).observe($('#stage'));
 }
+// (2026-10-16) 긴 작업은 ?async=1 → jobId 를 받아 3초마다 결과 확인(Cloudflare 100초 제한 회피). 반환 = { status, ok, body } (fetch 응답과 같은 모양)
+async function longJob(url,fd){const r=await fetch(url+'?async=1',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+  if(r.status!==202||!j.data||!j.data.jobId)return{status:r.status,ok:r.ok,body:j};
+  const id=j.data.jobId,t0=Date.now();
+  while(Date.now()-t0<15*60*1000){await new Promise(x=>setTimeout(x,3000));let q;try{q=await fetch('/api/generate/jobs/'+encodeURIComponent(id));}catch(e){continue;}
+    const k=await q.json().catch(()=>({}));if(q.status===404)return{status:404,ok:false,body:k};
+    if(k.data&&k.data.status==='done'){const res=k.data.result||{status:500,body:{}};return{status:res.status,ok:res.status<400,body:res.body||{}};}}
+  return{status:504,ok:false,body:{error:'Still running after 15 minutes — check your Library later.'}};}
 if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
 })();
 </script>

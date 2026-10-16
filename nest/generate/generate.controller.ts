@@ -162,6 +162,12 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postEdit', req));
   }
 
+  // GET /api/generate/jobs/:id — ?async=1 로 시작한 긴 작업(edit·face-swap) 상태 { status:'running'|'done', result:{status,body} }
+  @Get('jobs/:id')
+  async getAsyncJob(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('getAsyncJob', req));
+  }
+
   // POST /api/generate/face-swap — 우리 모델 사진 + 본인 얼굴(동의·성인 판별) → 비공개 결과
   @UseInterceptors(FileFieldsInterceptor([{ name: 'face', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
   @Post('face-swap')
