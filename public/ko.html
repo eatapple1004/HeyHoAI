@@ -194,6 +194,8 @@
   .sv-stack{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px}
   .sv-in{margin:0;text-align:center;width:104px}
   .sv-in img{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-in video{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-big video{width:100%;height:auto;max-height:585px;display:block;background:#000}
   .sv-in figcaption{margin-top:7px;font-size:12px;color:var(--dim)}
   .sv-plus{color:var(--faint);font-size:15px;line-height:1;margin:4px 0}
   /* 룩북 모델 토글: 얼굴 2개 나란히, 클릭 시 결과 스왑 */
@@ -434,13 +436,14 @@
 <section class="wrap" id="features">
   <div class="eyebrow">ALL-IN-ONE</div>
   <h2 data-i18n="sec2.title">촬영팀·편집자·마케터가 하던 일,<br>이제 <em>탭 하나</em>로 골라 쓰세요.</h2>
-  <p class="lead" data-i18n="sec2.lead">제품 사진 한 장이면 상세컷·착용컷·화보·광고 영상까지 다 나와요. 아래 탭을 눌러 지금 뭐가 나오는지 직접 확인해 보세요.</p>
+  <p class="lead" data-i18n="sec2.lead">제품 사진 한 장이면 상세컷·착용컷·화보·광고 영상까지 다 나오고, 렌즈·에디터·비디오 에디터로 더 멀리 갈 수 있어요. 아래 탭을 눌러 지금 뭐가 나오는지 직접 확인해 보세요.</p>
   <div class="exp">
     <div class="tabs">
       <button class="tab on" data-k="shots"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></span><span class="tt"><b>Shots</b><span data-i18n="tab.shots.sub">카탈로그 기본기</span></span></button>
+      <button class="tab" data-k="lens"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z"/></svg></span><span class="tt"><b>Doppia Lens</b><span>내 룩, 어떤 제품이든</span></span><span class="star">TOP</span></button>
       <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">사진 한 장, 한 줄</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="pack"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span class="tt"><b data-i18n="tab.pack">콘텐츠 팩</b><span data-i18n="tab.pack.sub">세트가 통째로</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b data-i18n="tab.edit">수정하기</b><span data-i18n="tab.edit.sub">말 한마디로 다시</span></span></button>
+      <button class="tab" data-k="vedit"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 6v4M16 6v4"/></svg></span><span class="tt"><b>비디오 에디터</b><span>교체 · 비율 · 연장</span></span><span class="star">NEW</span></button>
+      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>에디터</b><span>조명 · 앵글 · 지우기</span></span></button>
     </div>
     <div class="pane">
       <div class="panel on" data-k="shots">
@@ -511,6 +514,21 @@
           <a class="btn btn-p cta" href="/studio" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p>
         </div>
       </div>
+      <div class="panel" data-k="lens">
+        <div class="demo">
+          <div class="dpills"><span class="dpill on">같은 제품, 렌즈마다</span></div>
+          <div class="sv on">
+            <div class="sv-stack">
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/product.jpg" alt=""><figcaption>내 제품 사진</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""><figcaption>렌즈 · Glacier Ice</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <div class="sv-grid" style="flex:1;min-width:0"><figure><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/gummy.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/marble.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/holiday.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/plinth.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/linen.webp" alt=""></figure></div>
+          </div>
+        </div>
+        <div class="desc"><h3>Doppia Lens</h3><div class="tl">룩을 한 번 저장하면, 어떤 제품이든 같은 컨셉으로.</div><p>렌즈는 한 컷을 만드는 방법(컨셉·조명·구도·엔진)을 기억해요. 공식 렌즈(베스트셀러 템플릿·요즘 뜨는 룩)를 고르거나 내 결과물에서 바로 렌즈를 만들고, 새 제품 사진만 넣으면 끝. 링크로 공유하거나 커뮤니티에 공개할 수도 있어요.</p><ul><li>공식 렌즈: 베스트셀러 · 트렌드 룩</li><li>내 결과물에서 바로 저장 — 폴더 정리까지</li><li>링크 공유 · 커뮤니티 공개</li></ul><a class="btn btn-p cta" href="/lens" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+      </div>
       <div class="panel" data-k="video">
         <div class="demo">
           <div class="dpills"><span class="dpill on" data-i18n="dp.video">9:16 · 릴스/틱톡</span></div>
@@ -528,12 +546,31 @@
         </div>
         <div class="desc"><h3 data-i18n="video.h3">Ad Video</h3><div class="tl" data-i18n="video.tl">대본까지 알아서, 영상으로.</div><p data-i18n="video.p">사진과 한 줄이면 컨셉과 씬을 전부 짜서, 음악까지 얹은 9:16 광고로 만들어요. 틱톡·릴스에 바로 올립니다. 직접 짜고 싶으면 씬 개수와 길이까지 정할 수 있어요.</p><ul data-i18n="video.ul"><li>대본은 알아서 — 직접 쓰고 싶으면 씬 개수·길이까지</li><li>9:16 · 1:1 · 16:9 · 음악 포함 — 바로 업로드</li><li>나온 것만 크레딧, 실패는 자동 환불</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
       </div>
-      <div class="panel" data-k="pack">
+      <div class="panel" data-k="vedit">
         <div class="demo">
-          <div class="dpills"><span class="dpill on" data-i18n="dp.pack">한 장 → 세트</span></div>
-          <div class="flow" style="gap:14px"><div class="inp inp-photo" style="align-self:center"><img loading="lazy" decoding="async" src="/img/landing/pack2/src.jpg" alt=""><span data-i18n="cap.onephoto">제품 사진 한 장</span></div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/pdp_front_clean.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hero_threequarter.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hero_sunlit.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/macro_label_detail.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/ingredient_grape.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/picnic_blanket.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/desk_hot_day.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cooler_ice.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cvs_fridge.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/poolside_table.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/colorblock_lime_split.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/levitation_grapes.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/splash_frozen.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/hard_shadow_geo.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/pedestal_editorial.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/crushed_ice_bed.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/wet_stone_slab.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/marble_luxe.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/warm_linen.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/sand_ripples.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/midsummer_poolglow.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/gift_holiday_styling.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/claim_copyspace_card.jpg" alt=""></div><div class="g"><img loading="lazy" decoding="async" src="/img/landing/pack3/cozy_autumn_warm.jpg" alt=""></div></div></div>
+          <div class="dpills"><button class="dpill on" data-s="swap">제품 교체</button><button class="dpill" data-s="reframe">리프레임</button></div>
+          <div class="sv on" data-v="swap">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>내 영상</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/vedit/swap-product.jpg" alt=""><figcaption>내 제품 사진</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big" style="flex-basis:380px"><video src="/img/landing/vedit/swap-after.mp4" poster="/img/landing/vedit/swap-after.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>생성 · 제품 교체됨</figcaption></figure>
+          </div>
+          <div class="sv" data-v="reframe">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>내 영상 · 4:5</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><video src="/img/landing/vedit/reframe-169.mp4" poster="/img/landing/vedit/reframe-169.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>리프레임 · 16:9</figcaption></figure>
+          </div>
         </div>
-        <div class="desc"><h3 data-i18n="pack.h3">콘텐츠 팩</h3><div class="tl" data-i18n="pack.tl">당신은 사진만. 기획은 Doppia가.</div><p data-i18n="pack.p">무드를 한 줄 적거나 아예 비워둬도 괜찮아요. 제품을 보고 어떤 컷을 몇 장 뽑을지 알아서 기획해 세트로 만들어 드려요 — 무엇을 팔든.</p><ul data-i18n="pack.ul"><li>컨셉·구성을 자동으로 기획</li><li>의류든 식품이든 — 무엇을 팔든</li><li>원하는 만큼, 나온 것만 과금</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc">
+          <div class="sd on" data-v="swap"><h3>Product swap</h3><div class="tl">영상 속 제품을 내 제품으로.</div><p>영상과 내 제품 사진만 올리면 손·움직임·카메라는 그대로 두고 영상 속 제품만 내 것으로 바뀌어요. 이어서 타임라인에서 자르고 글자·음악을 얹으면 끝.</p><ul><li>같은 움직임, 새 제품 — 한 번에 최대 15초</li><li>타임라인 편집: 자르기 · 텍스트 · 음악 · 자막</li><li>연장 · 업스케일 · 리스타일 · 모션 전이</li></ul></div>
+          <div class="sd" data-v="reframe"><h3>Reframe</h3><div class="tl">어떤 비율로든 — 잘리는 사람 없이.</div><p>세로 영상을 16:9로(또는 반대로) 바꾸면, 자르는 대신 비어 있는 영역을 AI가 그려서 채워요. 9:16 · 16:9 · 1:1 · 4:5 · 5:4, 최대 60초.</p><ul><li>빈 영역은 AI가 생성 — 검은 띠·흐림 없음</li><li>9:16 · 16:9 · 1:1 · 4:5 · 5:4</li><li>최대 60초 · 1080p</li></ul></div>
+          <a class="btn btn-p cta" href="/video-edit" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p>
+        </div>
       </div>
       <div class="panel" data-k="edit">
         <div class="demo">
@@ -545,9 +582,9 @@
             <span class="cmp-lb" style="left:12px" data-i18n="ed.after">수정 후</span><span class="cmp-lb" style="right:12px" data-i18n="ed.before">수정 전</span>
             <div class="cmp-hd"><span>↔</span></div>
           </div>
-          <div class="ed-chips"><span data-i18n="ed.c1">“조명 더 따뜻하게”</span><span data-i18n="ed.c2">“소품은 빼줘”</span><span data-i18n="ed.c3">“모델이 살짝 웃게”</span><span data-i18n="ed.c4">“이런 걸로 더”</span></div>
+          <div class="ed-chips"><span>조명</span><span>앵글</span><span>배경 교체</span><span>지우기</span><span>확장</span><span>업스케일 ×16</span><span>배경 제거</span><span>라벨 글자</span></div>
         </div>
-        <div class="desc"><h3 data-i18n="edit.h3">수정하기</h3><div class="tl" data-i18n="edit.tl">재촬영 없이, 말로.</div><p data-i18n="edit.p">"배경만 바꿔줘", "더 밝게" — 마음에 안 드는 부분을 말로 고치면 돼요. 제품 디테일은 그대로, 반복은 자유롭게.</p><ul data-i18n="edit.ul"><li>인물 · 배경 · 소품 부분 수정</li><li>제품은 그대로 보존</li><li>재촬영 없이 무한 반복 · "이런 걸로 더"</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc"><h3>에디터</h3><div class="tl">다시 찍지 않고, 어떤 컷이든 고쳐요.</div><p>조명 패드로 빛을 다시 넣고, 카메라를 돌려 새 앵글을 만들고, 배경을 바꾸고, 지우거나 넓히고, 최대 ×16까지 업스케일하세요. 말로 고쳐도 돼요 — 제품 자체는 그대로.</p><ul><li>조명 · 앵글 · 배경 교체 · 지우기 · 부분 수정 · 확장</li><li>최대 ×16 업스케일 · 배경 제거 · 라벨 글자 수정</li><li>말로 고쳐도 제품은 그대로</li></ul><a class="btn btn-p cta" href="/image-edit" data-i18n="cta.start">무료로 시작하기 →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
       </div>
     </div>
   </div>
@@ -899,13 +936,13 @@
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
   tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
   // shots 서브탭(제품샷·룩북·화보·템플릿): 데모(.sv)와 설명(.sd)을 같이 전환
-  var sp=document.getElementById('sp');
-  sp.querySelectorAll('.dpill').forEach(function(b){b.addEventListener('click',function(){
-    sp.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
+  // 서브탭(Shots: 제품샷·룩북·화보·템플릿 / Video Editor: 제품 교체·리프레임): 같은 패널 안의 데모(.sv)와 설명(.sd)만 전환
+  document.querySelectorAll('.panel .dpills').forEach(function(g){var panel=g.closest('.panel');g.querySelectorAll('button.dpill[data-s]').forEach(function(b){b.addEventListener('click',function(){
+    g.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
     var v=b.dataset.s;
-    document.querySelectorAll('.sv').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
-    document.querySelectorAll('.sd').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
-  });});
+    panel.querySelectorAll('.sv[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+    panel.querySelectorAll('.sd[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+  });});});
   // Ad Video 릴스 플레이어 — 5초 클립 5편, ended(+5.6s 안전타이머) 시 아래→위 슬라이드 전환
   (function(){
     var wrap=document.getElementById('figReel'); if(!wrap) return;
