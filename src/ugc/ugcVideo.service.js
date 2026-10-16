@@ -275,7 +275,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
+  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null, page = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -305,7 +305,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine, page })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -344,7 +344,7 @@ function progressView(jobId) {
   return { stage: p.stage, label, pct: Math.min(99, Math.round(base)), scenes: p.scenes, elapsedSec: Math.round((Date.now() - p.startedAt) / 1000) };
 }
 
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null, page = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -435,7 +435,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     const persistedScript = { ...script, _render: {
       audio: audio || {}, aspect, product: productRef, products, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
-      engines: enginesUsed,
+      engines: enginesUsed, quality: quality || null, ...(page ? { page } : {}), // (10-16) 결과물 출처 기록용(어느 페이지에서)
     } };
     // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
     persistedScript._render.composites = [{
@@ -1092,6 +1092,7 @@ async function _commitJobImpl(id, userId, batchId) {
     promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
+      origin: { feature: 'ad-video', op: j.output_type || undefined, page: _R.page || undefined, ...(_R.quality ? { quality: _R.quality } : {}) },
       subtitleMode: j.subtitle_mode, clips: nClips,
       // 실제로 쓴 모션 엔진(씬마다 갈릴 수 있다). model은 'ugc-v1' 판별자라 건드리지 않는다.
       ...(Array.isArray(_R.engines) && _R.engines.length ? { engines: _R.engines } : {}),

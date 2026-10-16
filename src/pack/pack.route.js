@@ -271,6 +271,7 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId, sk
       await resultRepo.insert({
         promptIdx: idx, filePath: `tmp/images/${name}`, model: PACK_MODEL,  // 피드가 basename → /images/<name> 서빙
         metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id, batch_id: pack.share_id,
+          origin: { feature: 'pack', op: key, page: '/pack' }, // (10-16) 결과물 출처 — 팩 컷 키
           ...(srcUrls[0] ? { product_image: srcUrls[0], product_images: srcUrls } : {}),
           ...(refUrls.length ? { canonical_refs: refUrls } : {}) },
         visibility: 'private', templateSource: 'pack', templateName: label || '콘텐츠 팩',
