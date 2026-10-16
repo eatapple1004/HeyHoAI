@@ -78,8 +78,8 @@
   .hero .in{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:center} /* (10-16) minmax(0,…) — 제목이 길어져도 오른쪽 리포트 틀을 밀어내지 않게 */
   @media(max-width:900px){.hero .in{grid-template-columns:1fr;gap:40px}}
   .hero h1{margin-top:22px;max-width:none;font-size:clamp(32px,4.1vw,52px);white-space:normal}
-  .hero h1 .grad{white-space:normal}.hero h1 .nb{white-space:nowrap} /* 이름(Doppia × USAsia Journal)만 한 덩어리, 나머지는 줄바꿈 */
-  @media(max-width:600px){.hero h1 .nb{white-space:normal}} /* 폰 폭에선 이름도 줄바꿈 — 안 그러면 가로로 넘친다 */
+  .hero h1 .grad{white-space:normal} /* (10-16 실측) 이름(Doppia × USAsia Journal)이 52px 로 626px — 히어로 왼쪽 열(512px)보다 길어 nowrap 은 어느 폭에서도 못 쓴다 → 자연 줄바꿈 */
+  @media(max-width:600px){.brand .sfx{display:none}} /* 폰 폭: 브랜드 꼬리를 숨겨야 오른쪽 EN/KO·CTA 가 안 넘친다(히어로에 이름이 있다) */
   .hero .lead{margin-top:22px}
   .cta{margin-top:34px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .fine{color:var(--faint);font-size:13px;margin-top:14px}
@@ -342,7 +342,7 @@
     en: {
       navCta: 'Talk to us',
       eyebrow: 'Marketing operations · Featured in USAsia Journal',
-      h1: 'Every moment of marketing,<br><span class="grad">with <span class="nb">Doppia × USAsia Journal</span>.</span>',
+      h1: 'Every moment of marketing,<br><span class="grad">with Doppia × USAsia Journal.</span>',
       lead: 'Promotion, ads and loyalty, run by Doppia. Your brand, listed in USAsia Journal.',
       cta: 'Free marketing check-up', ctaB: 'Talk to us →', fine: 'Six questions, two minutes · written report in 7–10 business days, in order of request',
       sc1: 'Strategy & planning', sc2: 'Channel operations', sc3: 'Content production', sc4: 'Paid ads', sc5: 'Promotions & campaigns', sc6: 'Influencers & partnerships', sc7: 'Customer relationships (CRM)', sc8: 'Monthly report',
@@ -387,7 +387,7 @@
     ko: {
       navCta: '도입 문의',
       eyebrow: '마케팅 운영 · USAsia Journal 노출',
-      h1: '마케팅의 모든 순간,<br><span class="grad"><span class="nb">Doppia × USAsia Journal</span>과 함께.</span>',
+      h1: '마케팅의 모든 순간,<br><span class="grad">Doppia × USAsia Journal과 함께.</span>',
       lead: '홍보·광고·단골 관리는 Doppia가 운영하고, 브랜드는 USAsia Journal에 실립니다.',
       cta: '무료 마케팅 진단', ctaB: '도입 문의하기 →', fine: '질문 6개, 2분 · 접수 순서대로 영업일 7~10일 안에 서면 리포트',
       sc1: '전략·기획', sc2: '채널 운영', sc3: '콘텐츠 제작', sc4: '광고 운영', sc5: '프로모션·캠페인', sc6: '인플루언서·제휴', sc7: '고객 관리(CRM)', sc8: '월간 리포트',
