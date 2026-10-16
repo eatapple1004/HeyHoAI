@@ -13,6 +13,7 @@
 <script src="/saas-auth.js?v=3" defer></script>
 <link rel="stylesheet" href="/css/topnav.css?v=1" />
 <script src="/js/topnav.js?v=31" defer></script>
+<script src="/js/thumbs.js?v=1"></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <style>
@@ -329,9 +330,8 @@
   function toast(m){ if(!toastEl)return; toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){toastEl.classList.remove('show');},2600); }
   function card(it){
     var onerr="onerror=\"var c=this.closest('.cc-card');if(c)c.remove()\"";
-    var media=it.type==='video'
-      ? "<video class='cc-media' src='"+esc(it.url)+"' muted loop playsinline autoplay "+onerr+"></video>"
-      : "<img class='cc-media' src='"+esc(it.url)+"' loading='lazy' alt='' "+onerr+">";
+    // 썸네일(js/thumbs.js) — 원본 PNG·영상 80개를 한꺼번에 받아 카드가 한참 비던 것. 영상은 포스터 먼저, 보일 때 재생
+    var media=it.type==='video' ? DoppiaThumb.video(it.url,'cc-media','.cc-card') : DoppiaThumb.img(it.url,'cc-media','.cc-card');
     var by=it.creatorHandle
       ? "<a class='cc-by' href='/creator?handle="+encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))+"'>"+esc(it.creatorHandle)+"</a>"
       : "<span class='cc-by'>@creator</span>";
@@ -370,14 +370,11 @@
     if(m&&!m.__h){ m.__h=1; var ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
       if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeCard(c); else m.addEventListener(ev,function(){sizeCard(c);},{once:true}); }
     sizeCard(c); }); }
-  function playVids(){ var vids=grid.querySelectorAll('video.cc-media'); if(!vids.length)return;
-    var kick=function(v){ v.muted=true; var p=v.play(); if(p&&p.catch)p.catch(function(){}); };
-    if('IntersectionObserver' in window){ var io=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersecting?kick(e.target):e.target.pause();});},{threshold:.25}); vids.forEach(function(v){io.observe(v);}); } else vids.forEach(kick); }
   addEventListener('resize',function(){ clearTimeout(window.__ccT); window.__ccT=setTimeout(layout,150); });
   fetch('/api/generate/community?limit=80').then(function(r){return r.json();}).then(function(j){
     var d=(j&&j.data)||[];
     if(!d.length){ grid.innerHTML="<div class='cc-empty'>Nothing here yet — create something in Shots with Public mode on, and it shows up here.</div>"; return; }
-    grid.innerHTML=d.map(card).join(''); playVids(); layout();
+    grid.innerHTML=d.map(card).join(''); DoppiaThumb.watch(grid,function(v){ var c=v.closest('.cc-card'); if(c)sizeCard(c); }); layout();
   }).catch(function(){ grid.innerHTML="<div class='cc-empty'>Couldn’t load community creations.</div>"; });
 })();
 </script>
