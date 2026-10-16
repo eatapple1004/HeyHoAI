@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const resultOrigin = require('./resultOrigin'); // (10-16) 결과물 출처 기록
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -686,6 +687,7 @@ const postRootHandler = async (req, res, next) => {
           //   피드는 원래 prompt_idx로 묶는데 쪼개면 prompt 행이 N개가 되어 새로고침 시 N줄로 흩어진다.
           //   형식 무관·표시용이 아니므로 길이만 자른다(JSONB 오염 방지).
           metadata: { description,
+            origin: { page: resultOrigin.pageOf(req), ...resultOrigin.engineOf(usedModelId), ...(toolDef && usedModelId !== toolDef.model ? { requested: toolDef.id } : {}) }, // 어디서·실제 엔진(폴백 시 requested)
             ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})),
             ...(batchId ? { batch_id: batchId } : {}),
             ...(choices ? { choices } : {}) },
@@ -1012,7 +1014,7 @@ async function postEditHandler(req, res, next) {
           promptIdx: savedPrompt.idx, characterId: null,
           filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(out.buffer.length / 1024),
           width: meta.width, height: meta.height, model: modelLabel, visibility, templateName: 'Editor',
-          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}), ...(op === 'angles' ? { angle } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
+          metadata: { origin: { feature: 'editor', op, page: resultOrigin.pageOf(req), ...resultOrigin.engineOf(t.id) }, editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}), ...(op === 'angles' ? { angle } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
         });
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
         return res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, op, engine: { id: t.id, label: t.label, provider: t.provider }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
@@ -1228,6 +1230,7 @@ async function postVideoEditAiHandler(req, res, next) {
     const result = await videoJobService.submit({
       user: req.user, prompt, duration: String(duration), mode: 'pro', aspectRatio: b.aspectRatio || undefined, audio: b.audio === true || b.audio === 'true',
       engine: tool.provider, resolution: b.resolution, tool, extras: pickExtras(tool, JSON.stringify(extras)),
+      origin: { feature: op === 'productswap' ? 'product-swap' : 'video-editor', op, page: resultOrigin.pageOf(req) },
       visibility, templateId: null, templateSource: null, templateName: op === 'productswap' ? 'Product swap' : 'Video Editor', // Product swap 페이지의 '내 스왑' 목록이 이 이름으로 거른다
       sourceImagePath: op === 'productswap' ? null : imgFile, endFramePath: null, referenceImagePaths: op === 'productswap' && imgFile ? [imgFile] : [], // 제품 사진 = 참조 @Image1
       sourceVideoPath: def.slot === 'sourceVideo' ? cutFile : null, motionVideoPath: def.slot === 'motionVideo' ? cutFile : null,
@@ -1930,6 +1933,7 @@ const postUgcRenderHandler = async (req, res, next) => {
       visibility, isTemplate: false, quality: safeQuality, motionEngine: safeEngine,
       // (10-16) /ad-video 는 완성 즉시 서버가 Library 저장(사용자가 페이지를 떠나도 유실 없음). studio.html 은 안 보내므로 기존 draft 흐름 그대로.
       autoCommit: req.body && (req.body.autoCommit === 'true' || req.body.autoCommit === true),
+      page: resultOrigin.pageOf(req), // (10-16) 결과물 출처 — /ad-video · /studio
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
   } catch (err) {

@@ -20,6 +20,7 @@ const mediaStore = require('../storage/mediaStore');
 //   그 외 엔진은 src/videos/providers 어댑터(submit/poll 계약, providers/types.js)로 제출·폴링한다.
 //   ⚠️ 어댑터마다 시작 프레임을 받는 방식이 다르다 — seedance·veo·sora는 data URL/로컬 경로를 삼키지만,
 //   runway·minimax는 API가 직접 받아가는 **공개 URL**이 필요하다(PUBLIC_URL 없으면 제출 거부).
+const resultOrigin = require('./resultOrigin'); // (10-16) 결과물 출처
 const videoProviders = {
   runway: require('../videos/providers/runway.provider'),
   minimax: require('../videos/providers/minimax.provider'),
@@ -76,10 +77,10 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
   visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null, referenceImagePaths = [],
-  sourceVideoPath = null, motionVideoPath = null }) {
+  sourceVideoPath = null, motionVideoPath = null, origin = null }) {
   if (engine && engine !== 'kling') {
     return submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras, referenceImagePaths, sourceVideoPath, motionVideoPath });
+      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras, referenceImagePaths, sourceVideoPath, motionVideoPath, origin });
   }
   for (const p of [...(referenceImagePaths || []), sourceVideoPath, motionVideoPath]) { if (p) { try { fs.unlinkSync(p); } catch {} } } // kling 직결 경로는 레퍼런스·영상 입력 미지원 — 업로드만 치운다
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
@@ -158,7 +159,7 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
  */
 async function submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
   visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null, referenceImagePaths = [],
-  sourceVideoPath = null, motionVideoPath = null }) {
+  sourceVideoPath = null, motionVideoPath = null, origin = null }) { // origin = 결과물 출처(기능·작업·페이지) — ctx 에 실어 finalize 때 결과에 기록
   const provider = videoProviders[engine];
   if (!provider) { const e = new Error(`Unknown video engine: ${engine}`); e.statusCode = 400; throw e; }
   if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
@@ -244,7 +245,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
        VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
       [user.id, teamId, String(prompt || `${tool ? tool.label : engine}`).slice(0, 2000), String(dur), 'pro', String(sub.providerJobId), chargeAmount, wantAudio,
        vis, templateId || null, templateSource || null, templateName ? String(templateName).slice(0, 120) : null,
-       engine, sub.metadata ? JSON.stringify(sub.metadata) : null]
+       engine, JSON.stringify({ ...(sub.metadata || {}), ...(tool ? { toolId: tool.id } : {}), ...(origin ? { origin } : {}) })]
     );
     log.info(`Submitted job ${ins.rows[0].id} engine=${engine} task=${sub.providerJobId} (${dur}s)`);
     return { jobId: ins.rows[0].id };
@@ -412,7 +413,8 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     savedResult = await resultRepo.insert({
       promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
       fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: modelLabel,
-      metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio, engine: modelLabel },
+      metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio, engine: modelLabel,
+        origin: { ...((job.ctx && job.ctx.origin) || {}), ...resultOrigin.engineOf((job.ctx && job.ctx.toolId) || modelLabel) } },
       // 자동공개(P2): 잡이 운반한 visibility·출처 템플릿을 결과에 기록 → Explore 피드 노출.
       visibility: job.visibility, templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
     });

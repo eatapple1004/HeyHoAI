@@ -2,6 +2,9 @@ const { query } = require('../db/client');
 
 async function insert({ promptIdx, characterId, filePath, fileSizeKb, width, height, model, metadata,
   visibility, templateId, templateSource, templateName }) {
+  // (2026-10-16) 모든 결과물에 출처(기능·작업·엔진·페이지)를 같은 모양으로 — src/generate/resultOrigin.js
+  // eslint-disable-next-line global-require
+  metadata = require('./resultOrigin').withOrigin({ model, metadata, templateSource, templateName, filePath });
   const vis = visibility === 'public' ? 'public' : 'private';
   const result = await query(
     `INSERT INTO generation_results
