@@ -2,7 +2,7 @@
  * ─── Shoot "Create your model" — 사진 → (다각도) → Soul ID 학습 → 장면 뱅크 ───
  *
  * (2026-10-16) 흐름(사용자 지시: "Soul ID 처럼 사진 여러 장이 기본, 한 장뿐이면 우리가 다각도를 만들어 준다 — 학습 전에 그 자리에서 따로")
- *   A. 다각도(선택): POST /api/shoot/angles 사진 1장 → Nano Banana Pro 로 카메라 위치만 바꾼 ANGLES.length 장(앵커 파이프라인 angles_pure 의 keep 문장).
+ *   A. 다각도(선택): POST /api/shoot/angles 사진 1장 → Nano Banana Pro 로 얼굴 클로즈업 ANGLES.length 장(좌우·상하 각도 + 표정, 아래 ANGLES 주석). ANGLE_PARALLEL 장씩 동시에.
  *      프로세스 안 잡(angleJobs) — GET /api/shoot/angles/:id 로 진행·결과 URL. 결과는 사용자가 고른 뒤 photoUrls 로 학습에 넣는다.
  *   B. 학습: POST /api/shoot/models 사진(업로드 + photoUrls) → 공개 URL(PUBLIC_URL/images/…) → 힉스필드 POST /v1/custom-references(v2)
  *      → 'training' 폴링(not_ready→queued→in_progress→completed|failed) → 'bank' Soul 2 + custom_reference_id 로 SCENES 장면(우리 /images 로 저장,
@@ -34,23 +34,31 @@ const SCENES = [
   ['night', 'Night', 'standing on a neon-lit city street at night, wet pavement reflections, head to toe visible'],
   ['wall', 'Golden hour', 'leaning one hand on a stone wall in a narrow old-town alley, warm golden hour light, head to toe visible'],
 ];
-// 다각도 = **얼굴 학습셋**(Soul ID 는 얼굴을 배운다 — 사용자 10-16). 유나 「우리의 앵커」를 학습시킨 앵커 파이프라인 angles.json 의 11컷을 그대로 옮겼다:
-//   정면·반측면 좌우·측면·로우·하이·뒤돌아보기·클로즈업·미소 + 다른 옷의 상반신·반신(전부 맨어깨면 맨어깨가 정체성으로 굳는다 — 유나 실측).
-//   문구 실측(10-16, 48장): 유나는 Pro·Flash 전부 통과, Pro 만 카메라를 실제로 돌린다 · 저작권 캐릭터는 Pro 전부 거절·Flash 일부 통과 → Pro→Flash 순, 둘 다 막히면 그 각도만 건너뛴다.
-const ANGLE_KEEP = 'This is the same fictional character in the same photo session. Keep the face, the features, the makeup and the hair colour exactly the same. Only the camera position, the pose and what is described below change.';
+// 다각도 = **얼굴 학습셋 24컷**(Soul ID 는 얼굴을 배운다 — 사용자 10-16 확정). 옷·반신·조명 변주 없이 얼굴이 프레임을 채우는 클로즈업만.
+//   좌우 11단계(정면·좌우 15/30/45/60/90) + 상하 5(정면 로우·하이, 좌30 로우, 우30 하이, 턱 들기) + 표정 8(미소·웃음·큰웃음·놀람·생각·눈감음·스머크·입 살짝).
+//   10-16 실측: 유나 전신 거리 컷·다른 인물 전신 컷 모두 24/24, 60°·90° 측면까지 실제로 돌고 정체성 유지. 같은 세트로 Soul ID 학습 → 10장면 일관.
+//   문구 규칙(앵커 파이프라인 실측): 옷·배경·머리를 "묘사"하면 다시 그린다 → 카메라 자리·도수·표정만 말하고, 프레이밍 한 줄을 매 컷에 붙인다.
+//   모델: 각도마다 Pro → Flash 순(저작권 캐릭터는 Pro 전부 거절·Flash 일부 통과), 둘 다 막히면 그 각도만 건너뛴다. 한 장 20초라 ANGLE_PARALLEL 장씩 동시에 돈다.
+const ANGLE_KEEP = 'This is the same fictional character in the same photo session. Keep the face, the features, the makeup and the hair colour exactly the same. Only the camera position, the head angle and the expression change.';
+const ANGLE_FRAME = 'Framing: a tight face close-up, 105mm equivalent — the face fills the frame from the hairline to just below the chin, every feature sharp, the same lighting and background as the photo.';
+const YAW = [['directly in front of the face'], ['fifteen degrees to the left of the face'], ['fifteen degrees to the right of the face'], ['thirty degrees to the left'], ['thirty degrees to the right'], ['forty-five degrees to the left'], ['forty-five degrees to the right'], ['sixty degrees to the left'], ['sixty degrees to the right'], ['ninety degrees to the left, a clean profile, one ear fully visible'], ['ninety degrees to the right, a clean profile, one ear fully visible']];
 const ANGLES = [
-  'The camera has moved to stand directly in front of the person at eye level, 85mm. The face is square to the lens, both ears equally visible, shoulders level. Calm, unsmiling.',
-  'The camera has moved about thirty degrees to the left, still at eye level, 85mm. The far cheek narrows, the bridge of the nose separates from the cheek, the far eye sits closer to the nose in frame.',
-  'The camera has moved about thirty degrees to the right, still at eye level, 85mm. The other side is now toward the lens, the far cheek narrowing.',
-  'The camera has moved to the side, ninety degrees, at eye level, 85mm. A clean profile: the line of the forehead, nose, lips and chin reads as one silhouette, one ear fully visible.',
-  'The camera has dropped to chest height and tilts up, 50mm. The jawline and the underside of the chin come forward, the eyes look down into the lens.',
-  'The camera has risen above the head and looks down, 50mm. The top of the head and the forehead fill more of the frame, the eyes lift to the lens.',
-  'The person has turned their back to the camera and looks back over the shoulder into the lens, 85mm. The line of the shoulder and the back of the neck are toward the camera.',
-  'The camera has moved in close, 105mm. The face fills the whole frame from the hairline to the chin, every feature sharp.',
-  'Same camera position as a straight-on portrait, 85mm. The person is smiling with lips closed, the eyes creasing slightly.',
-  'The camera has pulled back to 50mm, framing from the top of the head to just below the collarbones. The person is wearing a fitted cream knit top with a high neckline. Plain warm grey wall behind.',
-  'The camera has pulled back to 35mm, framing from the top of the head down to the waist, standing. The person is wearing a white cotton shirt. Soft daylight, a plain pale wall behind.',
+  ...YAW.map(([where]) => `The camera stands ${where}, at eye level. Calm, unsmiling, eyes to the lens.`),
+  'The camera stands directly in front, dropped to chin height and tilting up a little. The jawline and the underside of the chin come forward, the eyes look down into the lens. Calm.',
+  'The camera stands directly in front, risen just above the eyeline and tilting down a little. The forehead fills more of the frame, the eyes lift to the lens. Calm.',
+  'The camera stands thirty degrees to the left, dropped to chin height and tilting up a little. Calm.',
+  'The camera stands thirty degrees to the right, risen above the eyeline and tilting down a little. Calm.',
+  'The camera stands directly in front at eye level. The head tips back slightly, chin up, eyes down to the lens. Calm.',
+  'Directly in front at eye level. A closed-lip smile, the eyes creasing slightly.',
+  'Thirty degrees to the right at eye level. Laughing with the teeth showing, eyes narrowed in a real smile.',
+  'Directly in front at eye level. A big open laugh, head tipped slightly back, eyes almost shut.',
+  'Directly in front at eye level. Surprised: eyebrows raised, eyes wide, mouth slightly open.',
+  'Fifteen degrees to the left at eye level. Pensive: the eyes look down and away, mouth relaxed.',
+  'Directly in front at eye level. The eyes gently closed, the face relaxed, lips together.',
+  'Thirty degrees to the left at eye level. A chic half-smirk, one corner of the mouth lifted, a direct gaze.',
+  'Fifteen degrees to the right at eye level. Lips parted very slightly, a soft relaxed expression, eyes to the lens.',
 ];
+const ANGLE_PARALLEL = 6;
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 const ANGLE_JOB_TTL_MS = 2 * 60 * 60 * 1000;
@@ -89,15 +97,27 @@ async function download(url) {
 const angleJobs = new Map(); // id → { userId, src, source, urls, error, done, at, charged }
 const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: j.urls, total: ANGLES.length, skipped: j.skipped, source: j.source });
 
-/** 각도 한 장 — 모델 순서대로 시도, 전부 실패면 null(건너뛴다) */
+/** 각도 한 장 — 모델 순서대로(각 2회: 503 같은 일시 오류 대비), 전부 실패면 null(건너뛴다) */
 async function shootAngle(nano, src, angle) {
   for (const model of ANGLE_MODELS) {
-    try {
-      const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle}`, references: [{ path: src, kind: 'person' }], model, width: 768, height: 1024, imageSize: '1K' });
-      return out.url.replace('file://', '');
-    } catch (err) { logger.info({ model, err: String(err.message || err).slice(0, 120) }, 'shoot angle blocked, next model'); }
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle} ${ANGLE_FRAME}`, references: [{ path: src, kind: 'person' }], model, width: 768, height: 1024, imageSize: '1K' });
+        return out.url.replace('file://', '');
+      } catch (err) { logger.info({ model, attempt, err: String(err.message || err).slice(0, 120) }, 'shoot angle failed'); }
+    }
   }
   return null;
+}
+
+/** 동시 실행 n개 — 결과는 입력 순서대로 */
+async function mapLimit(items, n, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) { const i = next; next += 1; out[i] = await fn(items[i], i); }
+  }));
+  return out;
 }
 
 async function startAngles(user, file) {
@@ -112,12 +132,12 @@ async function startAngles(user, file) {
     // eslint-disable-next-line global-require
     const nano = require('../images/providers/nanoBanana.provider');
     try {
-      for (const angle of ANGLES) {
+      await mapLimit(ANGLES, ANGLE_PARALLEL, async (angle) => { // 24장 × 20초를 ANGLE_PARALLEL 로 나눠 돈다(사용자: "한 번에 다 돌리게")
         const abs = await shootAngle(nano, job.src, angle);
-        if (!abs) { job.skipped += 1; continue; } // 두 모델 다 막힘(저작권 캐릭터 등) — 이 각도만 건너뛴다
+        if (!abs) { job.skipped += 1; return; } // 두 모델 다 막힘(저작권 캐릭터 등) — 이 각도만 건너뛴다
         await mediaStore.putFile(abs).catch(() => {});
         job.urls.push(publicUrl(path.basename(abs)));
-      }
+      });
       if (job.skipped === ANGLES.length) job.error = 'Every angle was blocked — this photo may be a copyrighted character or not a real person';
       else if (job.skipped) job.error = `${job.skipped} of ${ANGLES.length} angles were blocked`;
     } catch (err) {
