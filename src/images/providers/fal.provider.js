@@ -179,4 +179,20 @@ falProvider.erase = async function erase(req) {
   return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
 };
 
+/**
+ * (2026-10-16) 범용 — 입력을 그대로 보내고 결과 이미지 1장 URL. Face swap(Easel·fal face-swap)이 쓴다.
+ * @param {{ model: string, input: object, maxWaitMs?: number }} req
+ */
+falProvider.runImage = async function runImage(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const { result, requestId } = await submitAndWait(req.model, req.input, req.maxWaitMs || 180_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 응답에 이미지가 없습니다 (${req.model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model: req.model, width: image.width, height: image.height } };
+};
+
 module.exports = falProvider;

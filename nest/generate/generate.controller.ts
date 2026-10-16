@@ -162,6 +162,14 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postEdit', req));
   }
 
+  // POST /api/generate/face-swap — 우리 모델 사진 + 본인 얼굴(동의·성인 판별) → 비공개 결과
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'face', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
+  @Post('face-swap')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postFaceSwap(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postFaceSwap', req));
+  }
+
   // POST /api/generate/video/async
   @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }], VIDEO_UPLOAD_OPTIONS))
   @Post('video/async')

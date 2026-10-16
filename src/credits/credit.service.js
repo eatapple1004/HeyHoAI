@@ -35,6 +35,7 @@ const IMG_CREDIT = {
   soul: [185, 300],
   upscale: [90, 150], // Topaz(fal) 업스케일 1장 — 자리값(실원가 ~$0.05~0.1)
   removebg: [30, 50], // BiRefNet(fal) 배경 제거 1장 — 자리값(실원가 ~$0.01)
+  faceswap: [90, 150], // (10-16) Face swap(fal Easel/face-swap) 1장 — 자리값. 실원가 ~$0.03~0.05 → 바닥 ~68
   'bria-eraser': [90, 150], // (10-16) Bria Eraser(fal) 지우기 1장 — 자리값. 실원가 ~$0.04 → 바닥 55
   'flux-fill': [185, 300], // (10-16) FLUX.1 Fill pro(fal) Editor 마스크 채우기 1장 — 자리값. 실원가 $0.05/MP × 사본 ≤2.4MP(긴 변 1536) ≈ $0.12 → 바닥 163 → pro 동일가
 };

@@ -28,6 +28,10 @@ export interface ToolsDto {
   removebg: ToolDto[];
   /** Image Editor op 별 자동 엔진·대안·단가(src/images/imageEdit.engine.js catalog). 비어 있으면 Editor = soon */
   editor: EditorOpDto[];
+  /** Face swap 엔진(registry type 'faceswap') — 비어 있으면 메뉴 soon */
+  faceswap: ToolDto[];
+  /** Face swap 대상 프리셋(우리 모델) */
+  faceswapTargets: { id: string; label: string; url: string }[];
 }
 
 /** Image Editor op 1개 — engine = 자동 선택(마스크 있을 때), engineNoMask = 마스크 없을 때 다른 경우만 */
