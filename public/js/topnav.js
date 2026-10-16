@@ -73,6 +73,7 @@
     ],
     video: [
       ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
+      ['📣', 'Ad Video', 'Product photos → script, scenes, music & voice — one ready-to-post ad', 'live', '/ad-video', 'top'],
       ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
       ['⇄', 'Product swap', 'Swap the product in any video for yours', 'soon'],
       ['✎', 'Edit video', 'Timeline editor — trim · text · music · AI edit with words · captions', 'live', '/video-edit', 'new'],
