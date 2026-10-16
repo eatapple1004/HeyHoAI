@@ -225,7 +225,7 @@ async function renderClips(script, opts = {}) {
     renderSceneClip(scene, opts).catch((err) => ({
       sceneN: scene.n, clipUrl: null, durationMs: Math.round((scene.durationSec || 3) * 1000),
       isStill: false, imageUrl: null, error: err.message,
-    }))
+    })).then((c) => { if (opts.onSceneDone) { try { opts.onSceneDone(scene.n, !!c.clipUrl); } catch (e) { /* 진행 표시용 — 무시 */ } } return c; }) // (10-16) /ad-video 진행 표시
   );
 
   const ok = clips.filter((c) => c.clipUrl);

@@ -117,7 +117,7 @@ body{background:var(--bg)}
       <button class="av-go" id="go">GENERATE<small id="cost">◈ —</small></button>
     </div>
   </div>
-  <div class="av-note" id="note">Script by AI → scenes → motion → music & voice → one video. Usually 3–8 minutes. You can keep working while it renders.</div>
+  <div class="av-note" id="note">Script by AI → scenes → motion → music & voice → one video. Usually 5–12 minutes — the card below shows each step. You can leave and come back.</div>
   <input type="file" id="file" accept="image/*" multiple hidden>
 
   <div class="av-sec" id="mineSec"><h2>My ad videos</h2><div class="sub">Rendering and finished ads. Everything is saved to your Library — open one to edit scenes, music or voice.</div><div class="av-feed" id="feed"></div></div>
@@ -187,14 +187,19 @@ $('#prod').onclick=()=>{const m=document.createElement('div');m.className='av-mo
 // ── 공통 폼 ──
 function baseForm(){const fd=new FormData();st.products.forEach((p,i)=>{if(p.file)fd.append('productImage',p.file,'p'+i+'.jpg');else fd.append('productImageUrl',p.url);});fd.append('outputType','product-ad');fd.append('language',st.lang);return fd;}
 function fullConcept(){const f=FORMATS.find(x=>x[0]===st.fmt),c=$('#concept').value.trim();return [f&&f[2],c].filter(Boolean).join(' ');}
+// AI 컨셉은 업로드 파일만 받는다(productImageUrl 무시) → Library 에서 고른 사진은 내려받아 파일로 붙인다. 전엔 Library 사진이면 컨셉이 기본 문구로 떨어졌다(dev #188).
+async function conceptForm(){const fd=new FormData();for(let i=0;i<st.products.length;i++){const p=st.products[i];let f=p.file;
+    if(!f&&p.url){try{const r=await fetch(p.url);if(r.ok)f=await r.blob();}catch(e){}}if(f)fd.append('productImage',f,'p'+i+'.jpg');}
+  fd.append('outputType','product-ad');fd.append('language',st.lang);return fd;}
 async function suggest(){if(!st.products.length){toast('Add a product photo first.');return;}const b=$('#suggest');b.textContent='✨ Writing…';b.disabled=true;
-  try{const fd=baseForm();const r=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(j.success&&j.concept){$('#concept').value=j.concept;save();}else toast(j.error||'Could not write a concept');}
+  try{const fd=await conceptForm();const r=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(j.success&&j.concept){$('#concept').value=j.concept;save();}else toast(j.error||'Could not write a concept');}
   catch(e){toast('Network error');}finally{b.textContent='✨ Write the concept for me';b.disabled=false;}}
 
 // ── 생성: 대본 → (검토) → 렌더 ──
 $('#go').onclick=async()=>{if(st.busy)return;if(!st.products.length){toast('Add your product photos.');$('#prod').click();return;}
   let concept=fullConcept();st.busy=true;$('#go').disabled=true;const go=$('#go');go.firstChild.textContent='WRITING…';
-  try{if(!concept){const fd0=baseForm();const r0=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd0});const j0=await r0.json().catch(()=>({}));concept=(j0&&j0.concept)||'A short, engaging product ad.';$('#concept').value=concept;}
+  try{if(!concept){go.firstChild.textContent='THINKING…';const fd0=await conceptForm();const r0=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd0});const j0=await r0.json().catch(()=>({}));
+      if(!j0||!j0.concept){toast('Could not write a concept automatically — describe the ad in a sentence and try again.');return;}concept=j0.concept;$('#concept').value=concept;save();go.firstChild.textContent='WRITING…';}
     const fd=baseForm();fd.append('concept',concept);fd.append('voiceover',st.voice?'true':'false');fd.append('durationSec',String(st.dur));const ps=paceSpec();if(ps){fd.append('sceneCount',String(ps.n));fd.append('sceneDuration',String(ps.d));}
     const r=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(!r.ok||!j.success){toast(j.error||'Script failed');return;}
     if(st.mood&&st.mood!=='none')j.script.musicVibe=st.mood;
@@ -218,6 +223,7 @@ async function render(script,concept){const fd=baseForm();fd.append('script',JSO
   const job={id:j.jobId,status:'processing',title:script.title,t0:Date.now(),cost:j.cost};st.jobs.unshift(job);renderFeed();toast(`Rendering "${script.title||'ad'}" — about 3–8 minutes. Keep working.`);if(window.DoppiaNav)DoppiaNav.refreshCredits();
   document.getElementById('mineSec').scrollIntoView({behavior:'smooth'});poll(job);}
 async function poll(job){let n=0;while(job.status==='processing'){await new Promise(x=>setTimeout(x,n++<4?2500:4000));try{const j=await(await fetch('/api/generate/ugc/jobs/'+encodeURIComponent(job.id))).json();const d=j.data||{};
+    if(d.status==='processing'&&d.progress){job.progress=d.progress;if(d.progress.elapsedSec&&!job._t0fixed){job.t0=Date.now()-d.progress.elapsedSec*1000;job._t0fixed=true;}renderFeed();}
     if(d.status==='succeeded'){Object.assign(job,d,{status:'succeeded'});await commit(job);renderFeed();toast(`"${d.title||'Ad'}" is ready — saved to Library`);break;}
     if(d.status==='failed'){job.status='failed';job.error=d.error;renderFeed();toast('Ad failed: '+String(d.error||'').slice(0,120)+' (refunded)');break;}}catch(e){}
     if(Date.now()-job.t0>20*60*1000){job.status='failed';job.error='timeout — check Library';renderFeed();break;}renderFeedTimers();}}
@@ -225,9 +231,13 @@ async function commit(job){try{const r=await fetch('/api/generate/ugc/jobs/'+enc
 
 // ── 피드 ──
 function card(x){const url=x.resultUrl||x.url;const busy=x.status==='processing';
-  return `<div class="av-card" data-id="${esc(x.id||'')}" data-idx="${x.resultIdx||x.idx||''}"><div class="med">${busy?`<div class="run"><div class="sp"></div><b>${esc(x.title||'Rendering')}</b><span data-t0="${x.t0||Date.now()}">0:00</span><small>Script → frames → motion → sound</small></div>`:x.status==='failed'?`<div class="run" style="color:#ff8a8a">✕ ${esc(String(x.error||'Failed').slice(0,120))}<small>Credits refunded</small></div>`:`<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div>
+  return `<div class="av-card" data-id="${esc(x.id||'')}" data-idx="${x.resultIdx||x.idx||''}"><div class="med">${busy?`<div class="run"><div class="sp"></div><b>${esc(x.title||'Rendering')}</b>${progHtml(x.progress)}<span data-t0="${x.t0||Date.now()}" style="font-size:12px">0:00</span></div>`:x.status==='failed'?`<div class="run" style="color:#ff8a8a">✕ ${esc(String(x.error||'Failed').slice(0,120))}<small>Credits refunded</small></div>`:`<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div>
     <div class="meta"><b>${esc(x.title||'Ad video')}</b><small>${x.durationSec?Math.round(x.durationSec)+'s · ':''}${x.caption?esc(String(x.caption).slice(0,90)):''}</small>
     ${busy||x.status==='failed'?'':`<div class="acts"><button class="ib" data-edit>✎ Edit scenes</button><a class="ib" href="${esc(url)}" download="doppia-ad.mp4">⤓</a><a class="ib" href="/video-edit?video=${encodeURIComponent(url)}">Timeline</a>${x.caption||x.hashtags?'<button class="ib" data-copy>Copy caption</button>':''}</div>`}</div></div>`;}
+// 렌더 진행 — 서버 progress{stage,label,pct,scenes{n:queued|image|motion|done|failed}}
+function progHtml(p){if(!p)return '<small>Starting…</small>';const dot={queued:'○',image:'◐',motion:'◑',done:'●',failed:'✕'},tip={queued:'waiting',image:'making the frame',motion:'animating',done:'done',failed:'failed'};
+  return `<div style="width:80%;max-width:220px"><div style="height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden"><i style="display:block;height:100%;width:${p.pct||2}%;background:var(--lime);transition:width .6s"></i></div></div>
+  <small style="color:var(--text)">${esc(p.label||'')} · ${p.pct||0}%</small><div style="display:flex;gap:6px;font-size:15px">${Object.entries(p.scenes||{}).map(([n,v])=>`<span title="Scene ${n}: ${tip[v]||v}" style="color:${v==='done'?'var(--lime)':v==='failed'?'#ff8a8a':'var(--dim)'}">${dot[v]||'○'}</span>`).join('')}</div>`;}
 function renderFeed(){const items=[...st.jobs,...st.feed.filter(f=>!st.jobs.some(j=>j.resultIdx&&j.resultIdx===f.idx))];$('#feed').innerHTML=items.map(card).join('')||'<div style="color:var(--faint);font-size:13px">No ad videos yet — add a product above and hit Generate.</div>';renderFeedTimers();}
 function renderFeedTimers(){$$('[data-t0]').forEach(el=>{const s=Math.round((Date.now()-+el.dataset.t0)/1000);el.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');});}
 setInterval(renderFeedTimers,1000);
