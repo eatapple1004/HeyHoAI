@@ -162,6 +162,35 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postEdit', req));
   }
 
+  // POST /api/generate/video-edit/upload — Video Editor 미디어 업로드(영상·음악, 50MB) → /images/<uuid>.mp4
+  @UseInterceptors(FileInterceptor('file', VIDEO_UPLOAD_OPTIONS))
+  @Post('video-edit/upload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditUpload(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditUpload', req));
+  }
+
+  // POST /api/generate/video-edit/render — 타임라인 JSON → ffmpeg mp4 → Library (?async=1 권장)
+  @Post('video-edit/render')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditRender(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditRender', req));
+  }
+
+  // POST /api/generate/video-edit/ai — 클립 구간 → 기존 영상 파이프라인(Seedance Edit/Extend · Topaz · Kling Motion) → video job
+  @Post('video-edit/ai')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditAi(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditAi', req));
+  }
+
+  // POST /api/generate/video-edit/captions — 구간 오디오 → Gemini 자동 자막 (?async=1 권장)
+  @Post('video-edit/captions')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditCaptions(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditCaptions', req));
+  }
+
   // GET /api/generate/jobs/:id — ?async=1 로 시작한 긴 작업(edit·face-swap) 상태 { status:'running'|'done', result:{status,body} }
   @Get('jobs/:id')
   async getAsyncJob(@Req() req: any, @Res({ passthrough: true }) res: any) {

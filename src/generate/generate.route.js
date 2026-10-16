@@ -1122,6 +1122,117 @@ async function postFaceSwapHandler(req, res, next) {
   } catch (err) { cleanup(); next(err); }
 }
 
+// ─── Video Editor (2026-10-16) — /video-edit 타임라인 편집기. 렌더·자르기·자막 = src/videos/videoEditor.service.js ───
+//   AI 도구는 기존 영상 파이프라인(videoJobService.submit — 과금·잡·폴러·Library)을 그대로 쓴다: 클립의 선택 구간을 잘라 sourceVideo 로.
+const VIDEO_EDIT_OPS = {
+  edit: { label: 'Edit with words', engines: ['seedance-2.5-edit', 'kling-edit'], slot: 'sourceVideo', min: 4, max: 15, why: 'Seedance 2.5 Edit changes what you describe and keeps the rest of the shot.' },
+  restyle: { label: 'Restyle', engines: ['seedance-2.5-edit', 'kling-edit'], slot: 'sourceVideo', min: 4, max: 15, why: 'Same edit engine with look presets — color, light, style.' },
+  extend: { label: 'Extend', engines: ['seedance-2.5-extend'], slot: 'sourceVideo', min: 2, max: 15, why: 'Seedance 2.5 continues the shot from its last frame; the new part is added after the clip.' },
+  upscale: { label: 'Upscale', engines: ['topaz-video'], slot: 'sourceVideo', min: 0.5, max: 30, why: 'Topaz Video sharpens real detail — ×2 or ×4.' },
+  motion: { label: 'Motion transfer', engines: ['kling-motion', 'genjutsu'], slot: 'motionVideo', min: 3, max: 15, why: 'Kling Motion Control puts this clip’s movement onto a model photo (people only).' },
+};
+function videoEditEngines(op) {
+  const def = VIDEO_EDIT_OPS[op];
+  return def ? def.engines.map((id) => getTool(id)).filter((t) => t && t.enabled && isToolAvailable(t)) : [];
+}
+function videoEditCatalog() {
+  // eslint-disable-next-line global-require
+  const credit = require('../credits/credit.service');
+  return Object.entries(VIDEO_EDIT_OPS).map(([op, d]) => {
+    const list = videoEditEngines(op);
+    if (!list.length) return null;
+    return { op, label: d.label, why: d.why, min: d.min, max: d.max,
+      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.videoCost(5, 'pro', false), 10: credit.videoCost(10, 'pro', false) } })) };
+  }).filter(Boolean);
+}
+
+async function postVideoEditUploadHandler(req, res, next) {
+  const f = req.file || (req.files && (req.files.file || [])[0]);
+  try {
+    if (!f) return res.status(400).json({ success: false, error: 'file required' });
+    if (!/^(video|audio)\//.test(f.mimetype || '') && !/\.(mp4|mov|webm|m4v|mp3|wav|m4a|aac|ogg)$/i.test(f.originalname || '')) {
+      fs.unlink(f.path, () => {}); return res.status(400).json({ success: false, error: 'Upload a video or audio file' });
+    }
+    // eslint-disable-next-line global-require
+    const data = await require('../videos/videoEditor.service').saveUpload(f.path, f.originalname);
+    res.json({ success: true, data });
+  } catch (err) { if (f) fs.unlink(f.path, () => {}); if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
+async function postVideoEditRenderHandler(req, res, next) {
+  try {
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const tl = (req.body && req.body.timeline) || {};
+    const out = await ve.render(tl);
+    const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    const savedPrompt = await promptRepo.insert({ userId: req.user.id, characterId: null, promptText: `Video Editor export — ${(tl.clips || []).length} clips`, model: 'video-editor', referenceImagePath: null, tags: ['video', 'editor'], stylePreset: null, teamId });
+    const st = fs.statSync(out.file);
+    const saved = await resultRepo.insert({ promptIdx: savedPrompt.idx, characterId: null, filePath: `tmp/images/${out.name}`, fileSizeKb: Math.round(st.size / 1024), width: out.width, height: out.height, model: 'video-editor', visibility, templateName: 'Video Editor',
+      metadata: { type: 'video', duration: out.duration, editor: { clips: (tl.clips || []).length, texts: (tl.texts || []).length, aspect: tl.aspect, bgm: !!(tl.audio && tl.audio.src) } } });
+    await reviewRepo.insert({ resultIdx: saved.idx, promptIdx: savedPrompt.idx });
+    res.json({ success: true, data: { idx: saved.idx, url: `/images/${out.name}`, duration: out.duration, width: out.width, height: out.height } });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    logger.warn({ err: err.message }, 'video editor render failed');
+    res.status(500).json({ success: false, error: `Export failed: ${String(err.message).slice(0, 200)}` });
+  }
+}
+
+async function postVideoEditAiHandler(req, res, next) {
+  let cutFile = null, imgFile = null;
+  try {
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const b = req.body || {};
+    const op = String(b.op || '');
+    const def = VIDEO_EDIT_OPS[op];
+    if (!def) return res.status(400).json({ success: false, error: 'Unknown AI tool' });
+    const list = videoEditEngines(op);
+    const tool = list.find((t) => t.id === b.engine) || list[0];
+    if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
+    if ((op === 'edit' || op === 'restyle') && !String(b.prompt || '').trim()) return res.status(400).json({ success: false, error: 'Describe the change' });
+    if (op === 'motion' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Pick a model photo for the motion to go onto' });
+    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: def.max });
+    cutFile = c.path;
+    if (op === 'motion') imgFile = await ve.copyImage(b.imageSrc);
+    const range = (tool.controls && tool.controls.durationRange) || null;
+    let duration = Math.round(c.duration);
+    if (op === 'extend') duration = Math.max(4, Math.min(15, parseInt(b.extendSec, 10) || 5));
+    if (range) duration = Math.max(range.min, Math.min(range.max, duration));
+    else if (tool.controls && Array.isArray(tool.controls.duration)) duration = tool.controls.duration.reduce((p, x) => (Math.abs(x - duration) < Math.abs(p - duration) ? x : p), tool.controls.duration[0]);
+    const extras = op === 'upscale' ? { upscale_factor: String(parseInt(b.factor, 10) === 4 ? 4 : 2) } : {};
+    let prompt = String(b.prompt || '').trim();
+    if (op === 'edit' || op === 'restyle') prompt = `Edit @Video1: ${prompt}. Keep the same framing, timing and camera motion; change only what is asked.`;
+    if (op === 'extend') prompt = prompt || 'Continue the shot naturally — same scene, lighting and camera motion.';
+    const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const result = await videoJobService.submit({
+      user: req.user, prompt, duration: String(duration), mode: 'pro', aspectRatio: b.aspectRatio || undefined, audio: b.audio === true || b.audio === 'true',
+      engine: tool.provider, resolution: b.resolution, tool, extras: pickExtras(tool, JSON.stringify(extras)),
+      visibility, templateId: null, templateSource: null, templateName: 'Video Editor',
+      sourceImagePath: imgFile, endFramePath: null, referenceImagePaths: [],
+      sourceVideoPath: def.slot === 'sourceVideo' ? cutFile : null, motionVideoPath: def.slot === 'motionVideo' ? cutFile : null,
+      isTemplate: false,
+    });
+    cutFile = null; imgFile = null; // 파이프라인이 가져갔다(정리도 거기서)
+    res.json({ success: true, data: { ...result, op, engine: { id: tool.id, label: tool.label }, duration } });
+  } catch (err) {
+    [cutFile, imgFile].forEach((f) => { if (f) fs.unlink(f, () => {}); });
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+}
+
+async function postVideoEditCaptionsHandler(req, res, next) {
+  try {
+    const b = req.body || {};
+    // eslint-disable-next-line global-require
+    const lines = await require('../videos/videoEditor.service').captions(b.src, b.in, b.out, b.lang);
+    res.json({ success: true, data: { lines } });
+  } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
 // ─── 긴 작업 비동기화 (2026-10-16) — ?async=1 이면 jobId 를 바로 주고 처리는 계속(src/lib/asyncJobs.js). Cloudflare 100초 제한 회피 ───
 function asyncable(handler, kind) {
   return (req, res, next) => {
@@ -2259,7 +2370,8 @@ const reads = {
       removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
       editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
       faceswap: listTools({ type: 'faceswap', enabledOnly: true, availableOnly: true }).map(pub), // (10-16) Face swap 엔진 — 비어 있으면 메뉴 soon
-      faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
+      faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크)
+      videoEditor: videoEditCatalog(), // (10-16) Video Editor AI 도구별 엔진 — 비어 있어도 편집기 자체는 동작(로컬 편집·내보내기) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },
 
@@ -2320,6 +2432,7 @@ const reads = {
 
   /** 영상 작업 단건 */
   async videoJob(userId, id) {
+    if (env.DISABLE_VIDEO_POLLER) await videoJobService.pollJobNow(id).catch(() => {}); // (10-16) 폴러 꺼진 dev — 조회 때 즉석 폴링
     const job = await videoJobService.getJob(id, userId);
     if (!job) throw readError(404, 'Job not found');
     // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
@@ -2421,6 +2534,10 @@ const ops = {
   postEdit: asOps(asyncable(postEditHandler, 'edit')),
   postFaceSwap: asOps(asyncable(postFaceSwapHandler, 'faceswap')),
   getAsyncJob: asOps(getAsyncJobHandler),
+  postVideoEditUpload: asOps(postVideoEditUploadHandler),
+  postVideoEditRender: asOps(asyncable(postVideoEditRenderHandler, 'video-render')),
+  postVideoEditAi: asOps(postVideoEditAiHandler),
+  postVideoEditCaptions: asOps(asyncable(postVideoEditCaptionsHandler, 'captions')),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2463,6 +2580,10 @@ router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
 router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), asyncable(postEditHandler, 'edit'));
 router.get('/jobs/:id', getAsyncJobHandler);
+router.post('/video-edit/upload', uploadVideo.single('file'), postVideoEditUploadHandler);
+router.post('/video-edit/render', asyncable(postVideoEditRenderHandler, 'video-render'));
+router.post('/video-edit/ai', postVideoEditAiHandler);
+router.post('/video-edit/captions', asyncable(postVideoEditCaptionsHandler, 'captions'));
 router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), asyncable(postFaceSwapHandler, 'faceswap'));
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);

@@ -521,6 +521,21 @@ async function pollOnce() {
   }
 }
 
+/**
+ * (2026-10-16) 폴러가 꺼진 환경(DISABLE_VIDEO_POLLER=true — dev)에서 상태 조회 시 그 잡 하나만 즉석 폴링.
+ *   dev 는 폴러가 꺼져 있어 외부 엔진 영상이 영원히 processing 이었다(Video Editor AI 도구가 dev 에서 끝나지 않음).
+ *   pollOnce 와 같은 12초 게이트·클레임을 쓰므로 폴러가 켜진 환경과 겹쳐도 안전하다. 외부 엔진(어댑터)만.
+ */
+async function pollJobNow(id) {
+  const r = await query(`SELECT * FROM video_jobs WHERE id=$1 AND status='processing' AND updated_at < now() - interval '12 seconds'`, [id]);
+  const job = r.rows[0];
+  if (!job || !job.engine || job.engine === 'kling') return;
+  try { await pollExternal(job); } catch (err) {
+    log.error(`Poll-now error job ${job.id}: ${err.message}`);
+    await query(`UPDATE video_jobs SET attempts=attempts+1, updated_at=now() WHERE id=$1`, [job.id]).catch(() => {});
+  }
+}
+
 /** 잡 상태 조회 (소유자 본인 또는 팀 멤버) */
 async function getJob(id, userId) {
   const r = await query(
@@ -565,4 +580,4 @@ async function listActiveJobs(userId, { maxAgeMinutes = 30 } = {}) {
   return r.rows;
 }
 
-module.exports = { submit, getJob, pollOnce, startPoller, listActiveJobs };
+module.exports = { submit, getJob, pollOnce, pollJobNow, startPoller, listActiveJobs };
