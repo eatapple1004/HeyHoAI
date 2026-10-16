@@ -1242,6 +1242,162 @@ async function postVideoEditCaptionsHandler(req, res, next) {
   } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
 }
 
+// ─── Doppia Lens (2026-10-16) — 재사용 템플릿. 데이터·프롬프트 = src/lens/lens.service.js, 생성 = 기존 핸들러(postRootHandler·videoJob) 재사용 ───
+const isAdminUser = (u) => !!(u && u.role === 'admin');
+const lensErr = (res, err, next) => (err.statusCode ? res.status(err.statusCode).json({ success: false, error: err.message }) : next(err));
+
+const getLensListHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const data = await require('../lens/lens.service').list({ userId: req.user.id, isAdmin: isAdminUser(req.user), scope: req.query.scope, category: req.query.category, q: req.query.q });
+    res.json({ success: true, data });
+  } catch (err) { lensErr(res, err, next); }
+};
+const getLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.getRow(req.params.slug);
+    if (!L.canView(row, req.user.id)) return res.status(404).json({ success: false, error: 'Lens not found' });
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const postLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.create(req.user.id, req.body || {});
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const patchLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.update(req.user.id, isAdminUser(req.user), req.params.slug, req.body || {});
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const deleteLensHandler = async (req, res, next) => {
+  // eslint-disable-next-line global-require
+  try { await require('../lens/lens.service').remove(req.user.id, req.params.slug); res.json({ success: true }); } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 참고 이미지 업로드 → /images/<uuid>.png
+const postLensUploadHandler = async (req, res, next) => {
+  const f = req.file || (req.files && (req.files.file || [])[0]);
+  try {
+    if (!f) return res.status(400).json({ success: false, error: 'file required' });
+    // eslint-disable-next-line global-require
+    const sharp = require('sharp');
+    const buf = await sharp(fs.readFileSync(f.path)).rotate().resize(2048, 2048, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+    fs.unlink(f.path, () => {});
+    const name = `${crypto.randomUUID()}.png`;
+    fs.mkdirSync(path.join(process.cwd(), 'tmp', 'images'), { recursive: true });
+    fs.writeFileSync(path.join(process.cwd(), 'tmp', 'images', name), buf);
+    await mediaStore.put(name, buf);
+    res.json({ success: true, data: { url: `/images/${name}` } });
+  } catch (err) { if (f) fs.unlink(f.path, () => {}); lensErr(res, err, next); }
+};
+// 내 결과물 → 렌즈 초안(저장 전) — 그 결과의 프롬프트·엔진 + 결과 이미지를 스타일 참고로
+const getLensDraftHandler = async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    const r = await query(
+      `SELECT gr.idx, gr.file_path, gr.model, gr.metadata, p.prompt_text FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+        WHERE gr.idx = $1 AND gr.status = 'success' AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+      [idx, req.user.id, teamId || null]
+    );
+    const row = r.rows[0];
+    if (!row) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
+    const url = `/images/${path.basename(row.file_path || '')}`;
+    const isVideo = /\.(mp4|webm|mov)$/i.test(url);
+    const tool = listTools({ type: isVideo ? 'video' : 'image', enabledOnly: true }).find((t) => t.costKey === row.model || t.model === row.model || t.id === row.model);
+    res.json({ success: true, data: { title: '', prompt: String(row.prompt_text || '').slice(0, 3000), kind: isVideo ? 'video' : 'image', engine: tool ? tool.id : (isVideo ? 'seedance-2.5' : 'nano-banana-pro'), refs: isVideo ? [] : [url], coverUrl: isVideo ? null : url, fromResultIdx: idx } });
+  } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 실행 — multipart: product·person(파일) 또는 productSrc·personSrc(/images/..), note, count, privateMode
+async function postLensRunHandler(req, res, next) {
+  const tmpFiles = [];
+  const files = req.files || {};
+  const uploaded = Object.values(files).flat();
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const row = await L.getRow(req.params.slug);
+    if (!L.canView(row, req.user.id)) return res.status(404).json({ success: false, error: 'Lens not found' });
+    const c = row.config || {};
+    const b = req.body || {};
+    const mine = row.owner_id === req.user.id || (row.is_official && isAdminUser(req.user));
+    const copy = (src) => { const out = path.join(process.cwd(), 'tmp', 'uploads', `${crypto.randomUUID()}${path.extname(src) || '.png'}`); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.copyFileSync(src, out); tmpFiles.push(out); return out; };
+    // 입력 슬롯
+    const slots = [];
+    for (const inp of c.inputs || []) {
+      let p = (files[inp.key] || [])[0] ? files[inp.key][0].path : null;
+      if (!p && b[`${inp.key}Src`]) p = await ve.localFile(b[`${inp.key}Src`]);
+      if (!p) { if (inp.required) return res.status(400).json({ success: false, error: `Add ${inp.label}` }); continue; }
+      slots.push({ key: inp.key, path: p });
+    }
+    const note = String(b.note || '').trim();
+    const templateName = `Lens · ${row.title}`.slice(0, 120);
+
+    if (c.kind === 'video') {
+      const tool = L.videoEngine(c);
+      if (!tool) return res.status(400).json({ success: false, error: 'No video engine is configured on this server' });
+      if (!slots.length) return res.status(400).json({ success: false, error: 'Add a product photo' });
+      const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
+      const range = (tool.controls && tool.controls.durationRange) || null;
+      let duration = c.duration || 5;
+      if (range) duration = Math.max(range.min, Math.min(range.max, duration));
+      else if (tool.controls && Array.isArray(tool.controls.duration)) duration = tool.controls.duration.reduce((p2, x) => (Math.abs(x - duration) < Math.abs(p2 - duration) ? x : p2), tool.controls.duration[0]);
+      const result = await videoJobService.submit({
+        user: req.user, prompt: `${c.prompt}${note ? ` ${note}` : ''}`, duration: String(duration), mode: 'pro', aspectRatio: c.aspect, audio: false,
+        engine: tool.provider, tool, extras: {}, visibility, templateId: row.id, templateSource: 'lens', templateName,
+        sourceImagePath: copy(slots[0].path), endFramePath: null, referenceImagePaths: [], sourceVideoPath: null, motionVideoPath: null, isTemplate: !mine,
+      });
+      tmpFiles.length = 0; // 파이프라인이 가져갔다
+      await L.bumpUse(row, null, req.user.id);
+      return res.json({ success: true, data: { kind: 'video', jobId: result.jobId, engine: { id: tool.id, label: tool.label } } });
+    }
+
+    const tool = L.imageEngine(c);
+    if (!tool) return res.status(400).json({ success: false, error: 'No image engine is configured on this server' });
+    const refPaths = [];
+    for (const u of c.refs || []) { const p = await ve.localFile(u); if (p) refPaths.push(p); }
+    const shots = (c.shots && c.shots.length) ? c.shots : [null];
+    const count = shots[0] ? 1 : Math.max(1, Math.min(c.count || 1, parseInt(b.count, 10) || c.count || 1));
+    const results = [];
+    let credits = null, firstErr = null;
+    for (const shot of shots) {
+      const req2 = {
+        user: req.user,
+        body: {
+          prompt: L.buildImagePrompt(c, { slots: slots.map((s) => s.key), refCount: refPaths.length, shot, note }),
+          model: tool.costKey || 'pro', tool: tool.id, count: String(count), aspectRatio: c.aspect, imageSize: c.imageSize || '',
+          negativePrompt: c.negative || '', extras: JSON.stringify(c.extras || {}), enhance: 'false', style: 'none',
+          billingMode: mine ? 'custom' : 'template', templateName, templateSource: 'lens', templateId: row.id, privateMode: b.privateMode,
+        },
+        files: [...slots.map((s) => s.path), ...refPaths].map((p) => ({ path: copy(p), originalname: path.basename(p) })),
+        query: {},
+      };
+      const out = await asOps(postRootHandler)(req2);
+      if (out.status !== 200 || !out.body || !out.body.success) {
+        if (!results.length) return res.status(out.status || 502).json(out.body || { success: false, error: 'Lens failed' });
+        firstErr = (out.body && out.body.error) || 'failed'; break;
+      }
+      credits = out.body.credits || credits;
+      (out.body.results || []).filter((x) => x.success !== false && x.url).forEach((x) => results.push({ url: x.url, idx: x.resultIdx, shot: shot ? shot.name : null }));
+    }
+    await L.bumpUse(row, results[0] && results[0].url, req.user.id);
+    res.json({ success: true, data: { kind: 'image', results, credits, engine: { id: tool.id, label: tool.label }, partialError: firstErr } });
+  } catch (err) { lensErr(res, err, next); } finally {
+    tmpFiles.forEach((f) => fs.unlink(f, () => {}));
+    uploaded.forEach((f) => f && f.path && fs.unlink(f.path, () => {}));
+  }
+}
+
 // ─── 긴 작업 비동기화 (2026-10-16) — ?async=1 이면 jobId 를 바로 주고 처리는 계속(src/lib/asyncJobs.js). Cloudflare 100초 제한 회피 ───
 function asyncable(handler, kind) {
   return (req, res, next) => {
@@ -2548,6 +2704,14 @@ const ops = {
   postVideoEditAi: asOps(postVideoEditAiHandler),
   postVideoEditCaptions: asOps(asyncable(postVideoEditCaptionsHandler, 'captions')),
   postVideoEditScenes: asOps(postVideoEditScenesHandler),
+  getLensList: asOps(getLensListHandler),
+  getLens: asOps(getLensHandler),
+  postLens: asOps(postLensHandler),
+  patchLens: asOps(patchLensHandler),
+  deleteLens: asOps(deleteLensHandler),
+  postLensUpload: asOps(postLensUploadHandler),
+  getLensDraft: asOps(getLensDraftHandler),
+  postLensRun: asOps(asyncable(postLensRunHandler, 'lens')),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2595,6 +2759,14 @@ router.post('/video-edit/render', asyncable(postVideoEditRenderHandler, 'video-r
 router.post('/video-edit/ai', postVideoEditAiHandler);
 router.post('/video-edit/captions', asyncable(postVideoEditCaptionsHandler, 'captions'));
 router.post('/video-edit/scenes', postVideoEditScenesHandler);
+router.get('/lens', getLensListHandler);
+router.post('/lens', postLensHandler);
+router.post('/lens-upload', upload.single('file'), postLensUploadHandler);
+router.get('/lens-draft/:idx', getLensDraftHandler);
+router.get('/lens/:slug', getLensHandler);
+router.patch('/lens/:slug', patchLensHandler);
+router.delete('/lens/:slug', deleteLensHandler);
+router.post('/lens/:slug/run', upload.fields([{ name: 'product', maxCount: 1 }, { name: 'person', maxCount: 1 }]), asyncable(postLensRunHandler, 'lens'));
 router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), asyncable(postFaceSwapHandler, 'faceswap'));
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);

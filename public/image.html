@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=23" defer></script>
+<script src="/js/topnav.js?v=24" defer></script>
 </head>
 <body>
 <!-- (2026-10-13) 베이스 1차 — Image: 좌 컴포저(엔진·레퍼런스·프롬프트·컨트롤) + 우 결과 피드. 힉스필드 구조, 로컬 프로토 이식.
@@ -103,7 +103,7 @@ $('#presets').addEventListener('click',e=>{const b=e.target.closest('.pre');if(!
 $('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
 // ── 피드 ──
 function url(r){return '/images/'+String(r.file_path||'').split('/').pop();}
-function card(r,extra){const u=typeof r==='string'?r:url(r);const idx=r&&r.idx;return `<div class="rt ${extra||''}" ${idx?`onclick="location.href='/creation?idx=${idx}'"`:''}><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r&&r.model||'')}</span><span class="a">${idx&&EDITOR?`<span title="Upscale in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=upscale&idx=${idx}&u=${encodeURIComponent(u)}'">⤢</span><span title="Remove background in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=removebg&idx=${idx}&u=${encodeURIComponent(u)}'">✂</span><span title="Open in Editor" onclick="event.stopPropagation();location.href='/image-edit?idx=${idx}&u=${encodeURIComponent(u)}'">✎</span>`:''}<span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
+function card(r,extra){const u=typeof r==='string'?r:url(r);const idx=r&&r.idx;return `<div class="rt ${extra||''}" ${idx?`onclick="location.href='/creation?idx=${idx}'"`:''}><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r&&r.model||'')}</span><span class="a">${idx&&EDITOR?`<span title="Upscale in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=upscale&idx=${idx}&u=${encodeURIComponent(u)}'">⤢</span><span title="Remove background in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=removebg&idx=${idx}&u=${encodeURIComponent(u)}'">✂</span><span title="Open in Editor" onclick="event.stopPropagation();location.href='/image-edit?idx=${idx}&u=${encodeURIComponent(u)}'">✎</span>`:''}${idx?`<span title="Make a Lens from this look" onclick="event.stopPropagation();location.href='/lens?from=${idx}'">✦</span>`:''}<span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
 // (2026-10-16) 카드의 ⤢·✂·✎ 는 전부 개발자의 Editor(/image-edit?tool=…) 로 넘긴다 — 서버에 editor 엔진이 없으면(tools.editor 빈 배열) 버튼이 안 뜬다.
 let EDITOR=false;
 async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const api=st.feed==='mine'?'/api/generate/results?type=photo&limit=60':'/api/generate/community?limit=60';const d=(await(await fetch(api)).json()).data||[];const rows=d.filter(r=>r.file_path&&!/\.(mp4|webm|mov)$/i.test(r.file_path));if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(r=>card(r)).join('');}catch(e){$('#feedEmpty').hidden=false}}
