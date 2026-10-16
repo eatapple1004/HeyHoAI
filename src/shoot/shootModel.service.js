@@ -90,7 +90,8 @@ async function describeProfile(absPath) {
     ] }] });
     const text = String(r.text || '');
     const p = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-    return { gender: ['man', 'woman'].includes(p.gender) ? p.gender : 'person', age: String(p.age || '').slice(0, 20), hair: String(p.hair || '').slice(0, 60), build: String(p.build || '').slice(0, 40) };
+    const clean = (v, n) => (/not |unknown|n\/a|none|discernible|visible/i.test(String(v || '')) ? '' : String(v || '').slice(0, n)); // (10-16 로스터 실측) "not discernible"·"none" 이 프롬프트에 그대로 들어갔다 → 빈칸
+    return { gender: ['man', 'woman'].includes(p.gender) ? p.gender : 'person', age: clean(p.age, 20), hair: clean(p.hair, 60), build: clean(p.build, 40) };
   } catch (err) {
     logger.info({ err: String(err.message || err).slice(0, 120) }, 'shoot profile estimate failed — neutral');
     return { gender: 'person', age: '', hair: '', build: '' };
