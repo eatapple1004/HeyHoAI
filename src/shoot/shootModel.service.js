@@ -92,6 +92,29 @@ async function download(url) {
   return Buffer.from(await r.arrayBuffer());
 }
 
+/** 각도 한 장 — 모델 순서대로(각 2회: 503 같은 일시 오류 대비), 전부 실패면 null(건너뛴다) */
+async function shootAngle(nano, src, angle) {
+  for (const model of ANGLE_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle} ${ANGLE_FRAME}`, references: [{ path: src, kind: 'person' }], model, width: 768, height: 1024, imageSize: '1K' });
+        return out.url.replace('file://', '');
+      } catch (err) { logger.info({ model, attempt, err: String(err.message || err).slice(0, 120) }, 'shoot angle failed'); }
+    }
+  }
+  return null;
+}
+
+/** 동시 실행 n개 — 결과는 입력 순서대로 */
+async function mapLimit(items, n, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) { const i = next; next += 1; out[i] = await fn(items[i], i); }
+  }));
+  return out;
+}
+
 // ── A. 다각도 잡 — DB(shoot_angle_jobs). 배포로 프로세스가 죽어도 GET 때 남은 각도부터 다시 돈다 ──
 const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: (j.results || []).map((r) => r.url), total: ANGLES.length, skipped: (j.skipped || []).length, source: j.source });
 const runningAngles = new Set();
