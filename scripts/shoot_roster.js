@@ -10,7 +10,7 @@
  *   NODE_ENV=development node scripts/shoot_roster.js yuna                 # 유나(이미 학습된 Soul ID + 정적 뱅크 /img/shoot/yuna) 를 official 행으로
  *   NODE_ENV=development node scripts/shoot_roster.js retry                 # 학습 실패 행(관리자 것, 비공식) 을 같은 사진으로 다시 — 성공하면 official, 실패 행은 지운다
  *   NODE_ENV=development node scripts/shoot_roster.js thumbs <출력 폴더>   # Shoot 템플릿 28종 썸네일 — 공식 모델을 돌아가며 한 장씩(→ public/img/shoot/tpl/NN.jpg)
- * 옵션: --owner <userId>(기본 관리자) --angles 4 --train 6
+ * 옵션: --owner <userId>(기본 관리자) --angles 4 --train 6 · thumbs: --only 14,23,24(번호만 다시) --shift 3(모델 배정 밀기)
  */
 const fs = require('fs');
 const path = require('path');
@@ -105,9 +105,12 @@ async function thumbs(outDir) {
   const tpl = [...html.matchAll(/^ \['[^']*','([^']+)','([^']+)'\],$/gm)].map((m) => [m[1], m[2]]); // SHOT_TPL 과 같은 순서
   const models = await repo.findOfficial();
   if (!models.length) throw new Error('no official models');
-  log(`thumbs: ${tpl.length} templates over ${models.length} models`);
-  const out = await pool(tpl.map((t, i) => [t, i]), 6, async ([[name, prompt], i]) => {
-    const m = models[i % models.length];
+  const only = opt('only', '').split(',').filter(Boolean).map((n) => +n - 1); // --only 14,23 = 그 번호만 다시(얼굴이 안 보이는 컷 교체)
+  const shift = +opt('shift', 0); // 모델 배정을 밀어 다른 모델로
+  const jobs = tpl.map((t, i) => [t, i]).filter(([, i]) => !only.length || only.includes(i));
+  log(`thumbs: ${jobs.length} templates over ${models.length} models`);
+  const out = await pool(jobs, 6, async ([[name, prompt], i]) => {
+    const m = models[(i + shift) % models.length];
     const r = await svc.shot(USER, m.id, { prompt, count: 1, aspectRatio: '3:4', privateMode: true });
     const res = r.results[0];
     if (!res.success) throw new Error(`${name}: ${res.error}`);
