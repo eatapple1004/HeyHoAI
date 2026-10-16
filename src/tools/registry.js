@@ -433,7 +433,8 @@ const TOOLS = {
     id: 'luma-reframe', label: 'Luma Ray 2 Reframe', type: 'video',
     provider: 'fal', model: 'fal-ai/luma-dream-machine/ray-2/reframe',
     falInput: { video: 'video_url', aspect: true }, billPer10s: true, editorOnly: true,
-    costKey: null, enabled: true,
+    // ⚠️ enabled:false (10-16) — dev 실측 4:3: 원본 글씨가 깨지고("네일"→"네얌") 없는 낙서를 그림. 사용자 결정으로 LTX 비율만 남김
+    costKey: null, enabled: false,
     controls: { duration: [5, 10], durationRange: { min: 1, max: 10 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4', '21:9'] },
     imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Up to 10s. Describe the extended area (optional).' }],
   },
