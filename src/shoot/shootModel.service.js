@@ -225,11 +225,11 @@ async function create(user, { name, files, photoUrls, consent }) {
   requireConfigured();
   if (String(consent) !== 'true') throw httpError(400, 'Please confirm the photos are yours (or of an adult who gave permission)'); // 힉스필드 Soul ID 와 같은 초상·생체정보 동의
   const photos = (Array.isArray(photoUrls) ? photoUrls : []).filter(isOurs); // 다각도 결과 등 이미 우리 서버에 있는 사진
-  for (const f of (files || []).slice(0, 20)) photos.push(publicUrl(await keep(f)));
+  for (const f of (files || []).slice(0, 80)) photos.push(publicUrl(await keep(f))); // 업로드 상한 80(힉스필드 웹과 동일)
   if (!photos.length) throw httpError(400, 'Add at least one photo');
   const clean = String(name || '').trim().slice(0, 100) || 'My model';
   const charge = await teamCredit.chargeGeneration(user, credit().imageCost('shoot-train', 1, false), `Shoot model: ${clean}`); // 관리자는 null(과금 없음)
-  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: 'training', photos: photos.slice(0, 100), charged: !!charge });
+  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: 'training', photos: photos.slice(0, 100), charged: !!charge }); // 힉스필드 input_images 최대 100 — 업로드 80 + 다각도 24 면 앞의 100장만
   kick(row.id);
   return pub(row);
 }

@@ -144,9 +144,10 @@ $('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id],[da
 // 만들기: 사진(업로드 + 다각도 결과) + 이름 + 동의 → POST /api/shoot/models. 다각도는 학습 전에 따로: POST /api/shoot/angles(사진 1장) → 폴링 → 그리드에 AI 표시로 추가(지울 수 있다).
 //   오른쪽 패널의 두 게이지 = 힉스필드 캐릭터 화면 참고 — 장수, 품질(올린 사진 중 가장 작은 변). 얼굴 사전검사는 없다(사용자 10-16).
 const mk={files:[],consent:false,job:null}; // files: {file,url,px} 업로드 | {remote:url} 다각도 결과
+const MAX_PHOTOS=80; // 힉스필드 웹과 같은 상한(API 는 100, 다각도 24 가 더해진다)
 const MIN_PX=[[1000,'Good'],[600,'OK'],[0,'Low']];
 function openCreate(){mk.files=[];mk.consent=false;mk.job=null;$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
-  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>To train well, the model needs clear face photos from many angles. Only one photo? Don\'t worry — we make them: 24 face close-ups (every angle, several expressions), then train.</p>
+  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>To train well, the model needs clear face photos from many angles — up to 80, 20+ is best. Only one photo? Don\'t worry — we make them: 24 face close-ups (every angle, several expressions), then train.</p>
     <div class="ugrid" id="ugrid"></div><div class="angles" id="angles"></div>
     <div class="guide"><div><b>✓ Works well</b>One person · clear face · front, side and three-quarter · natural light and indoor light mixed · no heavy filters</div><div><b>✕ Avoid</b>Group shots · sunglasses, masks, hands over the face · duplicates · tiny or blurry photos · screenshots</div></div></div>
     <div class="panel"><div><div class="lbl" style="margin-top:0">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina"></div>
@@ -164,12 +165,12 @@ function renderMk(){const n=mk.files.length,up=mk.files.filter(f=>f.file),j=mk.j
   else if(up.length)a.innerHTML=`<span><b>${up.length===1?'Only one photo?':'Want a stronger set?'}</b> We shoot 24 face close-ups from the first photo — front to full profile both ways, up and down, and eight expressions. Soul ID learns the face, so these are what matter.</span><button class="btn2" id="mkAngles">Shoot 24 face angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
   else a.innerHTML='<span>Add a photo. Only one? We make the 24 face angles for you.</span>';
   const ab=$('#mkAngles');if(ab)ab.onclick=mkAngles;
-  const cnt=n===0?['—','Add photos','var(--border)']:n<5?[n,'OK · 5+ is better','#f5c542']:[n,'Good','var(--lime)'];
-  $('#gCount').innerHTML=`<i style="--v:${Math.min(100,n*5)};--c:${cnt[2]}"><span>${cnt[0]}/20</span></i><div class="t"><b>Photos</b>${cnt[1]}</div>`;
+  const cnt=n===0?['—','Add photos','var(--border)']:n<5?[n,'OK · 5+ is better','#f5c542']:n<20?[n,'Good · 20+ is best','#f5c542']:[n,'Best','var(--lime)'];
+  $('#gCount').innerHTML=`<i style="--v:${Math.min(100,Math.round(n/MAX_PHOTOS*100))};--c:${cnt[2]}"><span>${cnt[0]}/${MAX_PHOTOS}</span></i><div class="t"><b>Photos</b>${cnt[1]}</div>`;
   const px=up.length?Math.min(...up.map(f=>f.px||0)):0;const q=MIN_PX.find(([m])=>px>=m);
   $('#gQual').innerHTML=`<i style="--v:${up.length?Math.min(100,Math.round(px/14)):0};--c:${q[1]==='Good'?'var(--lime)':q[1]==='OK'?'#f5c542':'#e5533d'}"><span>${up.length?px+'px':'—'}</span></i><div class="t"><b>Quality</b>${up.length?q[1]+' · shortest side of the smallest upload':'Shortest side ≥ 1000px is best'}</div>`;
   $('#mkGo').disabled=!n||!mk.consent||!!(j&&!j.done);}
-function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,20-mk.files.length).forEach(f=>{const it={file:f,url:URL.createObjectURL(f),px:0};mk.files.push(it);const im=new Image();im.onload=()=>{it.px=Math.min(im.naturalWidth,im.naturalHeight);renderMk();};im.src=it.url;});renderMk();}
+function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,MAX_PHOTOS-mk.files.length).forEach(f=>{const it={file:f,url:URL.createObjectURL(f),px:0};mk.files.push(it);const im=new Image();im.onload=()=>{it.px=Math.min(im.naturalWidth,im.naturalHeight);renderMk();};im.src=it.url;});renderMk();}
 $('#pfile').addEventListener('change',e=>{mkAdd([...e.target.files]);e.target.value='';});
 async function mkAngles(){const src=mk.files.find(f=>f.file);if(!src)return;const fd=new FormData();fd.append('photo',src.file,src.file.name);
   try{const res=await fetch('/api/shoot/angles',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));

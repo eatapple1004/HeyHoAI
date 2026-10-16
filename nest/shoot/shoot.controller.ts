@@ -27,10 +27,10 @@ export class ShootController {
     return { success: true, data: this.shoot.getAngles(req.user, id) };
   }
 
-  // POST /api/shoot/models — multipart photos(0~20) + photoUrls(JSON) + name + consent → Soul ID 학습
+  // POST /api/shoot/models — multipart photos(0~80, 힉스필드 웹과 같은 상한) + photoUrls(JSON) + name + consent → Soul ID 학습
   @Post('models')
   @HttpCode(200) // 레거시 res.json=200
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'photos', maxCount: 20 }], GENERATE_UPLOAD_OPTIONS))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'photos', maxCount: 80 }], GENERATE_UPLOAD_OPTIONS))
   async create(@Req() req: any, @UploadedFiles() files: { photos?: Array<{ path: string }> }, @Body() body: CreateShootModelDto): Promise<ApiResponse<ShootModelDto>> {
     return { success: true, data: await this.shoot.create(req.user, body, ((files && files.photos) || []).map((f) => f.path)) };
   }
