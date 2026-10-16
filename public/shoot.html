@@ -114,7 +114,7 @@ const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'
 // 내 모델 — GET /api/shoot/models (Soul ID 학습 + 장면 뱅크, src/shoot/shootModel.service.js). 진행 중이면 6초마다 다시 본다.
 let MINE=[];const BUSY=['angles','training','bank'];const STATUS={training:'Training…',bank:'Shooting scenes',failed:'Failed'};
 const TRAIN_COST=1500,ANGLES_COST=4440; // credit.service IMG_CREDIT['shoot-train'] 자리값 · 다각도 = pro 185 × 24 컷(얼굴 학습셋)
-const toModel=m=>({id:m.id,name:m.name,tag:'Your model',avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
+const toModel=m=>({id:m.id,name:m.name,tag:'Your model · '+(m.profileLine||'a person'),profileLine:m.profileLine,avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
   outfit:'Drop a few item photos and I\'ll put them on — layers are fine.',scene:'Pick a place or describe one. I\'ll keep my outfit and pose.',pose:'Tell me how to stand, or just pick one.',
@@ -136,7 +136,7 @@ let pollT=null;
 async function loadMine(){try{MINE=((await(await fetch('/api/shoot/models')).json()).data)||[];}catch(e){MINE=[];}}
 function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;$('#create').hidden=true;$('#mgrid').hidden=false;
   const mine=MINE.map(m=>{const img=m.avatar||(m.bank[0]&&m.bank[0].url)||m.photos[0]||'';const st=m.progress?`${STATUS[m.status]} ${m.progress}`:STATUS[m.status]||'';
-    return `<button type="button" class="mc" data-mine="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(img)}" alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):'Your model'}</small></span></button>`;}).join('');
+    return `<button type="button" class="mc" data-mine="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(img)}" alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):'Your model · '+esc(m.profileLine||'')}</small></span></button>`;}).join('');
   $('#mgrid').innerHTML=MODELS.map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.bank[0].url}" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.tag)}</small></span></button>`).join('')+mine+`<button type="button" class="mc add" id="mkBtn">Create your model<br><small>from your photos — trained once, then every scene and outfit · ◈ ${TRAIN_COST.toLocaleString('en-US')}</small></button>`;
   $('#mkBtn').onclick=openCreate;
   clearTimeout(pollT);if(MINE.some(m=>BUSY.includes(m.status)))pollT=setTimeout(async()=>{await loadMine();if(!$('#hello').hidden&&$('#create').hidden)renderHello();},6000);}
@@ -249,13 +249,14 @@ $$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stag
 
 // ── 프롬프트(10-16 실측 틀): 이미지 1 = 현재 버전 보존, 바꿀 것만 ──
 const KEEP='Keep the person exactly as in image 1: same face, hair, body proportions and skin. Photorealistic, same image quality.';
+const who=()=>st.model.profileLine?`The person is ${st.model.profileLine}. `:''; // 내 모델이면 성별·외모 한 줄(Soul ID 는 얼굴만 배운다)
 function prompt(){
   if(st.act==='outfit'){const list=st.items.map((it,i)=>{const t=TYPES.find(x=>x[0]===it.type);return `image ${i+2} = ${t[1].toLowerCase()}, ${t[2]}`;}).join('; ');
-    return `Image 1 is the photo to edit. Dress the person in image 1 in these items, each reproduced faithfully from its photo — same color, print, logo placement and proportions: ${list}. Replace only what the items cover; keep the rest of the outfit, pose, background, lighting and camera. ${KEEP}`;}
+    return `${who()}Image 1 is the photo to edit. Dress the person in image 1 in these items, each reproduced faithfully from its photo — same color, print, logo placement and proportions: ${list}. Replace only what the items cover; keep the rest of the outfit, pose, background, lighting and camera. ${KEEP}`;}
   if(st.act==='scene'){const where=st.sceneText||(st.scene.scene+', '+st.scene.light);const ref=st.scene&&st.scene.id!=='studio'?' Image 2 shows the location.':'';
-    return `Image 1 is the photo to edit.${ref} Place the same person, in the same outfit and pose, in this location: ${where}. Match the light and shadows to the new place. ${KEEP}`;}
+    return `${who()}Image 1 is the photo to edit.${ref} Place the same person, in the same outfit and pose, in this location: ${where}. Match the light and shadows to the new place. ${KEEP}`;}
   const pose=st.poseText||POSES[st.pose][1];
-  return `Image 1 is the person. Same person, same outfit, same location and lighting; change only the pose and framing to: ${pose}. Natural hands, full outfit still visible where the framing allows. ${KEEP}`;}
+  return `${who()}Image 1 is the person. Same person, same outfit, same location and lighting; change only the pose and framing to: ${pose}. Natural hands, full outfit still visible where the framing allows. ${KEEP}`;}
 function label(){return st.act==='outfit'?st.items.map(it=>TYPES.find(x=>x[0]===it.type)[1]).join(' + '):st.act==='scene'?(st.sceneText||st.scene.name):(st.poseText||POSES[st.pose][0]);}
 async function refs(){const base=await(await fetch(cur().url)).blob();const out=[base];
   if(st.act==='outfit')for(const it of st.items)out.push(it.file||await(await fetch(it.url)).blob());

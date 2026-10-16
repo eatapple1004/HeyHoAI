@@ -23,7 +23,8 @@ const repo = require('./shootModel.repository');
 
 const HF = 'https://api.higgsfield.ai';
 const SOUL_MODEL = 'higgsfield-ai/soul/v2/standard';
-const OUTFIT = 'wearing a plain fitted beige sleeveless mock-neck mini dress'; // 뱅크 공통 옷 — 옷은 Shoot 에서 갈아입는다
+// 뱅크 공통 옷 — 성별 무관(10-16 실측: 유나용 베이지 원피스가 고정돼 있어 남자 얼굴 학습에 여자 몸·원피스가 붙고 얼굴이 잘렸다). 옷은 Shoot 에서 갈아입는다.
+const OUTFIT = 'wearing a plain white t-shirt and dark straight jeans';
 const SCENES = [
   ['portrait', 'Portrait', 'close-up portrait from the chest up in a clean light-grey studio, soft even light, looking at the camera'],
   ['street', 'Street', 'standing on a sunlit Paris street with Haussmann buildings, golden hour backlight, head to toe visible'],
@@ -69,6 +70,34 @@ const publicUrl = (name) => `${env.PUBLIC_URL.replace(/\/$/, '')}/images/${name}
 const isOurs = (u) => typeof u === 'string' && !!env.PUBLIC_URL && u.startsWith(`${env.PUBLIC_URL.replace(/\/$/, '')}/images/`);
 // eslint-disable-next-line global-require
 const credit = () => require('../credits/credit.service');
+
+/**
+ * 프로필 — Soul ID 는 얼굴만 배운다. 성별·나이대·몸·머리는 생성 프롬프트가 정하므로 사진에서 한 번 추정해 모든 뱅크·Shoot 프롬프트 앞에 붙인다.
+ * (10-16 실측: 남자 얼굴로 학습한 모델이 여자 몸으로 나옴) Gemini Flash 텍스트, 실패하면 중립('a person').
+ */
+async function describeProfile(absPath) {
+  try {
+    // eslint-disable-next-line global-require
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+    const mime = /\.png$/i.test(absPath) ? 'image/png' : /\.webp$/i.test(absPath) ? 'image/webp' : 'image/jpeg';
+    const r = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: [{ parts: [
+      { inlineData: { mimeType: mime, data: fs.readFileSync(absPath).toString('base64') } },
+      { text: 'Describe the main person for a photo prompt. Reply with JSON only: {"gender":"man"|"woman"|"person","age":"<e.g. 20s, 30s, 40s>","hair":"<short phrase: length, style, colour>","build":"<short phrase, e.g. slim, athletic, average>"}' },
+    ] }] });
+    const text = String(r.text || '');
+    const p = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    return { gender: ['man', 'woman'].includes(p.gender) ? p.gender : 'person', age: String(p.age || '').slice(0, 20), hair: String(p.hair || '').slice(0, 60), build: String(p.build || '').slice(0, 40) };
+  } catch (err) {
+    logger.info({ err: String(err.message || err).slice(0, 120) }, 'shoot profile estimate failed — neutral');
+    return { gender: 'person', age: '', hair: '', build: '' };
+  }
+}
+/** 프롬프트 앞 한 줄: "a 30s man with short dark hair, athletic" */
+function profileLine(p) {
+  if (!p) return 'a person';
+  return [`a ${[p.age, p.gender].filter(Boolean).join(' ')}`, p.hair && `with ${p.hair}`, p.build].filter(Boolean).join(', ');
+}
 
 function requireConfigured() {
   if (!env.HIGGSFIELD_API_KEY) throw httpError(503, 'Model training is not configured on this server');
@@ -172,7 +201,7 @@ async function getAngles(user, id) {
 function pub(row) {
   return {
     id: row.id, name: row.name, status: row.status, error: row.error || null,
-    avatar: row.avatar || null, bank: row.bank || [], photos: row.photos || [],
+    avatar: row.avatar || null, bank: row.bank || [], photos: row.photos || [], profile: row.profile || null, profileLine: profileLine(row.profile),
     progress: row.status === 'bank' ? `${(row.bank || []).length}/${SCENES.length}` : null,
     createdAt: row.created_at,
   };
@@ -202,7 +231,7 @@ async function stepBank(row) {
   const soul = require('../images/providers/higgsfield.provider');
   const bank = row.bank || [];
   for (const [key, label, scene] of SCENES.slice(bank.length)) {
-    const out = await soul.generate({ prompt: `photo of a person ${OUTFIT}, ${scene}, natural pose, photorealistic`, aspectRatio: '3:4', imageSize: '1080p', model: SOUL_MODEL, customReferenceId: row.hf_reference_id });
+    const out = await soul.generate({ prompt: `photo of ${profileLine(row.profile)}, ${OUTFIT}, ${scene}, the face clearly visible and looking at the camera, natural pose, photorealistic`, aspectRatio: '3:4', imageSize: '1080p', model: SOUL_MODEL, customReferenceId: row.hf_reference_id });
     const name = await keep(null, await download(out.url));
     bank.push({ key, label, url: `/images/${name}` });
     row = await repo.update(row.id, { bank });
@@ -237,8 +266,10 @@ async function create(user, { name, files, photoUrls, consent }) {
   for (const f of (files || []).slice(0, 80)) photos.push(publicUrl(await keep(f))); // 업로드 상한 80(힉스필드 웹과 동일)
   if (!photos.length) throw httpError(400, 'Add at least one photo');
   const clean = String(name || '').trim().slice(0, 100) || 'My model';
+  const first = (files && files[0]) || path.join(process.cwd(), 'tmp', 'images', String(photos[0]).split('/').pop()); // 업로드 원본 우선, 없으면 첫 사진(다각도 결과)
+  const profile = await describeProfile(first);
   const charge = await teamCredit.chargeGeneration(user, credit().imageCost('shoot-train', 1, false), `Shoot model: ${clean}`); // 관리자는 null(과금 없음)
-  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: 'training', photos: photos.slice(0, 100), charged: !!charge }); // 힉스필드 input_images 최대 100 — 업로드 80 + 다각도 24 면 앞의 100장만
+  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: 'training', photos: photos.slice(0, 100), charged: !!charge, profile }); // 힉스필드 input_images 최대 100 — 업로드 80 + 다각도 24 면 앞의 100장만
   kick(row.id);
   return pub(row);
 }
@@ -257,4 +288,4 @@ async function get(user, id) {
   return pub(row);
 }
 
-module.exports = { create, list, get, startAngles, getAngles, SCENES, ANGLES };
+module.exports = { create, list, get, startAngles, getAngles, describeProfile, profileLine, SCENES, ANGLES };

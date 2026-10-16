@@ -6,12 +6,12 @@
  */
 const { query } = require('../db/client');
 
-const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, created_at, updated_at';
+const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, profile, created_at, updated_at';
 
-async function insert({ userId, teamId, name, status, photos, charged }) {
+async function insert({ userId, teamId, name, status, photos, charged, profile }) {
   const r = await query(
-    `INSERT INTO shoot_models (user_id, team_id, name, status, photos, charged) VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${COLS}`,
-    [userId, teamId || null, name, status, JSON.stringify(photos || []), !!charged]
+    `INSERT INTO shoot_models (user_id, team_id, name, status, photos, charged, profile) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${COLS}`,
+    [userId, teamId || null, name, status, JSON.stringify(photos || []), !!charged, JSON.stringify(profile || null)]
   );
   return r.rows[0];
 }
@@ -34,7 +34,7 @@ async function update(id, fields) {
   const keys = Object.keys(fields);
   if (!keys.length) return findById(id);
   const sets = keys.map((k, i) => `${k} = $${i + 2}`);
-  const vals = keys.map((k) => (k === 'photos' || k === 'bank') ? JSON.stringify(fields[k]) : fields[k]);
+  const vals = keys.map((k) => (k === 'photos' || k === 'bank' || k === 'profile') ? JSON.stringify(fields[k]) : fields[k]);
   const r = await query(`UPDATE shoot_models SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 RETURNING ${COLS}`, [id, ...vals]);
   return r.rows[0] || null;
 }

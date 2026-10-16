@@ -8,6 +8,9 @@ export interface ShootModelDto {
   avatar: string | null;
   bank: Array<{ key: string; label: string; url: string }>;
   photos: string[];
+  /** 사진에서 추정한 성별·나이대·머리·체형 — 모든 생성 프롬프트 앞에 붙는다 */
+  profile: { gender: string; age: string; hair: string; build: string } | null;
+  profileLine: string;
   /** bank 단계 진행 "3/8", 그 외 null */
   progress: string | null;
   createdAt: string;

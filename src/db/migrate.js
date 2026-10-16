@@ -423,6 +423,7 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_shoot_models_team ON shoot_models(team_id);
   `);
   await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS charged BOOLEAN NOT NULL DEFAULT false;`); // (10-16) 관리자는 과금이 없으므로 환불도 없어야 한다
+  await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS profile JSONB;`); // (10-16) 성별·나이대·머리 — Soul ID 는 얼굴만 배우므로 몸·성별은 프롬프트가 정한다(남자 얼굴에 원피스 사고)
   // (2026-10-16) 다각도 잡 — 메모리에 두면 배포(pm2 restart) 때 날아가 화면이 0/24 로 멈춘다(실측). results = [{i,url}] 각도 번호별 결과, skipped = 막힌 각도 번호.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS shoot_angle_jobs (
