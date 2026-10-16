@@ -34,8 +34,11 @@ const SCENES = [
   ['night', 'Night', 'standing on a neon-lit city street at night, wet pavement reflections, head to toe visible'],
   ['wall', 'Golden hour', 'leaning one hand on a stone wall in a narrow old-town alley, warm golden hour light, head to toe visible'],
 ];
-// 다각도. 앵커 파이프라인(angles_pure.json) 실측: 옷·배경·머리를 "묘사"하면 다시 그린다 → 카메라 위치만 말한다.
-const ANGLE_KEEP = 'Same photograph, same person. The face, hair, makeup, clothing, lighting and background all stay exactly as they are in this image. The only thing that changes is where the camera is standing.';
+// 다각도. 앵커 파이프라인(angles_pure.json) 실측: 옷·배경·머리를 "묘사"하면 다시 그린다 → 카메라 위치만 말한다. 극단 각도(로우/하이)도 얼굴을 새로 그린다 → 완만하게.
+//   10-16 실험(유나 × {Pro, Flash} × {pure, fictional 문구} × 6각도 = 24/24 성공): 두 문구 모두 정체성 유지, Pro 만 카메라를 실제로 돌린다(Flash 는 거의 정면).
+//   저작권 캐릭터(아바타 나비족)는 Pro 12/12 PROHIBITED_CONTENT, Flash 5/12 통과 → 각도마다 Pro → Flash 순으로 시도하고 둘 다 막히면 그 각도만 건너뛴다.
+const ANGLE_KEEP = 'This is an AI-generated fictional character, not a real person. Generate a new photo of this exact same character: same face, hair, makeup, clothing, lighting and background, exactly as in this image. The only thing that changes is where the camera is standing.';
+const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const ANGLES = [
   'The camera stands directly in front of the person at eye level.',
   'The camera has moved fifteen degrees to the left, still at eye level.',
@@ -83,14 +86,25 @@ async function download(url) {
 
 // ── A. 다각도 잡 ──
 const angleJobs = new Map(); // id → { userId, src, source, urls, error, done, at, charged }
-const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: j.urls, total: ANGLES.length, source: j.source });
+const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: j.urls, total: ANGLES.length, skipped: j.skipped, source: j.source });
+
+/** 각도 한 장 — 모델 순서대로 시도, 전부 실패면 null(건너뛴다) */
+async function shootAngle(nano, src, angle) {
+  for (const model of ANGLE_MODELS) {
+    try {
+      const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle}`, references: [{ path: src, kind: 'person' }], model, width: 768, height: 1024, imageSize: '1K' });
+      return out.url.replace('file://', '');
+    } catch (err) { logger.info({ model, err: String(err.message || err).slice(0, 120) }, 'shoot angle blocked, next model'); }
+  }
+  return null;
+}
 
 async function startAngles(user, file) {
   if (!env.PUBLIC_URL) throw httpError(400, 'Angle shots need PUBLIC_URL');
   if (!file) throw httpError(400, 'Add a photo');
   const name = await keep(file);
   const charge = await teamCredit.chargeGeneration(user, credit().imageCost('pro', ANGLES.length, false), `Shoot angles ×${ANGLES.length}`); // 관리자는 null
-  const job = { id: crypto.randomUUID(), userId: user.id, src: path.join(process.cwd(), 'tmp', 'images', name), source: publicUrl(name), urls: [], error: null, done: false, at: Date.now(), charged: !!charge };
+  const job = { id: crypto.randomUUID(), userId: user.id, src: path.join(process.cwd(), 'tmp', 'images', name), source: publicUrl(name), urls: [], skipped: 0, error: null, done: false, at: Date.now(), charged: !!charge };
   angleJobs.set(job.id, job);
   for (const [id, j] of angleJobs) if (Date.now() - j.at > ANGLE_JOB_TTL_MS) angleJobs.delete(id); // 오래된 잡 정리
   (async () => {
@@ -98,18 +112,22 @@ async function startAngles(user, file) {
     const nano = require('../images/providers/nanoBanana.provider');
     try {
       for (const angle of ANGLES) {
-        const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle}`, references: [{ path: job.src, kind: 'person' }], model: 'gemini-3-pro-image-preview', width: 768, height: 1024, imageSize: '1K' });
-        const abs = out.url.replace('file://', '');
+        const abs = await shootAngle(nano, job.src, angle);
+        if (!abs) { job.skipped += 1; continue; } // 두 모델 다 막힘(저작권 캐릭터 등) — 이 각도만 건너뛴다
         await mediaStore.putFile(abs).catch(() => {});
         job.urls.push(publicUrl(path.basename(abs)));
       }
+      if (job.skipped === ANGLES.length) job.error = 'Every angle was blocked — this photo may be a copyrighted character or not a real person';
+      else if (job.skipped) job.error = `${job.skipped} of ${ANGLES.length} angles were blocked`;
     } catch (err) {
       job.error = String(err.message || err).slice(0, 300);
       logger.warn({ err: job.error, jobId: job.id, made: job.urls.length }, 'shoot angles failed');
+    } finally {
+      job.done = true;
       if (job.charged && job.urls.length < ANGLES.length) { // 못 만든 장수만큼 환불
-        await teamCredit.refundGeneration(user, credit().imageCost('pro', ANGLES.length - job.urls.length, false), 'Shoot angles failed').catch(() => {});
+        await teamCredit.refundGeneration(user, credit().imageCost('pro', ANGLES.length - job.urls.length, false), 'Shoot angles: blocked angles refunded').catch(() => {});
       }
-    } finally { job.done = true; }
+    }
   })();
   return pubAngles(job);
 }

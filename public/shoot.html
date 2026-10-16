@@ -160,7 +160,7 @@ function renderMk(){const n=mk.files.length,up=mk.files.filter(f=>f.file),j=mk.j
   $('#mkUp').onclick=()=>$('#pfile').click();$$('#ugrid [data-x]').forEach(b=>b.onclick=()=>{mk.files.splice(+b.dataset.x,1);renderMk();});
   // 다각도 행: 업로드 사진이 있고 잡이 없을 때 제안 → 진행 중엔 n/10 → 끝나면 결과 수
   const a=$('#angles');if(j&&!j.done)a.innerHTML=`<span><b>Shooting angles ${j.urls.length}/${j.total}</b> — same person, camera moves only. About ${Math.max(1,Math.round((j.total-j.urls.length)*0.35))} min left.</span>`;
-  else if(j&&j.done)a.innerHTML=`<span><b>${j.urls.length} angles added</b>${j.error?' · stopped: '+esc(j.error):''} — remove any you don't like, then Create.</span><button class="btn2" id="mkAngles">Shoot again</button>`;
+  else if(j&&j.done)a.innerHTML=`<span><b>${j.urls.length} angles added</b>${j.error?' · '+esc(j.error):''}${j.urls.length?' — remove any you don\'t like, then Create.':''}</span><button class="btn2" id="mkAngles">Shoot again</button>`;
   else if(up.length)a.innerHTML=`<span><b>Only ${up.length===1?'one photo':up.length+' photos'}?</b> We can shoot 10 more angles from the first one — same face, clothes and light, only the camera moves.</span><button class="btn2" id="mkAngles">Shoot 10 angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
   else a.innerHTML='<span>Add a photo, then shoot 10 angles from it if you have only one.</span>';
   const ab=$('#mkAngles');if(ab)ab.onclick=mkAngles;

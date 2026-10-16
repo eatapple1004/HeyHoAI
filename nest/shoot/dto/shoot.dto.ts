@@ -29,6 +29,8 @@ export interface AngleJobDto {
   /** 만들어진 순서대로 쌓이는 공개 URL */
   urls: string[];
   total: number;
+  /** 두 모델(Pro→Flash) 다 막혀 건너뛴 각도 수 */
+  skipped: number;
   /** 원본 사진 공개 URL */
   source: string;
 }
