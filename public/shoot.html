@@ -32,9 +32,11 @@
 .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
 .acts button{padding:9px 4px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--dim);font:inherit;font-size:12px;cursor:pointer}
 .acts button.on{border-color:var(--lime);color:var(--text)}.acts button[disabled]{opacity:.5;cursor:default}.acts button i{display:block;font-style:normal;font-size:16px;margin-bottom:2px}
-.items{display:flex;flex-direction:column;gap:8px}
-.item{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
-.item img{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--bg2)}.item select{flex:1;min-width:0}.item .x{background:none;border:0;color:var(--faint);cursor:pointer;font-size:16px}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slot{position:relative;aspect-ratio:1;border:1px dashed var(--border2);border-radius:12px;background:var(--surface);display:grid;place-items:center;align-content:center;gap:2px;cursor:pointer;color:var(--faint);font-size:11px;text-align:center;padding:4px;overflow:hidden}
+.slot i{font-style:normal;font-size:22px;line-height:1}.slot.on{border-style:solid;border-color:var(--lime)}.slot.on img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot.on span{position:absolute;left:0;right:0;bottom:0;padding:3px;background:rgba(0,0,0,.6);color:#fff;font-size:10px}.slot .x{position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:0;cursor:pointer;font-size:11px;display:grid;place-items:center;z-index:1}
+.slot.soon{opacity:.45;cursor:default}.slot.over{border-color:var(--lime);background:var(--bg2)}
 .drop{display:grid;place-items:center;min-height:84px;border:1px dashed var(--border2);border-radius:12px;background:var(--surface);color:var(--faint);text-align:center;padding:10px;cursor:pointer;font-size:12px;line-height:1.5;margin-top:8px}.drop b{display:block;color:var(--text);font-size:13px}
 .stage{padding:16px 22px 60px}
 .stage .cur{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}
@@ -96,7 +98,7 @@
     <div id="feedView" hidden><div class="masonry" id="feed"></div><div class="empty" id="feedEmpty" hidden>No Shoot results yet.</div></div>
   </div>
 </div>
-<input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="file" accept="image/*" hidden>
 <input type="file" id="pfile" accept="image/*" multiple hidden>
 <script>
 (function(){
@@ -121,11 +123,15 @@ const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we 
   done:(l)=>`How\'s this? Keep going from here, or pick another version below.`,busy:'One sec…'};
 const ACTS=[['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
 // 품목 유형 → 프롬프트의 착용 문구. 란제리는 얼굴-없이-생성→FaceFusion 경로가 서버에 없어 soon.
-const TYPES=[['top','Top','worn as the top'],['bottom','Bottom','worn as the trousers/skirt'],['dress','Dress','worn as the dress'],['outer','Outer','worn open as the outer layer'],['shoes','Shoes','on the feet'],['socks','Socks','visible at the ankles'],['hat','Hat','worn on the head'],['hair','Hair accessory','in the hair'],['bag','Bag','carried on the shoulder or in hand'],['jewelry','Jewelry','worn'],['glasses','Glasses','worn on the face'],['swim','Swimwear','worn as swimwear'],['underwear','Underwear (soon)',null]];
+// 옷입히기 슬롯(게임처럼 자리가 정해져 있다, 사용자 10-16). 머리→몸→발 순. [key, 라벨, 아이콘, 착용 문구(null = soon)]
+const SLOTS=[['hat','Hat','🧢','worn on the head'],['hair','Hair accessory','🎀','in the hair'],['glasses','Glasses','🕶','worn on the face'],['jewelry','Jewelry','💍','worn'],
+  ['outer','Outer','🧥','worn open as the outer layer'],['top','Top','👕','worn as the top'],['dress','Dress','👗','worn as the dress'],['bag','Bag','👜','carried on the shoulder or in hand'],
+  ['bottom','Bottom','👖','worn as the trousers/skirt'],['swim','Swimwear','🩱','worn as swimwear'],['socks','Socks','🧦','visible at the ankles'],['shoes','Shoes','👟','on the feet'],
+  ['underwear','Underwear','🩲',null]];
 const POSES=[['Standing','standing naturally, weight on one leg'],['Walking','walking toward the camera, natural movement'],['Sitting','sitting down, relaxed'],['Leaning','leaning against the nearest wall or surface'],['Back','turned away, back to camera, looking over the shoulder'],['Close-up','close-up from the chest up, hand near the face']];
 const STUDIO={id:'studio',name:'Studio',category:'Default',scene:'a clean light-grey seamless studio cyclorama',light:'soft even studio light',img:'/img/accessories/concept-studio.png'};
 
-const st={model:null,versions:[],cur:-1,act:'outfit',items:[],scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,busy:false,intro:0};
+const st={model:null,versions:[],cur:-1,act:'outfit',slots:{},slotTarget:null,scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,busy:false,intro:0};
 const tool=()=>st.tools.find(t=>t.id===st.tool)||st.tools[0];
 const cur=()=>st.versions[st.cur];
 function chipGroup(sel,onPick){$(sel).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));onPick(b.dataset.v);});}
@@ -191,7 +197,7 @@ async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormDa
     toast('Training started — a few minutes');DoppiaNav.refreshCredits();mk.job=null;await loadMine();renderHello();}
   catch(e){toast(e.message||'failed');b.disabled=false;}}
 
-function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
+function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.slots={};st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
 // 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
 async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
   for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
@@ -209,13 +215,17 @@ $('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(
 function renderPanel(){({outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();renderSettings();renderGo();}
 
 // Outfit: 품목 여러 개(사진 + 유형)
-function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Items to put on <i>· photos of clothes, shoes, bags, jewelry…</i></div><div class="items" id="items"></div><div class="drop" id="drop"><b>Drop item photos</b>or click to upload · several at once</div><div class="note">Each item is kept exactly as photographed — color, print, logo. Layering works (tee under an open cardigan).</div>`;
-  renderItems();$('#drop').onclick=()=>$('#file').click();$('#drop').addEventListener('dragover',e=>e.preventDefault());$('#drop').addEventListener('drop',e=>{e.preventDefault();addItems([...e.dataTransfer.files]);});}
-function renderItems(){const el=$('#items');if(!el)return;el.innerHTML=st.items.map((it,i)=>`<div class="item"><img src="${it.url}" alt=""><select class="ff" data-i="${i}">${TYPES.map(([v,n,p])=>`<option value="${v}" ${v===it.type?'selected':''} ${p?'':'disabled'}>${esc(n)}</option>`).join('')}</select><button type="button" class="x" data-x="${i}" title="remove">×</button></div>`).join('')||'';
-  el.querySelectorAll('select').forEach(s=>s.addEventListener('change',e=>{st.items[+s.dataset.i].type=e.target.value;}));
-  el.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{st.items.splice(+b.dataset.x,1);renderItems();renderGo();}));renderGo();}
-function addItems(files){files.filter(f=>/^image\//.test(f.type)).slice(0,8-st.items.length).forEach(f=>st.items.push({file:f,url:URL.createObjectURL(f),type:'top'}));renderItems();}
-$('#file').addEventListener('change',e=>{addItems([...e.target.files]);e.target.value='';});
+function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Dress up <i>· tap a slot or drop a photo on it</i></div><div class="slots" id="slots"></div><div class="note">Each item is kept exactly as photographed — color, print, logo. Fill as many slots as you like; layers work (tee under an open outer).</div>`;renderSlots();}
+function renderSlots(){const el=$('#slots');if(!el)return;
+  el.innerHTML=SLOTS.map(([k,n,ic,p])=>{const it=st.slots[k];return `<div class="slot ${it?'on':''} ${p?'':'soon'}" data-s="${k}" title="${esc(n)}${p?'':' · coming soon'}">${it?`<img src="${it.url}" alt=""><button type="button" class="x" data-x="${k}">×</button><span>${esc(n)}</span>`:`<i>${ic}</i>${esc(n)}${p?'':'<small>soon</small>'}`}</div>`;}).join('');
+  el.querySelectorAll('.slot:not(.soon)').forEach(d=>{const k=d.dataset.s;
+    d.addEventListener('click',e=>{if(e.target.closest('[data-x]'))return;st.slotTarget=k;$('#file').click();});
+    d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('over');});d.addEventListener('dragleave',()=>d.classList.remove('over'));
+    d.addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(f=>/^image\//.test(f.type));if(f)setSlot(k,f);});});
+  el.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{delete st.slots[b.dataset.x];renderSlots();}));renderGo();}
+function setSlot(k,f){st.slots[k]={file:f,url:URL.createObjectURL(f)};renderSlots();}
+const filled=()=>SLOTS.filter(([k,,,p])=>p&&st.slots[k]); // 채워진 슬롯, 몸 순서
+$('#file').addEventListener('change',e=>{const f=e.target.files[0];if(f&&st.slotTarget)setSlot(st.slotTarget,f);e.target.value='';});
 
 // Scene: 배경 로스터 + 직접 묘사
 function bgs(){return [STUDIO].concat((window.BACKGROUNDS||[]).filter(b=>!st.bgCat||b.category_key===st.bgCat));}
@@ -237,7 +247,7 @@ function renderSettings(){const t=tool();$('#panel').insertAdjacentHTML('beforee
   $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;renderPanel();e.stopPropagation();return}$('#msel').classList.toggle('open')});
   chipGroup('#ratios',v=>st.ratio=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
 document.addEventListener('click',e=>{const m=$('#msel');if(m&&!m.contains(e.target))m.classList.remove('open')});
-function ready(){return st.act==='outfit'?st.items.length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
+function ready(){return st.act==='outfit'?filled().length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
 function renderGo(){const t=tool(),L={outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act];$('#go').disabled=st.busy||!ready()||!t;$('#go').firstChild.textContent=L+' ';$('#cost').textContent=t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
@@ -251,15 +261,15 @@ $$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stag
 const KEEP='Keep the person exactly as in image 1: same face, hair, body proportions and skin. Photorealistic, same image quality.';
 const who=()=>st.model.profileLine?`The person is ${st.model.profileLine}. `:''; // 내 모델이면 성별·외모 한 줄(Soul ID 는 얼굴만 배운다)
 function prompt(){
-  if(st.act==='outfit'){const list=st.items.map((it,i)=>{const t=TYPES.find(x=>x[0]===it.type);return `image ${i+2} = ${t[1].toLowerCase()}, ${t[2]}`;}).join('; ');
+  if(st.act==='outfit'){const list=filled().map(([,n,,p],i)=>`image ${i+2} = ${n.toLowerCase()}, ${p}`).join('; ');
     return `${who()}Image 1 is the photo to edit. Dress the person in image 1 in these items, each reproduced faithfully from its photo — same color, print, logo placement and proportions: ${list}. Replace only what the items cover; keep the rest of the outfit, pose, background, lighting and camera. ${KEEP}`;}
   if(st.act==='scene'){const where=st.sceneText||(st.scene.scene+', '+st.scene.light);const ref=st.scene&&st.scene.id!=='studio'?' Image 2 shows the location.':'';
     return `${who()}Image 1 is the photo to edit.${ref} Place the same person, in the same outfit and pose, in this location: ${where}. Match the light and shadows to the new place. ${KEEP}`;}
   const pose=st.poseText||POSES[st.pose][1];
   return `${who()}Image 1 is the person. Same person, same outfit, same location and lighting; change only the pose and framing to: ${pose}. Natural hands, full outfit still visible where the framing allows. ${KEEP}`;}
-function label(){return st.act==='outfit'?st.items.map(it=>TYPES.find(x=>x[0]===it.type)[1]).join(' + '):st.act==='scene'?(st.sceneText||st.scene.name):(st.poseText||POSES[st.pose][0]);}
+function label(){return st.act==='outfit'?filled().map(([,n])=>n).join(' + '):st.act==='scene'?(st.sceneText||st.scene.name):(st.poseText||POSES[st.pose][0]);}
 async function refs(){const base=await(await fetch(cur().url)).blob();const out=[base];
-  if(st.act==='outfit')for(const it of st.items)out.push(it.file||await(await fetch(it.url)).blob());
+  if(st.act==='outfit')for(const [k] of filled())out.push(st.slots[k].file);
   if(st.act==='scene'&&st.scene&&st.scene.id!=='studio')out.push(await(await fetch(st.scene.img)).blob());
   return out;}
 
@@ -272,7 +282,7 @@ $('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.b
     if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
     if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
     const r=(d.results||[]).find(x=>x.success&&x.url);if(!r)throw new Error((d.results||[])[0]&&d.results[0].error||'no result');
-    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.items=[];DoppiaNav.refreshCredits();say(SAY.done());}
+    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.slots={};DoppiaNav.refreshCredits();say(SAY.done());}
   catch(e){toast(e.message||'failed');say(SAY[st.act])}
   finally{st.busy=false;renderStage();renderPanel();}});
 
