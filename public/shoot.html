@@ -189,6 +189,14 @@ async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormDa
     toast('Training started — a few minutes');DoppiaNav.refreshCredits();mk.job=null;await loadMine();renderHello();}
   catch(e){toast(e.message||'failed');b.disabled=false;}}
 
+function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
+// 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
+async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
+  for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
+  if(st.intro!==run)return;st.cur=0;renderStage(true);
+  say(SAY.hello(st.model),[['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
+function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${st.model.avatar}" alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
+  b.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>setAct(x.dataset.a));}
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
 function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.tag)}</small></div><button class="btn2" id="swap">Change</button>`;
   $('#swap').onclick=()=>{st.intro++;$('#bubble').hidden=true;renderHello();};
