@@ -308,12 +308,7 @@ function draw(){
   const src=st.compare?st.versions[0].img:(st.tool==='adjust'&&preview?preview:v.img);
   ctx.imageSmoothingQuality='high';ctx.drawImage(src,X,Y,iw*s,ih*s);
   if(!st.compare&&usesMask()){ctx.save();ctx.globalAlpha=.5;ctx.drawImage(mask,X,Y,iw*s,ih*s);ctx.restore();}
-  if(!st.compare&&st.tool==='relight'){const L=st.light,[r,g,b]=lightRGB(),W2=iw*s,H2=ih*s,gx=X+W2*(.5+L.x*.55),gy=Y+H2*(.5-L.y*.55),a=.25+L.intensity/100*.5,sh=(1-L.ambient/100)*.55;
-    // 미리보기 = 그늘(multiply: 빛 반대쪽을 어둡게) + 빛 색(multiply 로 색을 입힌 뒤 하이라이트) — 흰 배경에서도 보이게
-    const R2=Math.max(W2,H2)*(.6+L.softness/100*.7);ctx.save();ctx.beginPath();ctx.rect(X,Y,W2,H2);ctx.clip();
-    ctx.globalCompositeOperation='multiply';const sg=ctx.createRadialGradient(gx,gy,R2*.15,gx,gy,R2);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(1,`rgba(20,20,30,${(L.behind?sh+.25:sh)*(.5+L.intensity/200)})`);ctx.fillStyle=sg;ctx.fillRect(X,Y,W2,H2);
-    const tg=ctx.createRadialGradient(gx,gy,0,gx,gy,R2*.8);tg.addColorStop(0,`rgba(${r},${g},${b},${a*.9})`);tg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=tg;ctx.fillRect(X,Y,W2,H2);
-    ctx.globalCompositeOperation='screen';const hg=ctx.createRadialGradient(gx,gy,0,gx,gy,R2*(L.softness>50?.5:.3));hg.addColorStop(0,`rgba(${r},${g},${b},${a*.35})`);hg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=hg;ctx.fillRect(X,Y,W2,H2);ctx.restore();}
+  if(!st.compare&&st.tool==='relight')relightOverlay(ctx,X,Y,iw*s,ih*s);
   if(st.tool==='expand'&&st.expand.mode==='crop'&&st.crop){const c=st.crop;ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.rect(X,Y,iw*s,ih*s);ctx.rect(X+c.x*s,Y+c.y*s,c.w*s,c.h*s);ctx.fill('evenodd');ctx.strokeStyle='#d9ff4a';ctx.lineWidth=1.5;ctx.strokeRect(X+c.x*s,Y+c.y*s,c.w*s,c.h*s);
     ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;for(let k=1;k<3;k++){ctx.beginPath();ctx.moveTo(X+(c.x+c.w*k/3)*s,Y+c.y*s);ctx.lineTo(X+(c.x+c.w*k/3)*s,Y+(c.y+c.h)*s);ctx.moveTo(X+c.x*s,Y+(c.y+c.h*k/3)*s);ctx.lineTo(X+(c.x+c.w)*s,Y+(c.y+c.h*k/3)*s);ctx.stroke();}
     ctx.fillStyle='#d9ff4a';[[0,0],[1,0],[0,1],[1,1]].forEach(([a,b])=>ctx.fillRect(X+(c.x+c.w*a)*s-5,Y+(c.y+c.h*b)*s-5,10,10));ctx.restore();}
@@ -322,6 +317,15 @@ function draw(){
 const toolDef=()=>TOOLS.find(t=>t.id===st.tool);
 function usesMask(){const t=toolDef();return !!(t&&t.brush);}
 
+// Relight 미리보기 = 그늘(multiply) + 빛 색 + 하이라이트(screen). 화면과 서버로 보내는 조명 가이드가 같은 그림을 쓴다.
+function relightOverlay(c,X,Y,W2,H2){const L=st.light,[r,g,b]=lightRGB(),gx=X+W2*(.5+L.x*.55),gy=Y+H2*(.5-L.y*.55),a=.25+L.intensity/100*.5,sh=(1-L.ambient/100)*.55;
+  const R2=Math.max(W2,H2)*(.6+L.softness/100*.7);c.save();c.beginPath();c.rect(X,Y,W2,H2);c.clip();
+  c.globalCompositeOperation='multiply';const sg=c.createRadialGradient(gx,gy,R2*.15,gx,gy,R2);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(1,`rgba(20,20,30,${(L.behind?sh+.25:sh)*(.5+L.intensity/200)})`);c.fillStyle=sg;c.fillRect(X,Y,W2,H2);
+  const tg=c.createRadialGradient(gx,gy,0,gx,gy,R2*.8);tg.addColorStop(0,`rgba(${r},${g},${b},${a*.9})`);tg.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=tg;c.fillRect(X,Y,W2,H2);
+  c.globalCompositeOperation='screen';const hg=c.createRadialGradient(gx,gy,0,gx,gy,R2*(L.softness>50?.5:.3));hg.addColorStop(0,`rgba(${r},${g},${b},${a*.35})`);hg.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=hg;c.fillRect(X,Y,W2,H2);c.restore();}
+// 서버로 보내는 조명 가이드(긴 변 1024) — 저장 이미지가 R2 라 캔버스를 못 읽으면 null(가이드 없이 문장만)
+async function relightGuide(){try{const v=cur(),k=Math.min(1,1024/Math.max(v.img.naturalWidth,v.img.naturalHeight)),w=Math.round(v.img.naturalWidth*k),h=Math.round(v.img.naturalHeight*k);
+  const c=canvasOf(w,h),x=c.getContext('2d');x.drawImage(v.img,0,0,w,h);relightOverlay(x,0,0,w,h);return await new Promise(r=>c.toBlob(r,'image/jpeg',.88));}catch(e){return null;}}
 // ── 포인터 ──
 let drag=null,space=false;
 cv.addEventListener('pointerdown',e=>{if(!cur()||st.busy)return;cv.setPointerCapture(e.pointerId);const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;
@@ -484,7 +488,7 @@ $('#run').onclick=async()=>{
   const pr=$('#pr');if(pr&&pr.value.trim())fd.append('prompt',pr.value.trim());
   if(t.id==='fix_text'){const tx=$('#fxText').value.trim();if(!tx){toast('Type the exact label text first.');$('#fxText').focus();return;}fd.append('text',tx);}
   if(t.id==='upscale')fd.append('factor',String(st.upF));
-  if(t.id==='relight')fd.append('light',JSON.stringify(st.light));
+  if(t.id==='relight')fd.append('light',JSON.stringify(st.light)); // (10-16) 조명 가이드(relightGuide)는 보내지 않는다 — 화면 미리보기가 약해 결과를 오히려 약하게 끌었다(실측). 서버는 guide 를 받을 수 있게 남겨 둠
   if(t.id==='inpaint'&&!(pr&&pr.value.trim())){toast(hasMask()?'Say what should appear in the brushed area.':'Describe the change — it applies to the whole photo.');pr&&pr.focus();return;}
   if(t.id==='erase'&&!hasMask()&&!(pr&&pr.value.trim())){toast('Brush what to erase, or name it in the box.');pr&&pr.focus();return;}
   try{

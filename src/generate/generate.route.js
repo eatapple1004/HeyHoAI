@@ -914,7 +914,8 @@ async function postEditHandler(req, res, next) {
   const files = req.files || {};
   const imgFile = (files.image || [])[0];
   const maskFile = (files.mask || [])[0];
-  const cleanup = () => [imgFile, maskFile].forEach((f) => { if (f && f.path) fs.unlink(f.path, () => {}); });
+  const guideFile = (files.guide || [])[0]; // (10-16) relight 조명 가이드(화면 미리보기)
+  const cleanup = () => [imgFile, maskFile, guideFile].forEach((f) => { if (f && f.path) fs.unlink(f.path, () => {}); });
   try {
     // eslint-disable-next-line global-require
     const editEngine = require('../images/imageEdit.engine');
@@ -929,6 +930,7 @@ async function postEditHandler(req, res, next) {
     if (op === 'fix_text' && !String(body.text || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: 'Type the exact label text' }); }
 
     const maskBuf = maskFile ? fs.readFileSync(maskFile.path) : null;
+    const guideBuf = guideFile ? fs.readFileSync(guideFile.path) : null;
     const upBuf = imgFile ? fs.readFileSync(imgFile.path) : null;
     cleanup();
     const tool = editEngine.pickEngine(op, { hasMask: !!maskBuf, override: String(body.engine || 'auto') });
@@ -996,7 +998,7 @@ async function postEditHandler(req, res, next) {
         });
       }
       try {
-        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light });
+        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light, guide: guideBuf });
         const meta = await sharp(out.buffer).metadata();
         const outputDir = path.join(process.cwd(), 'tmp', 'images');
         fs.mkdirSync(outputDir, { recursive: true });
@@ -2754,7 +2756,7 @@ router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
-router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), asyncable(postEditHandler, 'edit'));
+router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }, { name: 'guide', maxCount: 1 }]), asyncable(postEditHandler, 'edit'));
 router.get('/jobs/:id', getAsyncJobHandler);
 router.post('/video-edit/upload', uploadVideo.single('file'), postVideoEditUploadHandler);
 router.post('/video-edit/render', asyncable(postVideoEditRenderHandler, 'video-render'));
