@@ -55,7 +55,7 @@ const OFFICIAL = [
   { folder: 'Templates', slug: 'tpl-jewelry-product-cut', title: 'Jewelry Product Cut', category: 'jewelry', description: 'Grey seamless jewelry set — hero, 3/4, setting detail and full silhouette.',
     config: { kind: 'image', engine: 'nano-banana-pro', recipeId: 'jewelry-product-cut', aspect: '4:5', inputs: [{ key: 'product', label: 'Your jewelry', required: true }] } },
   { folder: 'Templates', slug: 'tpl-dewy-glass-hero', title: 'Dewy Glass Hero', category: 'beauty', description: 'Wet glass, frosted risers and a hanging drop — serum & skincare hero set.',
-    config: { kind: 'image', engine: 'nano-banana-pro', recipeId: 'dewy-glass-hero', aspect: '4:5', inputs: [{ key: 'product', label: 'Your product', required: true }] } },
+    config: { kind: 'image', engine: 'nano-banana-pro', recipeId: 'dewy-glass', aspect: '4:5', inputs: [{ key: 'product', label: 'Your product', required: true }] } },
   { folder: 'Templates', slug: 'tpl-void-hero-cut', title: 'Void Hero Cut', category: 'tech', description: 'Matte-black void, one sharp highlight, levitation — gadgets & devices.',
     config: { kind: 'image', engine: 'nano-banana-pro', recipeId: 'void-hero-cut', aspect: '4:5', inputs: [{ key: 'product', label: 'Your product', required: true }] } },
   // (10-16) 외부 트렌드 조사 기반 5 — 출처는 config.source(렌즈 화면에 표시)
