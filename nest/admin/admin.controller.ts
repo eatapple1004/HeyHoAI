@@ -17,6 +17,12 @@ export class AdminDataController {
     return { success: true, data, hasMore };
   }
 
+  // GET /api/admin/usage?days=7|30|90|0 — 결과물 출처(metadata.origin) 기준 기능·작업·엔진·페이지별 사용량 (2026-10-16)
+  @Get('usage')
+  async usage(@Query('days') days?: string): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.admin.getUsage(days == null ? 30 : parseInt(days, 10) || 0) };
+  }
+
   // GET /api/admin/stats — 유저·생성물·기능별·매출·시계열 집계
   @Get('stats')
   async stats(): Promise<ApiResponse<AdminStatsDto>> {

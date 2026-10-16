@@ -150,6 +150,11 @@ export class PagesController {
   @Get('admin-stats')
   adminStats(@Res() res: any) { return res.sendFile(page('admin-stats.html')); }
 
+  /** (2026-10-16) 기능·엔진 사용량 — 결과물 출처(metadata.origin) 기준 */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-usage')
+  adminUsage(@Res() res: any) { return res.sendFile(page('admin-usage.html')); }
+
   @UseGuards(AdminPageGuard)
   @Get('admin-proposal')
   adminProposal(@Res() res: any) { return res.sendFile(page('admin-proposal.html')); }
