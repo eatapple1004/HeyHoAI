@@ -1122,6 +1122,23 @@ async function postFaceSwapHandler(req, res, next) {
   } catch (err) { cleanup(); next(err); }
 }
 
+// ─── 긴 작업 비동기화 (2026-10-16) — ?async=1 이면 jobId 를 바로 주고 처리는 계속(src/lib/asyncJobs.js). Cloudflare 100초 제한 회피 ───
+function asyncable(handler, kind) {
+  return (req, res, next) => {
+    if (!(req.query && req.query.async === '1')) return handler(req, res, next);
+    // eslint-disable-next-line global-require
+    const asyncJobs = require('../lib/asyncJobs');
+    const jobId = asyncJobs.start(req.user.id, kind, () => asOps(handler)(req));
+    return res.status(202).json({ success: true, data: { jobId } });
+  };
+}
+const getAsyncJobHandler = (req, res) => {
+  // eslint-disable-next-line global-require
+  const job = require('../lib/asyncJobs').get(req.user.id, req.params.id);
+  if (!job) return res.status(404).json({ success: false, error: 'Job not found — the server may have restarted. Check your Library.' });
+  return res.json({ success: true, data: job });
+};
+
 /** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
 function pickExtras(tool, raw) {
   const defs = tool && tool.controls && Array.isArray(tool.controls.extras) ? tool.controls.extras : [];
@@ -2401,8 +2418,9 @@ const ops = {
   getResults: asOps(getResultsHandler),
   getCommunity: asOps(getCommunityHandler),
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
-  postEdit: asOps(postEditHandler),
-  postFaceSwap: asOps(postFaceSwapHandler),
+  postEdit: asOps(asyncable(postEditHandler, 'edit')),
+  postFaceSwap: asOps(asyncable(postFaceSwapHandler, 'faceswap')),
+  getAsyncJob: asOps(getAsyncJobHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2443,8 +2461,9 @@ router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
-router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), postEditHandler);
-router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), postFaceSwapHandler);
+router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), asyncable(postEditHandler, 'edit'));
+router.get('/jobs/:id', getAsyncJobHandler);
+router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), asyncable(postFaceSwapHandler, 'faceswap'));
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
 router.get('/prompts/:idx', getPrompts2Handler);
