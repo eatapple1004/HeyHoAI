@@ -16,6 +16,7 @@ const IMG_CREDIT = {
   'pro-4k': [330, 540],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
   'gpt-image-2': [185, 300],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [330, 540],  // 상위 티어 근사
+  'shoot-train': [1500, 1500],     // (2026-10-16) Shoot 내 모델 만들기 1회(자리값). 실원가 ≈ Soul ID 학습 $2.50 + 장면 8장 $0.05 + 다각도 10장 $1.34(사진 1장 경로)
   // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. 원가 확정 전 pro 근사(placeholder, CLAUDE.md 가격 규칙).
   //   실원가 참고: Seedream v4.5(fal) $0.03/장 · FLUX dev(fal) $0.025/장 · FLUX 1.1 Pro(Replicate) $0.04/장 → 전부 pro보다 싸서 마진 바닥 위.
   seedream: [185, 300],

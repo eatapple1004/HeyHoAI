@@ -403,6 +403,25 @@ async function migrate() {
   //   template_data 등이 characters(id)를 FK 참조하므로 characters가 앞서야 함.
   //   (프레시 DB에서 42P01 "relation characters does not exist" 방지. prod는 IF NOT EXISTS라 무영향.)
   await pool.query(CREATE_CHARACTERS_TABLE);
+  // (2026-10-16) Doppia Shoot "Create your model" — src/shoot/shootModel.repository.js
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shoot_models (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id          UUID NOT NULL,
+        team_id          UUID,
+        name             VARCHAR(100) NOT NULL,
+        status           VARCHAR(20) NOT NULL DEFAULT 'training',
+        hf_reference_id  UUID,
+        photos           JSONB NOT NULL DEFAULT '[]'::jsonb,
+        bank             JSONB NOT NULL DEFAULT '[]'::jsonb,
+        avatar           TEXT,
+        error            TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_shoot_models_user ON shoot_models(user_id);
+    CREATE INDEX IF NOT EXISTS idx_shoot_models_team ON shoot_models(team_id);
+  `);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
   await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);

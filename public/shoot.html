@@ -51,17 +51,22 @@
 .bubble .b:before{content:'';position:absolute;left:-7px;top:16px;border:7px solid transparent;border-right-color:var(--border2);border-left:0}
 .bubble .q{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bubble .q button{font-size:12px;padding:5px 10px}
 .stage .cur img.intro{animation:pop .35s ease}@keyframes pop{from{opacity:.2;transform:scale(.97)}to{opacity:1;transform:none}}
+.mk{max-width:640px}.mk h2{font-family:'Sora',sans-serif;font-size:24px;margin:0 0 6px}.mk p{color:var(--dim);margin:0 0 16px;line-height:1.5}
+.mk .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.mk .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.mk .row{display:flex;gap:8px;align-items:center;margin-top:16px}.mk .row .gen{width:auto;padding:0 20px}
+.mc .st{position:absolute;left:8px;top:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff}
 </style>
 </head>
 <body>
 <!-- (2026-10-16) Doppia Shoot — 사람이 주인공인 촬영(제품 주인공은 Lens). 사용자: "옷입히기 게임 같은 느낌. 들어오면 '반가워, 너의 모델을 골라줘'. 모델을 고르면 그걸로 자세·옷·소품·배경, 나중엔 영상."
      흐름: 환영 화면(모델 고르기/만들기) → 스테이지(현재 모델 사진) + 왼쪽 행동 패널(Outfit · Scene · Pose · Video soon). 행동마다 새 버전이 띠에 쌓이고, 어느 버전에서든 이어 간다.
      엔진(10-16 실측): 현재 버전 사진을 이미지 1로 넣고 "이 사람은 그대로, 이것만 바꿔라" — 옷·소품·수영복·배경·자세 전부 Nano Banana Pro 편집 한 번. 란제리는 얼굴 없이 생성 → FaceFusion 스왑 경로라 서버 워커 전까지 soon.
-     모델 = 우리 모델만(유나 뱅크 /img/shoot/yuna, 장면 7). 로스터 200명은 기준 미달이라 제외. 새 모델은 Soul ID 학습 → 뱅크 공정(soon). 캐릭터가 인사하고 행동을 안내한다(말풍선). 생성 API = POST /api/generate(Image 페이지와 동일), 피드 = template_name 'Doppia Shoot'. -->
+     모델 = 유나(뱅크 /img/shoot/yuna) + 내 모델(GET /api/shoot/models — Create your model: 사진 → Soul ID 학습 → 장면 뱅크). 로스터 200명은 기준 미달이라 제외. 캐릭터가 인사하고 행동을 안내한다(말풍선). 생성 API = POST /api/generate(Image 페이지와 동일), 피드 = template_name 'Doppia Shoot'. -->
 <div id="hello" class="hello" hidden>
   <h1>Hi! Pick your model.</h1>
   <p>Dress them up, change the scene, strike a pose. Make a video with them soon.</p>
   <div class="pickg" id="mgrid"></div>
+  <div id="create" hidden></div>
 </div>
 <div class="split" id="app" hidden>
   <aside class="composer">
@@ -79,6 +84,7 @@
   </div>
 </div>
 <input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="pfile" accept="image/*" multiple hidden>
 <script>
 (function(){
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -92,6 +98,10 @@ const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(temp
 //   기존 로스터 200명은 기준 미달(사용자)이라 안 쓴다. 새 모델은 "Create your model"(Soul ID 학습 → 같은 뱅크 공정)로 — soon.
 const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'/img/shoot/yuna/avatar.jpg',
   bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
+// 내 모델 — GET /api/shoot/models (Soul ID 학습 + 장면 뱅크, src/shoot/shootModel.service.js). 진행 중이면 6초마다 다시 본다.
+let MINE=[];const BUSY=['angles','training','bank'];const STATUS={angles:'Shooting 10 angles…',training:'Training…',bank:'Shooting scenes',failed:'Failed'};
+const TRAIN_COST=1500; // credit.service IMG_CREDIT['shoot-train'] 자리값과 같이 간다
+const toModel=m=>({id:m.id,name:m.name,tag:'Your model',avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
   outfit:'Drop a few item photos and I\'ll put them on — layers are fine.',scene:'Pick a place or describe one. I\'ll keep my outfit and pose.',pose:'Tell me how to stand, or just pick one.',
@@ -109,9 +119,33 @@ function chipGroup(sel,onPick){$(sel).addEventListener('click',e=>{const b=e.tar
 const chipsHtml=(arr,cur)=>arr.map(([v,n])=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${esc(v)}">${esc(n)}</button>`).join('');
 
 // ── 환영 화면: 모델 고르기 ──
-function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;
-  $('#mgrid').innerHTML=MODELS.map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.bank[0].url}" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.tag)}</small></span></button>`).join('')+`<button type="button" class="mc add" disabled><span class="bd soon">soon</span>Create your model<br><small>from your photos — trained once, then every scene and outfit</small></button>`;}
-$('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;pick(MODELS.find(m=>m.id===b.dataset.id));});
+let pollT=null;
+async function loadMine(){try{MINE=((await(await fetch('/api/shoot/models')).json()).data)||[];}catch(e){MINE=[];}}
+function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;$('#create').hidden=true;$('#mgrid').hidden=false;
+  const mine=MINE.map(m=>{const img=m.avatar||(m.bank[0]&&m.bank[0].url)||m.photos[0]||'';const st=m.status==='bank'?`${STATUS.bank} ${m.progress}`:STATUS[m.status]||'';
+    return `<button type="button" class="mc" data-mine="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(img)}" alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):'Your model'}</small></span></button>`;}).join('');
+  $('#mgrid').innerHTML=MODELS.map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.bank[0].url}" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.tag)}</small></span></button>`).join('')+mine+`<button type="button" class="mc add" id="mkBtn">Create your model<br><small>from your photos — trained once, then every scene and outfit · ◈ ${TRAIN_COST.toLocaleString('en-US')}</small></button>`;
+  $('#mkBtn').onclick=openCreate;
+  clearTimeout(pollT);if(MINE.some(m=>BUSY.includes(m.status)))pollT=setTimeout(async()=>{await loadMine();if(!$('#hello').hidden&&$('#create').hidden)renderHello();},6000);}
+$('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id],[data-mine]');if(!b||b.disabled)return;pick(b.dataset.id?MODELS.find(m=>m.id===b.dataset.id):toModel(MINE.find(m=>m.id===b.dataset.mine)));});
+// 만들기: 사진 1~20장 + 이름 → POST /api/shoot/models. 한 장이면 서버가 다각도 10장을 먼저 만든다.
+const mk={files:[]};
+function openCreate(){mk.files=[];$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
+  c.innerHTML=`<div class="mk"><h2>Create your model</h2><p>Upload 5–20 photos of one person — different angles and light work best. One photo is enough too: we shoot 10 angles first, then train.</p>
+  <div class="lbl">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina">
+  <div class="lbl">Photos</div><div class="drop" id="mkDrop"><b>Drop photos</b>or click to upload · JPG · PNG</div><div class="thumbs" id="mkThumbs"></div>
+  <div class="note">Trained once as a Soul ID character, then every scene, outfit and pose is yours. Takes a few minutes.</div>
+  <div class="row"><button class="btn2" id="mkCancel">Cancel</button><button class="gen" id="mkGo" disabled>Create <span class="c">◈ ${TRAIN_COST.toLocaleString('en-US')}</span></button></div></div>`;
+  $('#mkDrop').onclick=()=>$('#pfile').click();$('#mkDrop').addEventListener('dragover',e=>e.preventDefault());$('#mkDrop').addEventListener('drop',e=>{e.preventDefault();mkAdd([...e.dataTransfer.files]);});
+  $('#mkCancel').onclick=renderHello;$('#mkGo').onclick=mkSubmit;}
+function mkAdd(files){files.filter(f=>/^image\//.test(f.type)).slice(0,20-mk.files.length).forEach(f=>mk.files.push(f));$('#mkThumbs').innerHTML=mk.files.map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join('');$('#mkGo').disabled=!mk.files.length;}
+$('#pfile').addEventListener('change',e=>{mkAdd([...e.target.files]);e.target.value='';});
+async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());mk.files.forEach(f=>fd.append('photos',f,f.name));
+  try{const res=await fetch('/api/shoot/models',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
+    if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
+    if(!res.ok||!d.success)throw new Error(d.error||'Could not start training');
+    toast((d.data.status==='angles'?'Shooting angles first, then training — ':'Training started — ')+'a few minutes');DoppiaNav.refreshCredits();await loadMine();renderHello();}
+  catch(e){toast(e.message||'failed');b.disabled=false;}}
 function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
 // 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
 async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
@@ -203,7 +237,7 @@ async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidd
 $('#feed').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;e.stopPropagation();st.versions.push({url:b.dataset.u,label:'From Library'});st.cur=st.versions.length-1;$$('.stage .tabs [data-f]')[0].click();renderStage();});
 
 // ── 부팅 ──
-function boot(){renderHello();DoppiaNav.tools().then(T=>{st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length);st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);if(st.model)renderPanel();});}
+function boot(){loadMine().then(renderHello);DoppiaNav.tools().then(T=>{st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length);st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);if(st.model)renderPanel();});}
 if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
 })();
 </script>

@@ -6,6 +6,7 @@
  *   비동기: submit → status_url 폴링 → status 'completed' 에 images[].url.
  *   입력: prompt · aspect_ratio('1:1','9:16','16:9','4:3','3:4','2:3','3:2') · resolution('720p'|'1080p') · batch_size 1
  *   ⚠️ 텍스트 전용 — Soul 의 참조는 custom_reference_id(학습해 둔 캐릭터)뿐이라 우리 레퍼런스 슬롯과 뜻이 다르다.
+ *   (2026-10-16) req.customReferenceId 로 그 캐릭터를 지정한다(Shoot 모델 뱅크 — src/shoot/shootModel.service.js).
  *   ⚠️ 키 없는 상태에서 문서 기준으로 작성(10-13). 실패 status 값은 문서에 없어 'completed' 외 종료 상태를 보수적으로 잡았다.
  */
 const { env } = require('../../config');
@@ -42,6 +43,7 @@ const higgsfieldProvider = {
       resolution: String(req.imageSize || '').toLowerCase() === '1080p' ? '1080p' : '720p',
       enhance_prompt: !!(req.extras && req.extras.enhance_prompt), // 기본 끔 — 힉스필드가 프롬프트를 서버에서 재작성한다. registry extras 로만 켠다
       batch_size: 1,
+      ...(req.customReferenceId && { custom_reference_id: req.customReferenceId, custom_reference_strength: 1 }), // (2026-10-16) Soul ID 캐릭터 — Shoot 모델 뱅크
       ...(req.seed != null && { seed: req.seed }),
       ...(req.extras && req.extras.seed != null && { seed: Number(req.extras.seed) }),
     };
