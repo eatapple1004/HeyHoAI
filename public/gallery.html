@@ -391,7 +391,7 @@ function cardHtml(it){
   const onerr=`onerror="var c=this.closest('.card');if(this.dataset.full&&this.src.indexOf('/images/t/')>=0){this.src=this.dataset.full;this.removeAttribute('srcset');}else if(c)c.remove()"`;
   const ar=it.w&&it.h?` style="aspect-ratio:${it.w}/${it.h}"`:'';
   const media=it.type==='reel'
-    ? `<video class="media" data-reel muted loop playsinline preload="none" poster="${esc(thumbUrl(it.url,480))}" data-src="${esc(it.url)}"${ar}></video>`
+    ? `<video class="media" data-reel muted loop playsinline preload="none" poster="${esc(thumbUrl(it.url,480))}" data-src="${esc(String(it.url).replace(/^\/images\/(?=[\w.-]+\.(mp4|webm|mov)$)/i,'/images/v/'))}"${ar}></video>`
     : `<img class="media" src="${esc(thumbUrl(it.url,480))}" srcset="${esc(thumbUrl(it.url,480))} 1x, ${esc(thumbUrl(it.url,960))} 2x" data-full="${esc(it.url)}" loading="lazy" decoding="async" alt=""${ar} ${onerr}>`;
   const vp=(it.visibility==='private');
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
