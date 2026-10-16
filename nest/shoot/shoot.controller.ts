@@ -23,8 +23,8 @@ export class ShootController {
 
   // GET /api/shoot/angles/:id — 진행·결과 URL
   @Get('angles/:id')
-  getAngles(@Req() req: any, @Param('id') id: string): ApiResponse<AngleJobDto> {
-    return { success: true, data: this.shoot.getAngles(req.user, id) };
+  async getAngles(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<AngleJobDto>> {
+    return { success: true, data: await this.shoot.getAngles(req.user, id) };
   }
 
   // POST /api/shoot/models — multipart photos(0~80, 힉스필드 웹과 같은 상한) + photoUrls(JSON) + name + consent → Soul ID 학습

@@ -3,7 +3,7 @@
  *
  * (2026-10-16) 흐름(사용자 지시: "Soul ID 처럼 사진 여러 장이 기본, 한 장뿐이면 우리가 다각도를 만들어 준다 — 학습 전에 그 자리에서 따로")
  *   A. 다각도(선택): POST /api/shoot/angles 사진 1장 → Nano Banana Pro 로 얼굴 클로즈업 ANGLES.length 장(좌우·상하 각도 + 표정, 아래 ANGLES 주석). ANGLE_PARALLEL 장씩 동시에.
- *      프로세스 안 잡(angleJobs) — GET /api/shoot/angles/:id 로 진행·결과 URL. 결과는 사용자가 고른 뒤 photoUrls 로 학습에 넣는다.
+ *      DB 잡(shoot_angle_jobs) — GET /api/shoot/angles/:id 로 진행·결과 URL, 재시작 뒤엔 GET 이 남은 각도를 재개. 결과는 사용자가 고른 뒤 photoUrls 로 학습에 넣는다.
  *   B. 학습: POST /api/shoot/models 사진(업로드 + photoUrls) → 공개 URL(PUBLIC_URL/images/…) → 힉스필드 POST /v1/custom-references(v2)
  *      → 'training' 폴링(not_ready→queued→in_progress→completed|failed) → 'bank' Soul 2 + custom_reference_id 로 SCENES 장면(우리 /images 로 저장,
  *      힉스필드 결과 URL 은 7일 뒤 사라진다) → 'ready'. 실패는 'failed' + error, 과금된 건만 환불.
@@ -61,7 +61,6 @@ const ANGLES = [
 const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 24장이면 두 바퀴, 약 40초
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
-const ANGLE_JOB_TTL_MS = 2 * 60 * 60 * 1000;
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 const hfHeaders = () => ({ Authorization: `Key ${env.HIGGSFIELD_API_KEY}`, 'Content-Type': 'application/json' });
@@ -93,31 +92,40 @@ async function download(url) {
   return Buffer.from(await r.arrayBuffer());
 }
 
-// ── A. 다각도 잡 ──
-const angleJobs = new Map(); // id → { userId, src, source, urls, error, done, at, charged }
-const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: j.urls, total: ANGLES.length, skipped: j.skipped, source: j.source });
+// ── A. 다각도 잡 — DB(shoot_angle_jobs). 배포로 프로세스가 죽어도 GET 때 남은 각도부터 다시 돈다 ──
+const pubAngles = (j) => ({ id: j.id, done: j.done, error: j.error || null, urls: (j.results || []).map((r) => r.url), total: ANGLES.length, skipped: (j.skipped || []).length, source: j.source });
+const runningAngles = new Set();
 
-/** 각도 한 장 — 모델 순서대로(각 2회: 503 같은 일시 오류 대비), 전부 실패면 null(건너뛴다) */
-async function shootAngle(nano, src, angle) {
-  for (const model of ANGLE_MODELS) {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        const out = await nano.generate({ prompt: `${ANGLE_KEEP}\n\n${angle} ${ANGLE_FRAME}`, references: [{ path: src, kind: 'person' }], model, width: 768, height: 1024, imageSize: '1K' });
-        return out.url.replace('file://', '');
-      } catch (err) { logger.info({ model, attempt, err: String(err.message || err).slice(0, 120) }, 'shoot angle failed'); }
+/** 아직 안 된 각도만 ANGLE_PARALLEL 장씩 돌린다. 같은 잡은 한 번에 하나만. */
+function kickAngles(id) {
+  if (runningAngles.has(id)) return;
+  runningAngles.add(id);
+  (async () => {
+    let job = await repo.findAngleJob(id);
+    // eslint-disable-next-line global-require
+    const nano = require('../images/providers/nanoBanana.provider');
+    const src = path.join(process.cwd(), 'tmp', 'images', String(job.source).split('/').pop());
+    const todo = ANGLES.map((_, i) => i).filter((i) => !job.results.some((r) => r.i === i) && !job.skipped.includes(i));
+    try {
+      await mapLimit(todo, ANGLE_PARALLEL, async (i) => {
+        const abs = await shootAngle(nano, src, ANGLES[i]);
+        job = await repo.findAngleJob(id); // 동시 갱신 — 최신 행 위에 더한다
+        if (!abs) { job = await repo.updateAngleJob(id, { skipped: job.skipped.concat(i) }); return; } // 두 모델 다 막힘(저작권 캐릭터 등)
+        await mediaStore.putFile(abs).catch(() => {});
+        job = await repo.updateAngleJob(id, { results: job.results.concat({ i, url: publicUrl(path.basename(abs)) }) });
+      });
+      const n = job.skipped.length;
+      const error = n === ANGLES.length ? 'Every angle was blocked — this photo may be a copyrighted character or not a real person' : n ? `${n} of ${ANGLES.length} angles were blocked` : null;
+      job = await repo.updateAngleJob(id, { done: true, error });
+    } catch (err) {
+      job = await repo.updateAngleJob(id, { done: true, error: String(err.message || err).slice(0, 300) });
+      logger.warn({ err: job.error, jobId: id, made: job.results.length }, 'shoot angles failed');
+    } finally {
+      runningAngles.delete(id);
+      const missing = ANGLES.length - job.results.length;
+      if (job.charged && missing > 0) await teamCredit.refundGeneration({ id: job.user_id }, credit().imageCost('pro', missing, false), 'Shoot angles: blocked angles refunded').catch(() => {}); // 못 만든 장수만큼 환불
     }
-  }
-  return null;
-}
-
-/** 동시 실행 n개 — 결과는 입력 순서대로 */
-async function mapLimit(items, n, fn) {
-  const out = new Array(items.length);
-  let next = 0;
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-    while (next < items.length) { const i = next; next += 1; out[i] = await fn(items[i], i); }
-  }));
-  return out;
+  })();
 }
 
 async function startAngles(user, file) {
@@ -125,37 +133,15 @@ async function startAngles(user, file) {
   if (!file) throw httpError(400, 'Add a photo');
   const name = await keep(file);
   const charge = await teamCredit.chargeGeneration(user, credit().imageCost('pro', ANGLES.length, false), `Shoot angles ×${ANGLES.length}`); // 관리자는 null
-  const job = { id: crypto.randomUUID(), userId: user.id, src: path.join(process.cwd(), 'tmp', 'images', name), source: publicUrl(name), urls: [], skipped: 0, error: null, done: false, at: Date.now(), charged: !!charge };
-  angleJobs.set(job.id, job);
-  for (const [id, j] of angleJobs) if (Date.now() - j.at > ANGLE_JOB_TTL_MS) angleJobs.delete(id); // 오래된 잡 정리
-  (async () => {
-    // eslint-disable-next-line global-require
-    const nano = require('../images/providers/nanoBanana.provider');
-    try {
-      await mapLimit(ANGLES, ANGLE_PARALLEL, async (angle) => { // 24장 × 20초를 ANGLE_PARALLEL 로 나눠 돈다(사용자: "한 번에 다 돌리게")
-        const abs = await shootAngle(nano, job.src, angle);
-        if (!abs) { job.skipped += 1; return; } // 두 모델 다 막힘(저작권 캐릭터 등) — 이 각도만 건너뛴다
-        await mediaStore.putFile(abs).catch(() => {});
-        job.urls.push(publicUrl(path.basename(abs)));
-      });
-      if (job.skipped === ANGLES.length) job.error = 'Every angle was blocked — this photo may be a copyrighted character or not a real person';
-      else if (job.skipped) job.error = `${job.skipped} of ${ANGLES.length} angles were blocked`;
-    } catch (err) {
-      job.error = String(err.message || err).slice(0, 300);
-      logger.warn({ err: job.error, jobId: job.id, made: job.urls.length }, 'shoot angles failed');
-    } finally {
-      job.done = true;
-      if (job.charged && job.urls.length < ANGLES.length) { // 못 만든 장수만큼 환불
-        await teamCredit.refundGeneration(user, credit().imageCost('pro', ANGLES.length - job.urls.length, false), 'Shoot angles: blocked angles refunded').catch(() => {});
-      }
-    }
-  })();
+  const job = await repo.insertAngleJob({ userId: user.id, source: publicUrl(name), charged: !!charge });
+  kickAngles(job.id);
   return pubAngles(job);
 }
 
-function getAngles(user, id) {
-  const job = angleJobs.get(id);
-  if (!job || job.userId !== user.id) throw httpError(404, 'Angle job not found');
+async function getAngles(user, id) {
+  const job = await repo.findAngleJob(id);
+  if (!job || job.user_id !== user.id) throw httpError(404, 'Angle job not found');
+  if (!job.done) kickAngles(job.id); // 재시작 뒤 멈춘 잡 재개
   return pubAngles(job);
 }
 

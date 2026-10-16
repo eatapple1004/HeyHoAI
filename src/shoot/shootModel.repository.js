@@ -39,4 +39,22 @@ async function update(id, fields) {
   return r.rows[0] || null;
 }
 
-module.exports = { insert, findById, findMine, update };
+// ── 다각도 잡(shoot_angle_jobs) — 재시작 뒤에도 이어 가려고 DB 에 둔다 ──
+const JCOLS = 'id, user_id, source, results, skipped, error, done, charged, created_at';
+async function insertAngleJob({ userId, source, charged }) {
+  const r = await query(`INSERT INTO shoot_angle_jobs (user_id, source, charged) VALUES ($1, $2, $3) RETURNING ${JCOLS}`, [userId, source, !!charged]);
+  return r.rows[0];
+}
+async function findAngleJob(id) {
+  const r = await query(`SELECT ${JCOLS} FROM shoot_angle_jobs WHERE id = $1`, [id]);
+  return r.rows[0] || null;
+}
+async function updateAngleJob(id, fields) {
+  const keys = Object.keys(fields);
+  const sets = keys.map((k, i) => `${k} = $${i + 2}`);
+  const vals = keys.map((k) => (k === 'results' || k === 'skipped') ? JSON.stringify(fields[k]) : fields[k]);
+  const r = await query(`UPDATE shoot_angle_jobs SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 RETURNING ${JCOLS}`, [id, ...vals]);
+  return r.rows[0] || null;
+}
+
+module.exports = { insert, findById, findMine, update, insertAngleJob, findAngleJob, updateAngleJob };

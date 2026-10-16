@@ -20,7 +20,7 @@ export class ShootService {
     return legacy.startAngles(user, file);
   }
 
-  getAngles(user: any, id: string): AngleJobDto {
+  getAngles(user: any, id: string): Promise<AngleJobDto> {
     return legacy.getAngles(user, id);
   }
 

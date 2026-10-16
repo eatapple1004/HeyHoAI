@@ -179,7 +179,8 @@ async function mkAngles(){const src=mk.files.find(f=>f.file);if(!src)return;cons
     mk.job=d.data;DoppiaNav.refreshCredits();renderMk();pollAngles();}
   catch(e){toast(e.message||'failed')}}
 async function pollAngles(){const j=mk.job;if(!j||$('#create').hidden)return;
-  try{const d=(await(await fetch('/api/shoot/angles/'+j.id)).json()).data;if(!d)return;const seen=new Set(mk.files.filter(f=>f.remote).map(f=>f.url));
+  try{const res=await fetch('/api/shoot/angles/'+j.id);if(res.status===404){mk.job={...j,done:true,error:'The job was lost — shoot again'};renderMk();return} // 잡이 사라짐(서버 재시작 등)
+    const d=(await res.json()).data;if(!d)return;const seen=new Set(mk.files.filter(f=>f.remote).map(f=>f.url));
     d.urls.filter(u=>!seen.has(u)).forEach(u=>mk.files.push({remote:true,url:u}));mk.job=d;renderMk();if(!d.done)setTimeout(pollAngles,4000);}
   catch(e){setTimeout(pollAngles,6000);}}
 async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormData();fd.append('name',$('#mkName').value.trim());fd.append('consent','true');
