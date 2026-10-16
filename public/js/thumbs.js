@@ -6,11 +6,14 @@
  *   DoppiaThumb.img(u, cls, sel)  <img> — 썸네일 실패하면 원본, 원본도 실패하면 sel(카드) 제거
  *   DoppiaThumb.video(u, cls, sel) <video> — 포스터만 먼저, 화면에 보일 때만 영상 로드·재생
  *   DoppiaThumb.watch(root, onSized)  root 안 video[data-src] 를 화면 보임에 맞춰 재생/정지(+포스터 비율로 크기)
+ *   DoppiaThumb.play(u)        카드 재생용 가벼운 영상 주소(/images/v/)
  *   DoppiaThumb.label(r)       카드 라벨 — 엔드포인트 원문 대신 사람이 읽는 이름(metadata.origin)
  */
 (function () {
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function url(u, w) { var m = /^\/images\/([\w.-]+\.(png|jpe?g|webp|mp4|webm|mov))$/i.exec(u || ''); return m ? '/images/t/' + (w || 480) + '/' + m[1] : u; }
+  // 카드 재생용 가벼운 영상(/images/v/ — 720·~1.8Mbps). 아직 안 만들어졌으면 서버가 원본으로 보내 준다
+  function play(u) { var m = /^\/images\/([\w.-]+\.(mp4|webm|mov))$/i.exec(u || ''); return m ? '/images/v/' + m[1] : u; }
   function onerr(sel) { return 'onerror="var c=this.closest(\'' + sel + '\');if(this.dataset.full&&this.src.indexOf(\'/images/t/\')>=0){this.src=this.dataset.full;this.removeAttribute(\'srcset\');}else if(c)c.remove()"'; }
   function img(u, cls, sel) {
     var t = url(u, 480);
@@ -18,7 +21,7 @@
   }
   function video(u, cls, sel) {
     var t = url(u, 480);
-    return '<video class="' + esc(cls || '') + '" data-src="' + esc(u) + '"' + (t !== u ? ' poster="' + esc(t) + '"' : '') + ' muted loop playsinline preload="none" onerror="var c=this.closest(\'' + sel + '\');if(c)c.remove()"></video>';
+    return '<video class="' + esc(cls || '') + '" data-src="' + esc(play(u)) + '"' + (t !== u ? ' poster="' + esc(t) + '"' : '') + ' muted loop playsinline preload="none" onerror="var c=this.closest(\'' + sel + '\');if(c)c.remove()"></video>';
   }
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
     es.forEach(function (e) {
@@ -42,5 +45,5 @@
     if (o.feature && o.feature !== 'create-image' && o.feature !== 'create-video') return o.featureLabel || o.feature;
     return o.engineLabel || (r && r.metadata && r.metadata.engine) || (r && r.model) || '';
   }
-  window.DoppiaThumb = { url: url, img: img, video: video, watch: watch, label: label };
+  window.DoppiaThumb = { url: url, play: play, img: img, video: video, watch: watch, label: label };
 })();
