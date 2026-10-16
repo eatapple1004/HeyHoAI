@@ -59,7 +59,7 @@ const ANGLES = [
   'Thirty degrees to the left at eye level. A chic half-smirk, one corner of the mouth lifted, a direct gaze.',
   'Fifteen degrees to the right at eye level. Lips parted very slightly, a soft relaxed expression, eyes to the lens.',
 ];
-const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 24장이면 두 바퀴, 약 40초
+const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 다각도 24장이면 두 바퀴 약 40초, 뱅크 8장면은 한 바퀴
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 
@@ -229,13 +229,16 @@ async function stepTrain(row) {
 async function stepBank(row) {
   // eslint-disable-next-line global-require
   const soul = require('../images/providers/higgsfield.provider');
-  const bank = row.bank || [];
-  for (const [key, label, scene] of SCENES.slice(bank.length)) {
+  const done = new Set((row.bank || []).map((b) => b.key));
+  // 장면 8개를 ANGLE_PARALLEL 로 한꺼번에(사용자 10-16 "너무 느리다"). 끝나는 대로 저장해 진행률이 보이고, 마지막에 SCENES 순서로 정렬한다.
+  await mapLimit(SCENES.filter(([key]) => !done.has(key)), ANGLE_PARALLEL, async ([key, label, scene]) => {
     const out = await soul.generate({ prompt: `photo of ${profileLine(row.profile)}, ${OUTFIT}, ${scene}, the face clearly visible and looking at the camera, natural pose, photorealistic`, aspectRatio: '3:4', imageSize: '1080p', model: SOUL_MODEL, customReferenceId: row.hf_reference_id });
     const name = await keep(null, await download(out.url));
-    bank.push({ key, label, url: `/images/${name}` });
-    row = await repo.update(row.id, { bank });
-  }
+    const fresh = await repo.findById(row.id); // 동시 갱신 — 최신 행 위에 더한다
+    await repo.update(row.id, { bank: fresh.bank.concat({ key, label, url: `/images/${name}` }) });
+  });
+  const order = SCENES.map(([key]) => key);
+  const bank = (await repo.findById(row.id)).bank.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
   const portrait = bank.find((b) => b.key === 'portrait');
   return repo.update(row.id, { status: 'ready', avatar: portrait ? portrait.url : bank[0].url, bank: bank.filter((b) => b.key !== 'portrait') });
 }
