@@ -67,7 +67,7 @@ body{background:var(--bg)}
 .av-tpl .e{font-size:22px}
 .av-feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .av-card{border:1px solid var(--border);border-radius:18px;background:var(--bg2);overflow:hidden}
-.av-card .med{position:relative;aspect-ratio:9/16;background:#000;max-height:460px}
+.av-card .med{position:relative;aspect-ratio:9/16;background:#000;max-height:460px;width:100%}/* (10-16) width 명시 — 없으면 aspect-ratio 가 max-height 로 폭을 259px 로 줄여 카드 왼쪽에 붙고 오른쪽이 비었다 */
 .av-card .med video{width:100%;height:100%;object-fit:contain;display:block}
 .av-card .run{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--dim);text-align:center;padding:16px;background:radial-gradient(circle at 50% 40%,rgba(106,64,224,.25),transparent 60%)}
 .av-card .sp{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--lime);animation:sp 1s linear infinite}

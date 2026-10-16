@@ -246,8 +246,7 @@
   .view-actions .btn{white-space:nowrap}
 </style>
 
-<!-- LOCAL-ONLY (do not push): 옛 기록 템플릿 추정용 시그니처 맵 -->
-<script src="/js/recipe_sig.local.js"></script>
+<!-- (10-16) recipe_sig.local.js(로컬 전용 시그니처 맵) 로드 제거 — 서버엔 파일이 없어 매번 404·콘솔 에러. 없으면 inferTemplate 는 원래대로 빈 값 -->
 <script src="/js/themes.js?v=7"></script>
 <script>
 // ═══ 실제 데이터 연결: GET /api/generate/results ═══

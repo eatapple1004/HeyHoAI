@@ -635,7 +635,7 @@
     'One product photo is all you need': '제품 사진 한 장이면 충분해요',
     'Detail cuts, editorials, on-model shots and ad videos — everything starts from a single photo.': '상세컷·화보·착용컷·광고영상까지 — 전부 사진 한 장에서 시작돼요.',
     'Three ways to create': '만드는 방법은 세 가지',
-    'Shots — catalog photos from templates. Ad Video — a 9:16 talking ad. Content Pack — a full planned set at once.': '컷 — 템플릿으로 만드는 카탈로그 사진. 광고영상 — 말하는 9:16 광고. 콘텐츠 팩 — 기획까지 알아서, 세트가 통째로.',
+    'Shots — catalog photos from templates. Ad Video — a 9:16 ad from one photo. Doppia Lens — a saved look you reuse every time.': '컷 — 템플릿으로 만드는 카탈로그 사진. 광고영상 — 사진 한 장으로 9:16 광고. 도피아 렌즈 — 저장해 두고 매번 같은 느낌으로.',
     'Pay only for what comes out': '나온 것만 과금돼요',
     'You start with 1,500 free credits. Failed generations refund automatically.': '가입하면 1,500 크레딧이 무료예요. 실패한 생성은 자동으로 환불돼요.',
     'Add your product photo': '제품 사진을 올려요',
