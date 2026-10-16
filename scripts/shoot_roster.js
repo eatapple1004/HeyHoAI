@@ -8,6 +8,7 @@
  * 사용(dev 서버, 서비스가 서버 코드를 그대로 쓴다):
  *   NODE_ENV=development node scripts/shoot_roster.js build <앵커 폴더>   # 파일명(확장자 뺀 것) = 모델 이름
  *   NODE_ENV=development node scripts/shoot_roster.js yuna                 # 유나(이미 학습된 Soul ID + 정적 뱅크 /img/shoot/yuna) 를 official 행으로
+ *   NODE_ENV=development node scripts/shoot_roster.js retry                 # 학습 실패 행(관리자 것, 비공식) 을 같은 사진으로 다시 — 성공하면 official, 실패 행은 지운다
  *   NODE_ENV=development node scripts/shoot_roster.js thumbs <출력 폴더>   # Shoot 템플릿 28종 썸네일 — 공식 모델을 돌아가며 한 장씩(→ public/img/shoot/tpl/NN.jpg)
  * 옵션: --owner <userId>(기본 관리자) --angles 4 --train 6
  */
@@ -73,6 +74,21 @@ async function build(dir) {
   console.log(JSON.stringify(results, null, 1));
 }
 
+/** 실패한 학습을 같은 사진(각도 24컷은 이미 우리 서버에 있다)으로 다시. 각도 비용 없이 학습 $2.50 만. --train 명씩. */
+async function retry() {
+  const nTrain = +opt('train', 2);
+  const rows = (await query(`SELECT id, name, photos FROM shoot_models WHERE user_id = $1 AND status = 'failed' AND NOT official AND jsonb_array_length(photos) >= 12 ORDER BY created_at`, [USER.id])).rows;
+  const byName = new Map(rows.map((r) => [r.name, r])); // 같은 이름은 마지막 것
+  log(`retry ${byName.size} models — train ×${nTrain}`);
+  const out = await pool([...byName.values()], nTrain, async (old) => {
+    const r = await train(old.name, old.photos);
+    log(`${old.name}: ${r.status}${r.error ? ` — ${r.error}` : ''} ${r.id}`);
+    if (r.status === 'ready') { await repo.update(r.id, { official: true }); await query('DELETE FROM shoot_models WHERE name = $1 AND status = $2 AND user_id = $3 AND NOT official', [old.name, 'failed', USER.id]); }
+    return { name: old.name, id: r.id, status: r.status, error: r.error };
+  });
+  console.log(JSON.stringify(out, null, 1));
+}
+
 async function yuna() {
   const exists = (await query(`SELECT id FROM shoot_models WHERE official AND name = 'Yuna'`)).rows[0];
   if (exists) { log('Yuna already official', exists.id); return; }
@@ -107,7 +123,8 @@ async function thumbs(outDir) {
   const [cmd, arg] = argv;
   if (cmd === 'build') await build(arg);
   else if (cmd === 'yuna') await yuna();
+  else if (cmd === 'retry') await retry();
   else if (cmd === 'thumbs') await thumbs(arg);
-  else { console.log('usage: build <dir> | yuna | thumbs <outDir>'); process.exit(1); }
+  else { console.log('usage: build <dir> | retry | yuna | thumbs <outDir>'); process.exit(1); }
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

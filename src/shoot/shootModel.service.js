@@ -210,20 +210,26 @@ function pub(row) {
   };
 }
 
+async function submitTraining(row) {
+  const r = await fetch(`${HF}/v1/custom-references`, { method: 'POST', headers: hfHeaders(), body: JSON.stringify({ name: row.name.slice(0, 100), model_version: 'v2', input_images: row.photos.map((u) => ({ type: 'image_url', image_url: u })) }) });
+  if (!r.ok) throw new Error(`Soul ID submit failed (${r.status}): ${(await r.text()).slice(0, 300)}`);
+  return (await r.json()).id;
+}
+
 async function stepTrain(row) {
-  let refId = row.hf_reference_id;
-  if (!refId) {
-    const r = await fetch(`${HF}/v1/custom-references`, { method: 'POST', headers: hfHeaders(), body: JSON.stringify({ name: row.name.slice(0, 100), model_version: 'v2', input_images: row.photos.map((u) => ({ type: 'image_url', image_url: u })) }) });
-    if (!r.ok) throw new Error(`Soul ID submit failed (${r.status}): ${(await r.text()).slice(0, 300)}`);
-    refId = (await r.json()).id;
-    row = await repo.update(row.id, { hf_reference_id: refId });
-  }
+  let refId = row.hf_reference_id || await submitTraining(row);
+  if (refId !== row.hf_reference_id) row = await repo.update(row.id, { hf_reference_id: refId });
   const start = Date.now();
+  let resubmitted = false;
   while (Date.now() - start < TRAIN_MAX_MS) {
     const st = await (await fetch(`${HF}/v1/custom-references/${refId}`, { headers: hfHeaders() })).json().catch(() => ({}));
     const s = String(st.status || '').toLowerCase();
     if (s === 'completed') return repo.update(row.id, { status: 'bank' });
-    if (s === 'failed') throw new Error(`Soul ID training failed: ${st.fail_reason || ''}`);
+    if (s === 'failed') {
+      // (10-16 실측) "We couldn't prepare your photos … Please try again" — 멀쩡한 얼굴 24컷도 동시 제출 6건 중 3건이 이걸로 떨어졌다. 말 그대로 한 번 다시 낸다.
+      if (/prepare your photos/i.test(st.fail_reason || '') && !resubmitted) { resubmitted = true; await sleep(20000); refId = await submitTraining(row); row = await repo.update(row.id, { hf_reference_id: refId }); continue; }
+      throw new Error(`Soul ID training failed: ${st.fail_reason || ''}`);
+    }
     await sleep(10000);
   }
   throw new Error('Soul ID training timed out');
