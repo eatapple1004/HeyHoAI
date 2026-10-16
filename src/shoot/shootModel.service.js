@@ -34,23 +34,24 @@ const SCENES = [
   ['night', 'Night', 'standing on a neon-lit city street at night, wet pavement reflections, head to toe visible'],
   ['wall', 'Golden hour', 'leaning one hand on a stone wall in a narrow old-town alley, warm golden hour light, head to toe visible'],
 ];
-// 다각도. 앵커 파이프라인(angles_pure.json) 실측: 옷·배경·머리를 "묘사"하면 다시 그린다 → 카메라 위치만 말한다. 극단 각도(로우/하이)도 얼굴을 새로 그린다 → 완만하게.
-//   10-16 실험(유나 × {Pro, Flash} × {pure, fictional 문구} × 6각도 = 24/24 성공): 두 문구 모두 정체성 유지, Pro 만 카메라를 실제로 돌린다(Flash 는 거의 정면).
-//   저작권 캐릭터(아바타 나비족)는 Pro 12/12 PROHIBITED_CONTENT, Flash 5/12 통과 → 각도마다 Pro → Flash 순으로 시도하고 둘 다 막히면 그 각도만 건너뛴다.
-const ANGLE_KEEP = 'This is an AI-generated fictional character, not a real person. Generate a new photo of this exact same character: same face, hair, makeup, clothing, lighting and background, exactly as in this image. The only thing that changes is where the camera is standing.';
-const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+// 다각도 = **얼굴 학습셋**(Soul ID 는 얼굴을 배운다 — 사용자 10-16). 유나 「우리의 앵커」를 학습시킨 앵커 파이프라인 angles.json 의 11컷을 그대로 옮겼다:
+//   정면·반측면 좌우·측면·로우·하이·뒤돌아보기·클로즈업·미소 + 다른 옷의 상반신·반신(전부 맨어깨면 맨어깨가 정체성으로 굳는다 — 유나 실측).
+//   문구 실측(10-16, 48장): 유나는 Pro·Flash 전부 통과, Pro 만 카메라를 실제로 돌린다 · 저작권 캐릭터는 Pro 전부 거절·Flash 일부 통과 → Pro→Flash 순, 둘 다 막히면 그 각도만 건너뛴다.
+const ANGLE_KEEP = 'This is the same fictional character in the same photo session. Keep the face, the features, the makeup and the hair colour exactly the same. Only the camera position, the pose and what is described below change.';
 const ANGLES = [
-  'The camera stands directly in front of the person at eye level.',
-  'The camera has moved fifteen degrees to the left, still at eye level.',
-  'The camera has moved fifteen degrees to the right, still at eye level.',
-  'The camera has moved thirty degrees to the left, still at eye level.',
-  'The camera has moved thirty degrees to the right, still at eye level.',
-  'The camera has moved forty-five degrees to the left, still at eye level.',
-  'The camera has moved forty-five degrees to the right, still at eye level.',
-  'The camera is slightly above eye level, looking gently down.',
-  'The camera is slightly below eye level, looking gently up.',
-  'The camera has moved closer for a tight head-and-shoulders framing, straight on.',
+  'The camera has moved to stand directly in front of the person at eye level, 85mm. The face is square to the lens, both ears equally visible, shoulders level. Calm, unsmiling.',
+  'The camera has moved about thirty degrees to the left, still at eye level, 85mm. The far cheek narrows, the bridge of the nose separates from the cheek, the far eye sits closer to the nose in frame.',
+  'The camera has moved about thirty degrees to the right, still at eye level, 85mm. The other side is now toward the lens, the far cheek narrowing.',
+  'The camera has moved to the side, ninety degrees, at eye level, 85mm. A clean profile: the line of the forehead, nose, lips and chin reads as one silhouette, one ear fully visible.',
+  'The camera has dropped to chest height and tilts up, 50mm. The jawline and the underside of the chin come forward, the eyes look down into the lens.',
+  'The camera has risen above the head and looks down, 50mm. The top of the head and the forehead fill more of the frame, the eyes lift to the lens.',
+  'The person has turned their back to the camera and looks back over the shoulder into the lens, 85mm. The line of the shoulder and the back of the neck are toward the camera.',
+  'The camera has moved in close, 105mm. The face fills the whole frame from the hairline to the chin, every feature sharp.',
+  'Same camera position as a straight-on portrait, 85mm. The person is smiling with lips closed, the eyes creasing slightly.',
+  'The camera has pulled back to 50mm, framing from the top of the head to just below the collarbones. The person is wearing a fitted cream knit top with a high neckline. Plain warm grey wall behind.',
+  'The camera has pulled back to 35mm, framing from the top of the head down to the waist, standing. The person is wearing a white cotton shirt. Soft daylight, a plain pale wall behind.',
 ];
+const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 const ANGLE_JOB_TTL_MS = 2 * 60 * 60 * 1000;
 

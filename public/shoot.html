@@ -113,7 +113,7 @@ const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'
   bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
 // 내 모델 — GET /api/shoot/models (Soul ID 학습 + 장면 뱅크, src/shoot/shootModel.service.js). 진행 중이면 6초마다 다시 본다.
 let MINE=[];const BUSY=['angles','training','bank'];const STATUS={training:'Training…',bank:'Shooting scenes',failed:'Failed'};
-const TRAIN_COST=1500,ANGLES_COST=1850; // credit.service IMG_CREDIT['shoot-train'] 자리값 · 다각도 = pro 185 × 10 장
+const TRAIN_COST=1500,ANGLES_COST=2035; // credit.service IMG_CREDIT['shoot-train'] 자리값 · 다각도 = pro 185 × 11 컷(얼굴 학습셋)
 const toModel=m=>({id:m.id,name:m.name,tag:'Your model',avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
@@ -146,7 +146,7 @@ $('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id],[da
 const mk={files:[],consent:false,job:null}; // files: {file,url,px} 업로드 | {remote:url} 다각도 결과
 const MIN_PX=[[1000,'Good'],[600,'OK'],[0,'Low']];
 function openCreate(){mk.files=[];mk.consent=false;mk.job=null;$('#mgrid').hidden=true;const c=$('#create');c.hidden=false;
-  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>Photos of one person, clear face, different angles and light. 5–20 is best. Only one photo? Shoot 10 angles from it first, then train.</p>
+  c.innerHTML=`<div class="mk"><div><h2>Create your model</h2><p>Photos of one person, clear face, different angles and light. 5–20 is best. Only one photo? Shoot 11 face angles from it first, then train.</p>
     <div class="ugrid" id="ugrid"></div><div class="angles" id="angles"></div>
     <div class="guide"><div><b>✓ Works well</b>One person · clear face · front, side and three-quarter · natural light and indoor light mixed · no heavy filters</div><div><b>✕ Avoid</b>Group shots · sunglasses, masks, hands over the face · duplicates · tiny or blurry photos · screenshots</div></div></div>
     <div class="panel"><div><div class="lbl" style="margin-top:0">Name</div><input class="ff" id="mkName" maxlength="100" placeholder="e.g. Mina"></div>
@@ -161,8 +161,8 @@ function renderMk(){const n=mk.files.length,up=mk.files.filter(f=>f.file),j=mk.j
   // 다각도 행: 업로드 사진이 있고 잡이 없을 때 제안 → 진행 중엔 n/10 → 끝나면 결과 수
   const a=$('#angles');if(j&&!j.done)a.innerHTML=`<span><b>Shooting angles ${j.urls.length}/${j.total}</b> — same person, camera moves only. About ${Math.max(1,Math.round((j.total-j.urls.length)*0.35))} min left.</span>`;
   else if(j&&j.done)a.innerHTML=`<span><b>${j.urls.length} angles added</b>${j.error?' · '+esc(j.error):''}${j.urls.length?' — remove any you don\'t like, then Create.':''}</span><button class="btn2" id="mkAngles">Shoot again</button>`;
-  else if(up.length)a.innerHTML=`<span><b>Only ${up.length===1?'one photo':up.length+' photos'}?</b> We can shoot 10 more angles from the first one — same face, clothes and light, only the camera moves.</span><button class="btn2" id="mkAngles">Shoot 10 angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
-  else a.innerHTML='<span>Add a photo, then shoot 10 angles from it if you have only one.</span>';
+  else if(up.length)a.innerHTML=`<span><b>Only ${up.length===1?'one photo':up.length+' photos'}?</b> We can shoot 11 face angles from the first one — front, three-quarter, profile, close-up, smile and two with different clothes. Soul ID learns the face, so these matter more than full-body shots.</span><button class="btn2" id="mkAngles">Shoot 11 angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
+  else a.innerHTML='<span>Add a photo, then shoot 11 face angles from it if you have only one.</span>';
   const ab=$('#mkAngles');if(ab)ab.onclick=mkAngles;
   const cnt=n===0?['—','Add photos','var(--border)']:n<5?[n,'OK · 5+ is better','#f5c542']:[n,'Good','var(--lime)'];
   $('#gCount').innerHTML=`<i style="--v:${Math.min(100,n*5)};--c:${cnt[2]}"><span>${cnt[0]}/20</span></i><div class="t"><b>Photos</b>${cnt[1]}</div>`;
