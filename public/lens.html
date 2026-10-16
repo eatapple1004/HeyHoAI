@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=25" defer></script>
+<script src="/js/topnav.js?v=26" defer></script>
 <style>
 /* (2026-10-16) Doppia Lens — 힉스필드 Apps(REA 캡처: 히어로·검색·카테고리 탭·카드 Try now → 앱 안 1 Upload·2 Generate·3 Pick) 구성.
    렌즈 = 제작 방식(엔진·콘셉트 프롬프트·비율·컷 목록·스타일 참고) 묶음 → 내 제품/인물 사진만 넣으면 같은 콘셉트로 반복 제작 · 링크/갤러리로 공유.
@@ -31,6 +31,18 @@ body{background:var(--bg)}
 .ln-cats{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;overflow-x:auto;flex:1}
 .ln-cats button{border:0;background:transparent;color:var(--dim);padding:7px 13px;border-radius:9px;cursor:pointer;font:inherit;font-size:13.5px;white-space:nowrap}
 .ln-cats button.on{background:var(--surface2);color:#fff}
+.ln-lib{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start}
+.ln-tree{position:sticky;top:calc(var(--hdr) + 14px);border:1px solid var(--border);border-radius:16px;background:var(--bg2);padding:8px 6px;max-height:calc(100vh - var(--hdr) - 40px);overflow:auto;font-size:13.5px}
+.tn-n{display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:9px;cursor:pointer;color:var(--dim);user-select:none;border:1px solid transparent}
+.tn-n:hover{background:var(--surface)}.tn-n.on{background:var(--surface2);color:#fff}
+.tn-n.drop{border-color:var(--lime);background:rgba(217,255,74,.08)}
+.tn-n .lb{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tn-n .ct{font-size:11px;color:var(--faint)}
+.tn-n .tw{width:14px;display:inline-block;color:var(--faint);font-weight:400}
+.tn-n .ac{display:none;gap:4px;font-style:normal}.tn-n:hover .ac{display:inline-flex}.tn-n .ac i{font-style:normal;font-size:11px;opacity:.7}.tn-n .ac i:hover{opacity:1}
+.tn-add{padding:7px 10px;color:var(--accent2);cursor:pointer;font-size:12.5px;border-radius:9px}.tn-add:hover{background:var(--surface)}
+.ln-crumb{flex:1;font-size:14px;color:var(--text)}.ln-crumb small{color:var(--faint)}
+.ln-card .ib{height:28px;min-width:28px;padding:0 7px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:12px}
+@media (max-width:900px){.ln-lib{grid-template-columns:1fr}.ln-tree{position:static;max-height:none}}
 .ln-new{height:42px;padding:0 16px;border-radius:12px;border:0;background:var(--lime);color:#111;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
 .ln-sec{margin-top:28px}
 .ln-sec h2{font-family:'Sora';font-size:22px;text-transform:uppercase}
@@ -107,26 +119,70 @@ body{background:var(--bg)}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
-const CATS=[['all','All'],['product','Product'],['beauty','Beauty'],['fashion','Fashion'],['on-model','On-model'],['food','Food'],['video','Video'],['mine','My lenses']];
-const st={T:null,lenses:[],cat:'all',q:'',lens:null,slots:{},results:[],busy:false,note:''};
+const CATS=[['product','Product'],['beauty','Beauty'],['fashion','Fashion'],['jewelry','Jewelry'],['tech','Tech'],['on-model','On-model'],['food','Food'],['video','Video']];
+const CAT_LABEL=Object.fromEntries(CATS);
+// 공식 컬렉션(폴더) — 서버 lenses.folder 값
+const COLLECTIONS=[['Templates','⭐ Best-selling templates','Our templates already used on the market, as lenses'],['Trending','🔥 Trending now','Concepts trending in product content right now']];
+const st={T:null,lenses:[],folders:[],nav:{root:'all',path:''},open:{official:true,mine:true,community:false},q:'',lens:null,slots:{},results:[],busy:false,note:''};
+try{Object.assign(st.open,JSON.parse(localStorage.getItem('doppia.lens.open')||'{}'));}catch(e){}
 const api=async(u,o)=>{const r=await fetch(u,o);const j=await r.json().catch(()=>({}));return{ok:r.ok&&j.success!==false,status:r.status,j};};
 
-// ── 갤러리 ──
-async function loadList(){const scope=st.cat==='mine'?'mine':'all';const qs=new URLSearchParams({scope});if(st.cat!=='all'&&st.cat!=='mine')qs.set('category',st.cat);if(st.q)qs.set('q',st.q);
-  const r=await api('/api/generate/lens?'+qs);st.lenses=r.ok?r.j.data:[];renderGallery();}
+// ── 갤러리 = 컴퓨터 폴더처럼: 왼쪽 트리(Doppia Official · My lenses · Community) + 오른쪽 내용 ──
+async function loadList(){const [r,f]=await Promise.all([api('/api/generate/lens?scope=all'),api('/api/generate/lens-folders')]);st.lenses=r.ok?r.j.data:[];st.folders=f.ok?f.j.data:[];renderGallery();}
 function card(l){const cov=l.coverUrl?(/\.(mp4|webm)$/i.test(l.coverUrl)?`<video src="${esc(l.coverUrl)}#t=1" muted playsinline preload="metadata"></video>`:`<img src="${esc(l.coverUrl)}" loading="lazy" alt="">`):`<div class="ph">${esc(l.title)}</div>`;
-  return `<div class="ln-card" data-slug="${esc(l.slug)}"><div class="ln-cover">${cov}<div class="ln-badges">${l.isOfficial?'<span class="of">Official</span>':''}${l.kind==='video'?'<span class="vid">Video</span>':''}${!l.isOfficial&&l.mine?`<span>${esc(l.visibility)}</span>`:''}</div></div>
-    <div class="ln-meta"><b>${esc(l.title)}</b><small>${esc(l.description||'')}</small><div class="ft"><span>${esc(l.creator||'You')} · ${l.uses||0} uses</span><button class="ln-try">▶ Try lens</button></div></div></div>`;}
-function renderGallery(){const off=st.lenses.filter(l=>l.isOfficial),mine=st.lenses.filter(l=>l.mine&&!l.isOfficial),comm=st.lenses.filter(l=>!l.isOfficial&&!l.mine);
+  const own=l.mine&&!l.isOfficial;
+  return `<div class="ln-card" data-slug="${esc(l.slug)}" ${own?'draggable="true"':''}><div class="ln-cover">${cov}<div class="ln-badges">${l.isOfficial?'<span class="of">Official</span>':''}${l.fromTemplate?'<span>Template</span>':''}${l.folder==='Trending'&&l.isOfficial?'<span>Trend</span>':''}${l.kind==='video'?'<span class="vid">Video</span>':''}${own?`<span>${esc(l.visibility)}</span>`:''}</div></div>
+    <div class="ln-meta"><b>${esc(l.title)}</b><small>${esc(l.description||'')}</small><div class="ft"><span>${own?`📁 ${esc(l.folder||'Unfiled')}`:esc(l.creator||'You')} · ${l.uses||0} uses</span><span style="display:flex;gap:4px">${own?`<button class="ib" data-move="${esc(l.slug)}" title="Move to folder">📁</button>`:''}<button class="ln-try">▶ Try</button></span></div></div></div>`;}
+// 현재 폴더의 렌즈
+function inView(){const {root,path}=st.nav,q=st.q.toLowerCase();let L=st.lenses;
+  if(q)return L.filter(l=>(l.title+' '+(l.description||'')+' '+(CAT_LABEL[l.category]||'')).toLowerCase().includes(q));
+  if(root==='official'){L=L.filter(l=>l.isOfficial);if(path.startsWith('col:'))L=L.filter(l=>l.folder===path.slice(4));else if(path)L=L.filter(l=>l.category===path);}
+  else if(root==='mine'){L=L.filter(l=>l.mine&&!l.isOfficial);if(path==='__unfiled')L=L.filter(l=>!l.folder);else if(path)L=L.filter(l=>l.folder===path||l.folder.startsWith(path+'/'));}
+  else if(root==='community'){L=L.filter(l=>!l.isOfficial&&!l.mine);if(path)L=L.filter(l=>l.category===path);}
+  return L;}
+function crumb(){const {root,path}=st.nav;if(st.q)return `Search “${esc(st.q)}”`;const r={all:'All lenses',official:'Doppia Official',mine:'My lenses',community:'Community'}[root];
+  let p='';if(root==='official'&&path)p=path.startsWith('col:')?(COLLECTIONS.find(c=>c[0]===path.slice(4))||[0,path])[1]:CAT_LABEL[path]||path;else if(root==='mine'&&path)p=path==='__unfiled'?'Unfiled':path.split('/').join(' › ');else if(root==='community'&&path)p=CAT_LABEL[path]||path;
+  return `📁 ${r}${p?` <span style="color:var(--faint)">›</span> ${esc(p)}`:''}`;}
+function treeNode(root,path,label,count,depth,extra){const on=st.nav.root===root&&st.nav.path===path&&!st.q;return `<div class="tn-n ${on?'on':''}" data-root="${root}" data-path="${esc(path)}" style="padding-left:${10+depth*14}px" ${root==='mine'&&path&&path!=='__unfiled'?`data-drop="${esc(path)}"`:root==='mine'&&path==='__unfiled'?'data-drop=""':''}>${extra||''}<span class="lb">${label}</span><span class="ct">${count}</span>${root==='mine'&&path&&path!=='__unfiled'?`<span class="ac"><i data-fr="${esc(path)}" title="Rename">✎</i><i data-fd="${esc(path)}" title="Delete folder">🗑</i></span>`:''}</div>`;}
+function renderTree(){const L=st.lenses,off=L.filter(l=>l.isOfficial),mine=L.filter(l=>l.mine&&!l.isOfficial),comm=L.filter(l=>!l.isOfficial&&!l.mine);
+  const tw=(k)=>`<b class="tw" data-tw="${k}">${st.open[k]?'▾':'▸'}</b>`;
+  let h=treeNode('all','','🗂 All lenses',L.length,0);
+  h+=treeNode('official','',`${tw('official')}📁 Doppia Official`,off.length,0);
+  if(st.open.official){COLLECTIONS.forEach(c=>{const n=off.filter(l=>l.folder===c[0]).length;if(n)h+=treeNode('official','col:'+c[0],c[1],n,1);});
+    CATS.forEach(([k,lab])=>{const n=off.filter(l=>l.category===k).length;if(n)h+=treeNode('official',k,'📁 '+lab,n,1);});}
+  h+=treeNode('mine','',`${tw('mine')}📁 My lenses`,mine.length,0);
+  if(st.open.mine){h+=treeNode('mine','__unfiled','📄 Unfiled',mine.filter(l=>!l.folder).length,1);
+    st.folders.forEach(f=>{const d=f.split('/').length,n=mine.filter(l=>l.folder===f||l.folder.startsWith(f+'/')).length;h+=treeNode('mine',f,'📁 '+esc(f.split('/').pop()),n,d);});
+    h+=`<div class="tn-add" id="newFolder" style="padding-left:24px">＋ New folder</div>`;}
+  if(comm.length){h+=treeNode('community','',`${tw('community')}📁 Community`,comm.length,0);if(st.open.community)CATS.forEach(([k,lab])=>{const n=comm.filter(l=>l.category===k).length;if(n)h+=treeNode('community',k,'📁 '+lab,n,1);});}
+  return h;}
+function renderGallery(){const list=inView();const {root,path}=st.nav;
+  const showGroups=root==='all'&&!st.q;
+  const grid=(arr,empty)=>`<div class="ln-grid">${arr.map(card).join('')||`<div class="ln-empty">${empty}</div>`}</div>`;
+  const body=showGroups?COLLECTIONS.map(c=>{const a=st.lenses.filter(l=>l.isOfficial&&l.folder===c[0]);return a.length?`<div class="ln-sec"><h2>${c[1]}</h2><div class="sub">${c[2]}</div>${grid(a,'')}</div>`:'';}).join('')
+      +`<div class="ln-sec"><h2>Doppia Official</h2><div class="sub">Made by Doppia for product pages, Instagram and reels.</div>${grid(st.lenses.filter(l=>l.isOfficial&&!l.folder),'')}</div>`
+      +`<div class="ln-sec"><h2>My lenses</h2><div class="sub">Private by default — share by link or publish. Drag a lens onto a folder on the left to file it.</div>${grid(st.lenses.filter(l=>l.mine&&!l.isOfficial),'No lenses yet. Click <b>＋ Create lens</b>, or open any image in your Library and choose <b>✦</b>.')}</div>`
+    :`<div class="ln-sec" style="margin-top:6px">${grid(list,root==='mine'?'This folder is empty — drag lenses here, or create one.':'Nothing here yet.')}</div>`;
   $('#root').innerHTML=`<div class="ln-hero"><div class="ic">◎</div><h1>Doppia <span>Lens</span></h1><p>A lens is a saved way of making content — engine, look, framing and shot list. Drop in your product or model photo and get the same concept every time. Make your own and share it.</p></div>
-  <div class="ln-bar"><label class="ln-search">⌕<input id="q" placeholder="Search lenses" value="${esc(st.q)}"></label><div class="ln-cats" id="cats">${CATS.map(c=>`<button class="${st.cat===c[0]?'on':''}" data-c="${c[0]}">${c[1]}</button>`).join('')}</div><button class="ln-new" id="newLens">＋ Create lens</button></div>
-  ${st.cat==='mine'?'':`<div class="ln-sec"><h2>Official lenses</h2><div class="sub">Made by Doppia for product pages, Instagram and reels.</div><div class="ln-grid">${off.map(card).join('')||'<div class="ln-empty">No lenses in this category.</div>'}</div></div>`}
-  <div class="ln-sec"><h2>My lenses</h2><div class="sub">Private by default — share by link or publish to the gallery.</div><div class="ln-grid">${mine.map(card).join('')||'<div class="ln-empty">No lenses yet. Click <b>＋ Create lens</b>, or open any image in your Library and choose <b>✦ Make a lens</b>.</div>'}</div></div>
-  ${comm.length?`<div class="ln-sec"><h2>Community</h2><div class="sub">Public lenses from other creators.</div><div class="ln-grid">${comm.map(card).join('')}</div></div>`:''}`;
-  $('#cats').onclick=e=>{const b=e.target.closest('[data-c]');if(b){st.cat=b.dataset.c;loadList();}};
-  let t;$('#q').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value.trim();loadList().then(()=>{const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length);});},300);};
-  $('#newLens').onclick=()=>openBuilder();
-  $$('.ln-card').forEach(c=>c.onclick=()=>go(c.dataset.slug));}
+  <div class="ln-lib"><aside class="ln-tree" id="tree">${renderTree()}</aside><div>
+    <div class="ln-bar"><label class="ln-search">⌕<input id="q" placeholder="Search all lenses" value="${esc(st.q)}"></label><div class="ln-crumb">${crumb()} <small>· ${(showGroups?st.lenses:list).length}</small></div><button class="ln-new" id="newLens">＋ Create lens</button></div>
+    ${body}</div></div>`;
+  let t;$('#q').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value.trim();renderGallery();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length);},250);};
+  $('#newLens').onclick=()=>openBuilder(null,st.nav.root==='mine'&&st.nav.path&&st.nav.path!=='__unfiled'?{folder:st.nav.path}:null);
+  $$('.ln-card').forEach(c=>{c.onclick=e=>{if(e.target.closest('[data-move]'))return;go(c.dataset.slug);};c.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('text/lens',c.dataset.slug);});});
+  $$('[data-move]').forEach(b=>b.onclick=()=>moveLens(b.dataset.move));}
+// 트리 클릭·드롭
+document.addEventListener('click',async e=>{const tree=e.target.closest('#tree');if(!tree)return;
+  const tw=e.target.closest('[data-tw]');if(tw){st.open[tw.dataset.tw]=!st.open[tw.dataset.tw];try{localStorage.setItem('doppia.lens.open',JSON.stringify(st.open));}catch(err){}renderGallery();return;}
+  const fr=e.target.closest('[data-fr]');if(fr){const to=prompt('Rename / move folder (use / for sub-folders)',fr.dataset.fr);if(to&&to!==fr.dataset.fr){const r=await api('/api/generate/lens-folders',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:fr.dataset.fr,to})});if(r.ok){st.nav={root:'mine',path:to.split('/').map(x=>x.trim()).filter(Boolean).join('/')};await loadList();}else toast(r.j.error||'Rename failed');}return;}
+  const fd=e.target.closest('[data-fd]');if(fd){if(!confirm(`Delete folder “${fd.dataset.fd}”? Lenses inside move up one level.`))return;const r=await api('/api/generate/lens-folders?path='+encodeURIComponent(fd.dataset.fd),{method:'DELETE'});if(r.ok){st.nav={root:'mine',path:''};await loadList();}return;}
+  if(e.target.closest('#newFolder')){const base=st.nav.root==='mine'&&st.nav.path&&st.nav.path!=='__unfiled'?st.nav.path+'/':'';const name=prompt('New folder name (use / for sub-folders)',base);if(!name||name===base)return;const r=await api('/api/generate/lens-folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:name})});if(r.ok){st.open.mine=true;await loadList();}else toast(r.j.error||'Could not create folder');return;}
+  const n=e.target.closest('.tn-n');if(n){st.q='';st.nav={root:n.dataset.root,path:n.dataset.path};renderGallery();}});
+document.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('[data-drop]');if(d){e.preventDefault();d.classList.add('drop');}});
+document.addEventListener('dragleave',e=>{const d=e.target.closest&&e.target.closest('[data-drop]');if(d)d.classList.remove('drop');});
+document.addEventListener('drop',async e=>{const d=e.target.closest&&e.target.closest('[data-drop]');const slug=e.dataTransfer&&e.dataTransfer.getData('text/lens');if(!d||!slug)return;e.preventDefault();d.classList.remove('drop');await setFolder(slug,d.dataset.drop);});
+async function setFolder(slug,folder){const r=await api('/api/generate/lens/'+encodeURIComponent(slug),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder})});if(r.ok){toast(folder?`Moved to 📁 ${folder}`:'Moved to Unfiled');await loadList();}else toast(r.j.error||'Move failed');}
+function moveLens(slug){const opts=['(Unfiled)',...st.folders];const pick=prompt('Move to which folder?\n'+opts.map((f,i)=>`${i}: ${f}`).join('\n')+'\n\nType a number, or a new folder name:','');if(pick==null||pick==='')return;const i=parseInt(pick,10);const folder=String(i)===pick.trim()&&opts[i]!==undefined?(i===0?'':opts[i]):pick.trim();setFolder(slug,folder);}
 function go(slug){history.pushState(null,'','/lens?l='+encodeURIComponent(slug));route();}
 addEventListener('popstate',route);
 
@@ -139,7 +195,7 @@ function costText(l){const t=((st.T&&(l.kind==='video'?st.T.video:st.T.image))||
 function renderLens(){const l=st.lens,hasRes=st.results.length>0;
   $('#root').innerHTML=`<div class="lv-crumb"><a href="/lens" id="back">Lens</a> / ${esc(l.title)}</div>
   <div class="lv-steps"><span class="${Object.keys(st.slots).length?'':'on'}">1 Upload</span><span class="${st.busy?'on':''}">2 Generate</span><span class="${hasRes?'on':''}">3 Pick</span></div>
-  <div class="lv"><div class="lv-l"><h1>${esc(l.title)}</h1><div class="d">${esc(l.description||'')}</div>
+  <div class="lv"><div class="lv-l"><h1>${esc(l.title)}</h1><div class="d">${esc(l.description||'')}</div>${l.source?`<div style="font-size:11.5px;color:var(--faint);margin:-4px 0 10px">📈 Why trending: ${esc(l.source)}</div>`:''}${l.fromTemplate?`<div style="font-size:11.5px;color:var(--faint);margin:-4px 0 10px">⭐ Same recipe as our <b>${esc(l.title)}</b> template — stays in sync with it</div>`:''}
     <div class="lv-tags"><span>${l.kind==='video'?'▶ Video · '+(l.duration||5)+'s':'▣ Image'}</span><span>${esc(l.engineLabel)}</span><span>${esc(l.aspect)}</span>${l.shots&&l.shots.length?`<span>${l.shots.length} shots: ${l.shots.map(s=>esc(s.name)).join(' · ')}</span>`:`<span>${l.count} per run</span>`}${l.refsCount?`<span>${l.refsCount} style refs</span>`:''}<span>${esc(l.creator||'You')}</span></div>
     <div class="lv-slots">${l.inputs.map(i=>{const s=st.slots[i.key];return `<div class="lv-slot ${s?'on':''}" data-slot="${i.key}">${s?`<img src="${esc(s.preview)}" alt=""><span class="chg">${esc(i.label)} · change</span>`:`<span style="font-size:22px">${i.key==='person'?'☺':'▣'}</span><b>${esc(i.label)}</b><small>${i.key==='person'?'Front-facing, one adult':'Clear photo, label visible'}${i.required?'':' · optional'}</small>`}<button class="lib" data-lib="${i.key}">Library</button></div>`;}).join('')}</div>
     <div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="note" maxlength="400" placeholder="e.g. use spring colors, add cherry blossoms">${esc(st.note)}</textarea>
@@ -187,12 +243,12 @@ async function delLens(){if(!confirm('Delete this lens? Results in your Library 
 // ── 만들기·수정 ──
 function openBuilder(edit,draft){const T=st.T||{},src=edit||draft||{};const kind=src.kind||'image';
   const b={title:src.title||'',description:src.description||'',category:src.category||'product',kind,engine:src.engine||(kind==='video'?'seedance-2.5':'nano-banana-pro'),prompt:src.prompt||'',negative:src.negative||'',aspect:src.aspect||'4:5',count:src.count||2,duration:src.duration||5,
-    inputs:(src.inputs&&src.inputs.length?src.inputs:[{key:'product',label:'Your product',required:true}]).map(i=>i.key),shots:(src.shots||[]).filter(s=>s.prompt),refs:[...(src.refs||[])],visibility:src.visibility||'private',coverUrl:src.coverUrl||null,fromResultIdx:src.fromResultIdx||null};
+    inputs:(src.inputs&&src.inputs.length?src.inputs:[{key:'product',label:'Your product',required:true}]).map(i=>i.key),shots:(src.shots||[]).filter(s=>s.prompt),refs:[...(src.refs||[])],visibility:src.visibility||'private',coverUrl:src.coverUrl||null,fromResultIdx:src.fromResultIdx||null,folder:src.folder||''};
   const m=document.createElement('div');m.className='ln-modal';document.body.appendChild(m);
   const engines=()=>((b.kind==='video'?T.video:T.image)||[]).filter(t=>b.kind==='video'||(t.imageSlots||[]).length);
   const aspects=()=>{const t=engines().find(x=>x.id===b.engine);return (t&&t.controls&&t.controls.aspectRatio)||['4:5','1:1','9:16','3:4','16:9'];};
   function draw(){m.innerHTML=`<div><h3>${edit?'Edit lens':'Create a lens'} <button class="ib" data-x>✕</button></h3><div style="color:var(--dim);font-size:13px;margin-bottom:8px">Save how you make a look once — anyone you share it with just drops in their product.</div>
-    <div class="ln-two"><div><div class="lbl">Name</div><input class="ff" id="bTitle" maxlength="60" value="${esc(b.title)}" placeholder="e.g. Cherry Nail Spring"></div><div><div class="lbl">Category</div><select class="ff" id="bCat">${CATS.filter(c=>!['all','mine'].includes(c[0])).map(c=>`<option value="${c[0]}" ${b.category===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
+    <div class="ln-two"><div><div class="lbl">Name</div><input class="ff" id="bTitle" maxlength="60" value="${esc(b.title)}" placeholder="e.g. Cherry Nail Spring"></div><div><div class="lbl">Category</div><select class="ff" id="bCat">${CATS.map(c=>`<option value="${c[0]}" ${b.category===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
     <div class="lbl">Short description</div><input class="ff" id="bDesc" maxlength="200" value="${esc(b.description)}" placeholder="What it makes and where to use it">
     <div class="ln-two"><div><div class="lbl">Type</div><div class="chips"><button class="chip ${b.kind==='image'?'on':''}" data-k="image">▣ Image</button><button class="chip ${b.kind==='video'?'on':''}" data-k="video">▶ Video</button></div></div>
       <div><div class="lbl">Engine</div><select class="ff" id="bEng">${engines().map(t=>`<option value="${esc(t.id)}" ${b.engine===t.id?'selected':''}>${esc(t.label)}</option>`).join('')}</select></div></div>
@@ -206,8 +262,9 @@ function openBuilder(edit,draft){const T=st.T||{},src=edit||draft||{};const kind
       <div class="lbl">Style references <i>· optional, up to 4 — the look to follow (not copied)</i></div><div class="ln-refs">${b.refs.map((u,i)=>`<div class="r"><img src="${esc(u)}"><button data-rx="${i}">✕</button></div>`).join('')}${b.refs.length<4?'<button class="add" id="refUp">＋ Upload</button><button class="add" id="refLib">＋ Library</button>':''}</div>`}
     <div class="lbl">Who can use it</div><div class="chips">${[['private','🔒 Only me'],['link','🔗 Anyone with the link'],['public','🌐 Public gallery']].map(v=>`<button class="chip ${b.visibility===v[0]?'on':''}" data-v="${v[0]}">${v[1]}</button>`).join('')}</div>
     <div style="font-size:11.5px;color:var(--faint);margin-top:6px">Others can use your lens but never see your prompt or reference images.</div>
+    <div class="lbl">Folder <i>· in My lenses — type a new name to create one (A/B for sub-folders)</i></div><input class="ff" id="bFolder" list="bFolders" value="${esc(b.folder)}" placeholder="Unfiled"><datalist id="bFolders">${st.folders.map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
     <button class="gen" id="bSave" style="margin-top:16px">${edit?'Save changes':'Create lens'}</button></div>`;}
-  const sync=()=>{const g=id=>m.querySelector(id);if(g('#bTitle'))b.title=g('#bTitle').value;if(g('#bDesc'))b.description=g('#bDesc').value;if(g('#bCat'))b.category=g('#bCat').value;if(g('#bPrompt'))b.prompt=g('#bPrompt').value;if(g('#bNeg'))b.negative=g('#bNeg').value;
+  const sync=()=>{const g=id=>m.querySelector(id);if(g('#bTitle'))b.title=g('#bTitle').value;if(g('#bDesc'))b.description=g('#bDesc').value;if(g('#bCat'))b.category=g('#bCat').value;if(g('#bPrompt'))b.prompt=g('#bPrompt').value;if(g('#bNeg'))b.negative=g('#bNeg').value;if(g('#bFolder'))b.folder=g('#bFolder').value;
     m.querySelectorAll('[data-sn]').forEach(x=>b.shots[+x.dataset.sn].name=x.value);m.querySelectorAll('[data-sp]').forEach(x=>b.shots[+x.dataset.sp].prompt=x.value);};
   draw();
   m.addEventListener('change',e=>{if(e.target.id==='bEng'){b.engine=e.target.value;sync();draw();}});
@@ -221,7 +278,7 @@ function openBuilder(edit,draft){const T=st.T||{},src=edit||draft||{};const kind
     if(t.id==='bSave'){if(!b.title.trim()){toast('Give it a name.');return;}if(!b.prompt.trim()&&!b.shots.some(s=>s.prompt.trim())){toast('Describe the look.');return;}
       const labels={product:b.kind==='video'?'Product photo (start frame)':'Your product',person:'Model photo'};
       const config={kind:b.kind,engine:b.engine,prompt:b.prompt,negative:b.negative,aspect:b.aspect,count:b.count,duration:b.duration,shots:b.shots.filter(s=>s.prompt.trim()),inputs:b.inputs.map(k=>({key:k,label:labels[k],required:true})),refs:b.refs};
-      const payload={title:b.title,description:b.description,category:b.kind==='video'?'video':b.category,visibility:b.visibility,config,coverUrl:b.coverUrl,fromResultIdx:b.fromResultIdx};
+      const payload={title:b.title,description:b.description,category:b.kind==='video'?'video':b.category,visibility:b.visibility,config,coverUrl:b.coverUrl,fromResultIdx:b.fromResultIdx,folder:b.folder};
       const r=edit?await api('/api/generate/lens/'+encodeURIComponent(edit.slug),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
                    :await api('/api/generate/lens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       if(!r.ok){toast(r.j.error||'Save failed');return;}m.remove();toast(edit?'Lens saved':'Lens created — try it with your product');go(r.j.data.slug);}

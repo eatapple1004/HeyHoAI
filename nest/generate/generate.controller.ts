@@ -220,6 +220,28 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postLensUpload', req));
   }
 
+  // /api/generate/lens-folders — 내 렌즈 폴더(GET 목록 · POST 만들기 · PATCH 이름 바꾸기 · DELETE ?path=)
+  @Get('lens-folders')
+  async getLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Post('lens-folders')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Patch('lens-folders')
+  async patchLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
+  @Delete('lens-folders')
+  async deleteLensFolders(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('lensFolders', req));
+  }
+
   // GET /api/generate/lens-draft/:idx — 내 결과물 → 렌즈 초안
   @Get('lens-draft/:idx')
   async getLensDraft(@Req() req: any, @Res({ passthrough: true }) res: any) {
