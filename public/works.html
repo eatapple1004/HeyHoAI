@@ -208,6 +208,7 @@
       <div class="lang" role="group" aria-label="Language">
         <button type="button" data-lang="en">EN</button>
         <button type="button" data-lang="ko">KO</button>
+        <button type="button" data-lang="ja">JA</button>
       </div>
       <a class="btn btn-p btn-sm" href="/diagnose" data-s="navCta"></a>
     </div>
@@ -334,9 +335,11 @@
   'use strict';
   var LANG_KEY = 'doppia_lang';
   function getLang() {
-    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en') return v; } catch (e) {}
-    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en)/); if (m) return m[1];
-    return /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+    // (2026-10-16) ja 추가 — 저장값·쿠키·브라우저 언어 세 경로 모두 en|ko|ja
+    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en' || v === 'ja') return v; } catch (e) {}
+    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en|ja)/); if (m) return m[1];
+    var bl = (navigator.language || '').toLowerCase().slice(0, 2);
+    return (bl === 'ko' || bl === 'ja') ? bl : 'en';
   }
   var STR = {
     en: {
@@ -428,6 +431,52 @@
       closeLead: '질문 6개, 실제 채널을 검토한 서면 리포트, 제안 범위, 그리고 USAsia Journal 노출. 비용도 약정도 없이.',
       cta2: '무료 진단 시작하기',
       foot: 'Doppia × USAsia Journal · 브랜드와 매장을 위한 마케팅 운영 파트너.'
+    },
+    // (2026-10-16) 일본어 — 영어 원문 기준 번역. 고유명사(Doppia·USAsia Journal·Instagram·TikTok) 유지. 목업 숫자는 en과 동일.
+    ja: {
+      navCta: '相談する',
+      eyebrow: 'マーケティング運用 · USAsia Journal掲載',
+      h1: 'マーケティングのすべての瞬間を、<br><span class="grad">Doppia × USAsia Journalとともに。</span>',
+      lead: 'プロモーション・広告・リピーター管理はDoppiaが運用し、ブランドはUSAsia Journalに掲載されます。',
+      cta: '無料マーケティング診断', ctaB: '相談する →', fine: '6つの質問、2分 · 受付順に7〜10営業日以内に書面レポート',
+      sc1: '戦略・企画', sc2: 'チャネル運用', sc3: 'コンテンツ制作', sc4: '広告運用', sc5: 'プロモーション・キャンペーン', sc6: 'インフルエンサー・提携', sc7: '顧客管理 (CRM)', sc8: '月次レポート',
+      fr1: 'マーケティングレポート', rpDate: '2026年10月', rpBiz: 'ARVO Skincare<small>オンラインストア · 店舗2か所 · Instagram · マップ · 広告</small>',
+      b1: 'Instagram', b1v: '31 / 100', b2: 'マップ・レビュー', b2v: '18 / 100', b3: 'オンラインストア', b3v: '54 / 100', b4: '広告', b4v: '9 / 100',
+      planH: '来月', planA: '第1週 — 投稿再開、週3回、ベストセラーラインから', planB: '第2週 — ストアの商品情報とマップ写真を更新、未返信レビューに全件返信', planC: '第3〜4週 — Instagram・ストア・広告を束ねたローンチキャンペーン',
+      fr3: '確認したチャネル', k2: '最終投稿から', k3: 'マップ写真', k4: 'レビュー (未返信9)', k5: '提案範囲: チャネル運用 + 広告',
+      pg1h: '1ページ · 現状', pg1p: 'Instagramは47日間止まっています。店舗2か所のマップ写真は3枚のみで、レビュー12件中9件が未返信です。オンラインストアは最新ですが、お客様をストアへ導く導線がありません。',
+      pg2h: '2ページ · 商品写真から作ったカット', t1: 'ヒーロー', t2: 'ディテール', t3: '使用シーン',
+      pg3h: '3ページ · 来月の計画と提案範囲', pg3a: '投稿: 週3回、月・水・金', pg3b: 'マップ: 写真10枚追加、全レビューに48時間以内に返信', pg3c: '範囲: チャネル運用 + 広告 · 毎月1日にレポート',
+      whoPill: 'こんなチームに', whoH: '2種類のチーム。<span class="ac">ひとつのパートナー。</span>',
+      who1k: 'オーナー自身で運営', who1h: '採用せずに、マーケティングチームを。',
+      who1p: 'ひとりで経営していると、最初に止まるのがマーケティングです。オンライン・オフラインのプロモーション、広告、リピーター管理まで丸ごと引き受け、毎月レポートします。',
+      who1to: '運用代行 →',
+      st1a: '週間投稿計画', st1ae: '3件予約', st1ad: '月・水・金 — ベストセラーライン、新商品、舞台裏',
+      st1b: '広告・プロモーション', st1be: '実施中', st1bd: '秋のプロモーション · Instagram + マップ · 10月31日まで',
+      st1c: '月次レポート', st1ce: '10月1日送付', st1cd: '9月: 投稿13件、マップ写真10枚追加、レビュー12件に返信',
+      who2k: '社内チームあり', who2h: 'チームの隣に付く、運用・実行ユニット。',
+      who2p: '戦略コンサルティング、キャンペーン実行、制作・チャネル運用の補強まで。チームに足りない部分を範囲単位で引き受けます。',
+      who2to: 'コンサルティング · 実行 →',
+      st2a: 'キャンペーン実行', st2ae: 'D-12', st2ad: '秋のローンチ — 3チャネル、クリエイターシーディング20アカウント',
+      st2b: '制作支援', st2be: '納品済み', st2bd: '新ライン: カット24枚、広告動画2本、比率3種',
+      st2c: 'チャネル展開計画', st2ce: '確認中', st2cd: 'Instagram · TikTok · ストア — 週単位の順序',
+      howPill: '始め方', howH: '始めるまで<span class="ac">3ステップ。</span>',
+      how1h: 'マーケティング診断', how1p: '何をどこで売り、マーケティングは誰が担当し、今いちばん難しいことは何か。6つの質問、2分、入力なし。',
+      how2h: '7〜10営業日以内に書面レポート', how2p: '回答だけでなく実際のチャネルを確認し、現状と次の一手を文章にまとめてお送りします。',
+      how3h: '範囲を決めて開始', how3p: '全体運用、コンサルティング、または広告やキャンペーンなど単一の範囲まで — 一緒に決めます。レポートはどちらにしてもお客様のものです。',
+      jrnPill: 'USAsia Journal掲載', jrnH: '運用はDoppia。<span class="ac">露出はUSAsia Journal。</span>',
+      jrn1: 'ご契約の間ずっとUSAsia Journalに掲載されます。', jrn2: '選ばれたブランドは特集記事で紹介されます。',
+      repPill: 'レポート', repH: 'レポート1枚に、<span class="grad">必要なすべて。</span>',
+      repLead: 'お客様のビジネス基準で、実際に確認したことだけをチームが書きます。回答から自動生成はしません。',
+      rep1: 'チャネル・広告・顧客接点の現状',
+      rep2: '店舗がある場合は、マップ・レビュー・お客様が見つける経路',
+      rep3: 'お客様の商品・店舗写真から制作したカット',
+      rep4: '来月の推奨プランと、こちらが提案する運用範囲',
+      slot2: 'レポートサンプル — 準備中',
+      closeH: 'まず見て、レポートを手に決める。',
+      closeLead: '6つの質問、実際のチャネルを確認した書面レポート、提案範囲 — そしてUSAsia Journal掲載。費用も契約もなしで。',
+      cta2: '無料診断を始める',
+      foot: 'Doppia × USAsia Journal · ブランドと店舗のためのマーケティング運用。'
     }
   };
   var lang = getLang();
