@@ -1891,6 +1891,8 @@ const postUgcRenderHandler = async (req, res, next) => {
         speed: Number.isFinite(spd) ? spd : undefined,
       },
       visibility, isTemplate: false, quality: safeQuality, motionEngine: safeEngine,
+      // (10-16) /ad-video 는 완성 즉시 서버가 Library 저장(사용자가 페이지를 떠나도 유실 없음). studio.html 은 안 보내므로 기존 draft 흐름 그대로.
+      autoCommit: req.body && (req.body.autoCommit === 'true' || req.body.autoCommit === true),
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
   } catch (err) {

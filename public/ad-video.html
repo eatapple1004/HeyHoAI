@@ -217,7 +217,7 @@ function reviewScript(script,concept){const m=document.createElement('div');m.cl
   m.addEventListener('input',e=>{const t=e.target;if(t.dataset.i!=null){const s=script.scenes[+t.dataset.i];s[t.dataset.f]=t.value;if(t.dataset.f==='summary'){s.direction=t.value;}}});
   m.addEventListener('click',async e=>{if(e.target===m||e.target.closest('[data-x]')){m.remove();return;}if(e.target.id==='rgo'){e.target.disabled=true;m.remove();await render(script,concept);}});}
 async function render(script,concept){const fd=baseForm();fd.append('script',JSON.stringify(script));fd.append('concept',concept);fd.append('product',script.title||'');fd.append('aspect',st.aspect);
-  fd.append('voice',st.voice?'true':'false');fd.append('music',st.mood==='none'?'false':'true');fd.append('voiceId',st.voiceId);fd.append('speed',st.speed);fd.append('quality',st.quality);fd.append('motionEngine',st.engine);
+  fd.append('voice',st.voice?'true':'false');fd.append('music',st.mood==='none'?'false':'true');fd.append('voiceId',st.voiceId);fd.append('speed',st.speed);fd.append('quality',st.quality);fd.append('motionEngine',st.engine);fd.append('autoCommit','true');
   const r=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
   if(r.status===402){toast(j.error||'Not enough credits.');return;}if(!r.ok||!j.success){toast(j.error||'Render failed to start');return;}
   const job={id:j.jobId,status:'processing',title:script.title,t0:Date.now(),cost:j.cost};st.jobs.unshift(job);renderFeed();toast(`Rendering "${script.title||'ad'}" — about 3–8 minutes. Keep working.`);if(window.DoppiaNav)DoppiaNav.refreshCredits();
