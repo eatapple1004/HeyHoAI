@@ -977,6 +977,9 @@ async function postEditHandler(req, res, next) {
     }
     let light = null;
     try { light = body.light ? JSON.parse(body.light) : null; } catch (e) { light = null; }
+    let angle = null;
+    try { angle = body.angle ? editEngine.cleanAngle(JSON.parse(body.angle)) : null; } catch (e) { angle = null; }
+    if (op === 'angles' && !angle) angle = editEngine.cleanAngle({ h: 45, v: 0, zoom: 5 });
     let savedPrompt = null;
     const errors = [];
     for (const t of tries) {
@@ -993,12 +996,12 @@ async function postEditHandler(req, res, next) {
       if (!savedPrompt) {
         savedPrompt = await promptRepo.insert({
           userId: req.user.id, characterId: null,
-          promptText: `${def.label}${body.prompt ? ` — ${String(body.prompt).slice(0, 500)}` : ''}${op === 'fix_text' ? ` — "${String(body.text).slice(0, 200)}"` : ''}`,
+          promptText: `${def.label}${op === 'angles' ? ` — ${editEngine.describeAngle(angle)}` : ''}${body.prompt ? ` — ${String(body.prompt).slice(0, 500)}` : ''}${op === 'fix_text' ? ` — "${String(body.text).slice(0, 200)}"` : ''}`,
           model: modelLabel, referenceImagePath: null, tags: ['editor', op], stylePreset: null, teamId,
         });
       }
       try {
-        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light, guide: guideBuf });
+        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light, guide: guideBuf, angle });
         const meta = await sharp(out.buffer).metadata();
         const outputDir = path.join(process.cwd(), 'tmp', 'images');
         fs.mkdirSync(outputDir, { recursive: true });
@@ -1009,7 +1012,7 @@ async function postEditHandler(req, res, next) {
           promptIdx: savedPrompt.idx, characterId: null,
           filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(out.buffer.length / 1024),
           width: meta.width, height: meta.height, model: modelLabel, visibility, templateName: 'Editor',
-          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
+          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}), ...(op === 'angles' ? { angle } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
         });
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
         return res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, op, engine: { id: t.id, label: t.label, provider: t.provider }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });

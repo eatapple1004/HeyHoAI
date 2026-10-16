@@ -62,6 +62,12 @@ const EDIT_OPS = {
     enginesNoMask: ['nano-banana-pro', 'gpt-image'],
     why: 'Most faithful lettering. Brush the label to lock the rest of the photo.',
   },
+  // (10-16) Higgsfield Angles 2.0 대응 — 사진 1장 → 다른 카메라 각도. angle = { h: 0~315(0 정면·90 오른쪽·180 뒤), v: -30~60(로우~하이), zoom: 0~10(와이드~클로즈업) }
+  angles: {
+    label: 'Angles', mask: 'none',
+    engines: ['qwen-angles', 'nano-banana-pro', 'seedream-5-pro'],
+    why: 'A model trained on camera moves — orbits around the subject and keeps the product design.',
+  },
   removebg: {
     label: 'Remove background', mask: 'none',
     engines: ['birefnet'],
@@ -144,8 +150,24 @@ function describeLight(light) {
     + 'Cast shadows, highlights, specular reflections on glossy surfaces and the contact shadow must all follow this light direction consistently.';
 }
 
+// ── 카메라 각도(Angles) — 값 정리·문장 ── Qwen LoRA 학습 축(8방위 × 4고도 × 3거리)에 맞춰 가장 가까운 값으로 스냅
+const ANGLE_H = ['front view', 'front-right quarter view', 'right side view', 'back-right quarter view', 'back view', 'back-left quarter view', 'left side view', 'front-left quarter view'];
+function cleanAngle(a) {
+  const n = (v, d) => (Number.isFinite(+v) ? +v : d);
+  const h = ((Math.round(n(a && a.h, 0) / 45) * 45) % 360 + 360) % 360;
+  const v = Math.max(-30, Math.min(60, Math.round(n(a && a.v, 0) / 30) * 30));
+  const zoom = Math.max(0, Math.min(10, Math.round(n(a && a.zoom, 5) / 5) * 5));
+  return { h, v, zoom };
+}
+function describeAngle(a) {
+  const { h, v, zoom } = cleanAngle(a);
+  const elev = { '-30': 'low-angle shot (camera below, looking up)', 0: 'eye-level shot', 30: 'elevated shot (camera slightly above, looking down)', 60: 'high-angle shot (camera well above, looking down steeply)' }[v];
+  const dist = { 0: 'wide shot (whole subject with room around it)', 5: 'medium shot', 10: 'close-up' }[zoom];
+  return `${ANGLE_H[h / 45]}, ${elev}, ${dist}`;
+}
+
 // ── 프롬프트 ── 사용자 입력은 "무엇을"만, 보존 규칙은 여기서 붙인다.
-function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null, patched = false, guide = false } = {}) {
+function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null, patched = false, guide = false, angle = null } = {}) {
   const p = String(prompt || '').trim();
   const keep = 'Keep everything else exactly identical — same product shape, colors, logo, label text, proportions, framing and position.';
   const area = patched ? 'the softly blurred patch in the photo' : 'the masked area';
@@ -177,6 +199,11 @@ function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null
         + (guide ? 'Image 2 is a rough lighting GUIDE painted over the same photo — match its light direction, brightness falloff and color, but render it as realistic photographic light (no flat painted gradients, no color wash).\n' : '')
         + 'Keep the product exactly the same object — same shape, design, proportions, printed text, logo and position, same framing. Only light, shadows, reflections and the resulting brightness/color of surfaces change.';
     }
+    case 'angles':
+      // 폴백(Nano Banana 등) 전용 — Qwen 각도 모델은 숫자로 받는다
+      return `Re-photograph the exact same subject from a different camera position: ${describeAngle(angle)}. `
+        + 'Move the CAMERA, not the subject: show the sides and surfaces that become visible from this viewpoint with correct perspective and foreshortening, and keep the same scene, background, lighting and style. '
+        + `${p ? `${p}. ` : ''}It must be the same object — same shape, design, colors, materials, printed text and logo (do not invent text on newly visible sides).`;
     case 'fix_text': {
       const t = String(text || '').trim();
       return `Fix the printed text on the product label. It must read exactly: "${t}". `
@@ -315,6 +342,20 @@ async function runBriaEraser(tool, original, mask, W, H) {
   return download(out.url);
 }
 
+/** Qwen Multiple-Angles(fal) — 숫자 각도로 카메라를 옮긴다. 사본 긴 변 1536(MP 과금), 결과 크기 = 사본 크기 */
+async function runQwenAngles(tool, original, angle, extra, W, H) {
+  // eslint-disable-next-line global-require
+  const prov = require(`./providers/${tool.provider}.provider`);
+  const [w, h] = fitSide(W, H, FILL_SIDE);
+  const img = await sharp(original).removeAlpha().resize(w, h, { fit: 'fill' }).jpeg({ quality: 93 }).toBuffer();
+  const a = cleanAngle(angle);
+  const out = await prov.runImage({
+    model: tool.model,
+    input: { image_urls: [dataUrl(img, 'image/jpeg')], horizontal_angle: a.h, vertical_angle: a.v, zoom: a.zoom, ...(extra ? { additional_prompt: String(extra).slice(0, 400) } : {}), output_format: 'png', num_images: 1 },
+  });
+  return download(out.url);
+}
+
 async function runExternal(tool, image, text, W, H) {
   // eslint-disable-next-line global-require
   const prov = require(`./providers/${tool.provider}.provider`);
@@ -333,7 +374,7 @@ async function runExternal(tool, image, text, W, H) {
  * 편집 실행. original = 지금 캔버스(아무 포맷), mask = 같은 비율 PNG(흰색=편집) | null.
  * @returns {Promise<{ buffer: Buffer, ext: 'png'|'jpg', engine: object, prompt: string, passes?: number }>}
  */
-async function runEdit({ op, tool, original, mask, prompt, text, factor, light, guide }) {
+async function runEdit({ op, tool, original, mask, prompt, text, factor, light, guide, angle }) {
   const meta = await sharp(original).metadata();
   const W = meta.width, H = meta.height;
 
@@ -359,13 +400,17 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light, 
     }
     return { buffer: await download(url), ext: big ? 'jpg' : 'png', engine: tool, prompt: '', passes: passes.length };
   }
+  if (op === 'angles' && tool.id === 'qwen-angles') {
+    const raw = await runQwenAngles(tool, original, angle, prompt, W, H);
+    return { buffer: await sharp(raw).resize(W, H, { fit: 'cover' }).png().toBuffer(), ext: 'png', engine: tool, prompt: describeAngle(angle) };
+  }
 
   const m = mask ? await maskRaw(mask, W, H) : null;
   const hasMask = !!(m && m.some((v) => v > 0));
   const trueMask = hasMask && (tool.provider === 'openai' || tool.id === 'flux-fill' || tool.id === 'bria-eraser');
   const patched = hasMask && !trueMask && (op === 'erase' || op === 'inpaint' || op === 'expand');
   const useGuide = op === 'relight' && !!guide && tool.provider === 'gemini';
-  const text2 = buildPrompt(op, { prompt, text, hasMask, light, patched, guide: useGuide });
+  const text2 = buildPrompt(op, { prompt, text, hasMask, light, patched, guide: useGuide, angle });
 
   let raw;
   if (tool.id === 'bria-eraser') raw = await runBriaEraser(tool, original, m, W, H);
@@ -390,4 +435,4 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light, 
   return { buffer, ext: 'png', engine: tool, prompt: text2 };
 }
 
-module.exports = { EDIT_OPS, candidates, pickEngine, catalog, buildPrompt, describeLight, runEdit, nearestAspect, gptCanvas, upscalePasses, UPSCALE_MAX_SIDE };
+module.exports = { EDIT_OPS, candidates, pickEngine, catalog, buildPrompt, describeLight, describeAngle, cleanAngle, runEdit, nearestAspect, gptCanvas, upscalePasses, UPSCALE_MAX_SIDE };

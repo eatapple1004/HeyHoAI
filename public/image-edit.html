@@ -87,6 +87,8 @@ body{background:var(--bg)}
 .ed-row input[type=range]{flex:1;accent-color:var(--lime)}
 .ed-row output{width:36px;text-align:right;font-size:12px;color:var(--faint)}
 .ed-foot{padding:12px 16px;border-top:1px solid var(--border)}
+.ed-lpad.ed-asph{height:230px;user-select:none;touch-action:none;cursor:grab}.ed-asph canvas{width:100%;height:100%;display:block}
+.ed-aar{position:absolute;width:26px;height:26px;border-radius:50%;border:1px solid var(--border2,#333);background:rgba(0,0,0,.4);color:#fff;cursor:pointer;font:inherit;font-size:14px;line-height:1;z-index:2}.ed-aar:hover{background:rgba(255,255,255,.12)}
 .ed-lpad{position:relative;height:210px;border-radius:14px;overflow:hidden;border:1px solid var(--border2);background:#0b0b12;touch-action:none;cursor:crosshair}
 .ed-lpad canvas{width:100%;height:100%;display:block}
 .ed-lpos{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--dim);pointer-events:none}
@@ -183,6 +185,7 @@ const TOOLS=[
   {id:'erase',ic:'⌫',name:'Erase',ai:true,title:'Erase object',d:'Brush over anything you want gone — dust, a price tag, a stray hand. Or skip the brush and name it.',prompt:'Only without a brush: e.g. "the price tag on the left"',promptLabel:'What to remove <i>· only if you don\'t brush</i>',brush:'optional',brushHint:'Brush what should disappear. No brush = name it below and it is removed anywhere in the photo.'},
   {id:'expand',ic:'⤢',name:'Expand',ai:true,title:'Expand & Crop',d:'Pick a platform size. Expand fills the new border with AI; Crop trims for free.'},
   {id:'relight',ic:'☀',name:'Relight',ai:true,title:'Relight',d:'Drag the light around the subject. Set how hard, how warm and how bright — only the lighting changes.'},
+  {id:'angles',ic:'◐',name:'Angles',ai:true,title:'Angles',d:'Move the camera around your product — new angles from a single photo. Drag the sphere or use the sliders.'},
   {id:'fix_text',ic:'T',name:'Fix label',ai:true,title:'Fix label text',d:'AI garbled the label? Type exactly what it should say. Brush the label to lock the rest.',brush:'optional',brushHint:'Recommended: brush over the label text only.'},
   {id:'removebg',ic:'✂',name:'Remove BG',ai:true,title:'Remove background',d:'Cut out the product as a transparent PNG.',noPrompt:true},
   {id:'upscale',ic:'▲',name:'Upscale',ai:true,title:'Upscale',d:'Enlarge with real detail — for print, Coupang detail pages, banners.',noPrompt:true},
@@ -192,7 +195,7 @@ const SIZES=[['Instagram feed','4:5',1080,1350],['Reels · Story','9:16',1080,19
 
 const st={T:null,ops:{},tool:'replace_bg',mode:'move',brush:56,versions:[],cur:-1,undo:[],redo:[],
   view:{s:1,x:0,y:0},fitted:false,busy:false,engine:{},compare:false,
-  adj:{b:0,c:0,s:0,w:0},upF:2,light:{x:-.55,y:.45,behind:false,intensity:65,softness:55,kelvin:5200,ambient:40,color:'#ffffff'},expand:{size:0,mode:'expand',scale:1,ox:.5,oy:.5},crop:null,cropMode:false};
+  adj:{b:0,c:0,s:0,w:0},upF:2,angle:{h:45,v:0,zoom:5},angleBest:false,light:{x:-.55,y:.45,behind:false,intensity:65,softness:55,kelvin:5200,ambient:40,color:'#ffffff'},expand:{size:0,mode:'expand',scale:1,ox:.5,oy:.5},crop:null,cropMode:false};
 const cv=$('#cv'),ctx=cv.getContext('2d');
 const mask=document.createElement('canvas'),mctx=mask.getContext('2d',{willReadFrequently:true});
 let preview=null; // 조정 미리보기 캔버스
@@ -385,7 +388,7 @@ function engineBox(op){const o=st.ops[op];if(!o)return '';const e=engineFor(op),
   const opts=[`<option value="auto" ${sel==='auto'?'selected':''}>Auto · ${esc(e&&sel==='auto'?e.label:o.engine.label)}</option>`].concat(o.alternatives.length>1?o.alternatives.map(a=>`<option value="${esc(a.id)}" ${sel===a.id?'selected':''}>${esc(a.label)} · ◈${a.perImage}</option>`):[]).join('');
   return `<div class="ed-eng"><div class="lbl" style="margin:0 0 4px">Engine <i>· auto picks the best connected model</i></div><select id="engSel">${opts}</select><small>${esc(o.why)}</small></div>`;}
 function hint(){const t=toolDef();let h='';if(t&&t.brush)h=(t.brush==='required'?'Paint the area to change. ':'')+'B brush · E eraser · [ ] size · Space+drag pan · \\ compare';
-  else if(t&&t.id==='relight')h='Preview on the canvas is a rough guide — the AI result lights the actual product.';else if(t&&t.id==='expand')h=st.expand.mode==='expand'?'Drag the photo to place it inside the new frame.':'Drag the box to move, corners to resize.';else h='Scroll to zoom · drag to pan · hold \\ to compare';$('#hint').textContent=h;}
+  else if(t&&t.id==='angles')h='Drag the sphere: left/right orbits around the product, up/down raises or lowers the camera.';else if(t&&t.id==='relight')h='Preview on the canvas is a rough guide — the AI result lights the actual product.';else if(t&&t.id==='expand')h=st.expand.mode==='expand'?'Drag the photo to place it inside the new frame.':'Drag the box to move, corners to resize.';else h='Scroll to zoom · drag to pan · hold \\ to compare';$('#hint').textContent=h;}
 function renderBody(soft){
   const t=toolDef();if(!t)return;hint();
   if(soft){const r=$('#runNote');updateRun();const s=$('#engSel'),e0=engineFor(st.tool);if(s&&e0&&(st.engine[st.tool]||'auto')==='auto')s.options[0].text=`Auto · ${e0.label}${usesMask()?(hasMask()?' · brushed area':' · whole photo'):''}`;return;}
@@ -411,11 +414,45 @@ function renderBody(soft){
       +`<div class="lbl">Light color</div><div class="chips">${LIGHT_COLORS.map(([c,n])=>`<button class="ed-sw ${L.color===c?'on':''}" data-lc="${c}" title="${n}" style="background:${c}"></button>`).join('')}</div>`
       +`<div class="lbl">Presets</div><div class="chips">${LIGHT_PRESETS.map((p,i)=>`<button class="chip" data-lp="${i}">${esc(p[0])}</button>`).join('')}</div>`
       +`<div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="600" placeholder="e.g. keep the window reflection on the bottle"></textarea>`;}
+  if(t.id==='angles'){const A=st.angle;
+    h+=`<div class="lbl">Camera <i>· hold and drag to change the angle</i></div><div class="ed-lpad ed-asph" id="asphW"><canvas id="asph"></canvas><button class="ed-aar" data-ar="u" style="top:6px;left:50%;transform:translateX(-50%)">⌃</button><button class="ed-aar" data-ar="d" style="bottom:22px;left:50%;transform:translateX(-50%)">⌄</button><button class="ed-aar" data-ar="l" style="left:6px;top:50%;transform:translateY(-50%)">‹</button><button class="ed-aar" data-ar="r" style="right:6px;top:50%;transform:translateY(-50%)">›</button><span class="ed-lpos" id="apos"></span></div>`
+      +ANGLE_ROWS.map(([k,l,mn,mx,stp])=>`<div class="ed-row"><label>${l}</label><input type="range" min="${mn}" max="${mx}" step="${stp}" value="${A[k]}" data-ag="${k}" ${st.angleBest?'disabled':''}><output>${k==='zoom'?A[k]:A[k]+'°'}</output></div>`).join('')
+      +`<div class="lbl">Quick angles</div><div class="chips">${ANGLE_PRESETS.map((p,i)=>`<button class="chip" data-ap="${i}">${esc(p[0])}</button>`).join('')}</div>`
+      +`<label class="ed-chk" style="display:flex;gap:8px;align-items:center;margin:12px 0 2px;font-size:13px;cursor:pointer"><input type="checkbox" id="aBest" ${st.angleBest?'checked':''}> Generate from 12 best angles <span style="color:var(--faint);font-size:11.5px">· a full contact sheet</span></label>`
+      +`<div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="400" placeholder="e.g. keep the marble surface under the product"></textarea>`;}
   if(t.ai)h+=engineBox(t.id);
   const bd=$('#body'),keep=bd.dataset.t===t.id?bd.scrollTop:0,prv=$('#pr')?$('#pr').value:'';bd.innerHTML=h;bd.dataset.t=t.id;bd.scrollTop=keep; // 같은 도구 안에서 다시 그릴 땐 스크롤·입력 유지
   if(keep&&prv&&$('#pr'))$('#pr').value=prv;updateRun();
   if(t.id==='relight')setupLightPad();
+  if(t.id==='angles')setupAngleSphere();
 }
+// ── Angles 카메라 구 (Higgsfield Angles 2.0 처럼) ── h: 0 정면·90 오른쪽·180 뒤(45 단위) · v: -30~60(30 단위) · zoom 0/5/10
+const ANGLE_ROWS=[['h','Rotation',0,315,45],['v','Tilt',-30,60,30],['zoom','Zoom',0,10,5]];
+const ANGLE_H=['Front','Front-right','Right side','Back-right','Back','Back-left','Left side','Front-left'];
+const ANGLE_PRESETS=[['Front',{h:0,v:0,zoom:5}],['3/4 right',{h:45,v:0,zoom:5}],['Side',{h:90,v:0,zoom:5}],['Back',{h:180,v:0,zoom:5}],['Top-down',{h:0,v:60,zoom:5}],['Low hero',{h:315,v:-30,zoom:5}],['Close-up',{h:45,v:30,zoom:10}]];
+// 12 best = 8 방위(눈높이) + 위에서·아래에서·하이 3/4·클로즈업
+const ANGLE_BEST=[0,45,90,135,180,225,270,315].map(h=>({h,v:0,zoom:5})).concat([{h:0,v:30,zoom:5},{h:45,v:60,zoom:5},{h:315,v:-30,zoom:5},{h:0,v:0,zoom:10}]);
+function angleLabel(a){a=a||st.angle;return `${ANGLE_H[(a.h/45)%8]} · ${{'-30':'Low angle','0':'Eye level','30':'Elevated','60':'High angle'}[a.v]} · ${{0:'Wide',5:'Medium',10:'Close-up'}[a.zoom]}`;}
+function setAngle(p){const A=st.angle;if(p.h!==undefined)A.h=((Math.round(p.h/45)*45)%360+360)%360;if(p.v!==undefined)A.v=Math.max(-30,Math.min(60,Math.round(p.v/30)*30));if(p.zoom!==undefined)A.zoom=Math.max(0,Math.min(10,Math.round(p.zoom/5)*5));
+  $$('#body [data-ag]').forEach(r=>{const k=r.dataset.ag;r.value=A[k];r.nextElementSibling.textContent=k==='zoom'?A[k]:A[k]+'°';});drawAngleSphere();updateRun();}
+function drawAngleSphere(){const c=$('#asph');if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(c.width!==w*d){c.width=w*d;c.height=h*d;}const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);
+  const cx=w/2,cy=h/2-6,R=Math.min(w,h)*.36,A=st.angle;
+  x.strokeStyle='rgba(255,255,255,.13)';x.lineWidth=1;
+  for(let i=0;i<6;i++){const k=Math.cos(i*Math.PI/6);x.beginPath();x.ellipse(cx,cy,Math.abs(R*k),R,0,0,Math.PI*2);x.stroke();} // 경선
+  for(const lat of [-60,-30,0,30,60]){const r=lat*Math.PI/180;x.beginPath();x.ellipse(cx,cy-R*Math.sin(r),R*Math.cos(r),R*Math.cos(r)*.18,0,0,Math.PI*2);x.stroke();} // 위선
+  // 피사체(가운데 상자)
+  x.fillStyle='rgba(255,255,255,.08)';x.strokeStyle='rgba(255,255,255,.35)';x.beginPath();x.roundRect?x.roundRect(cx-12,cy-14,24,28,4):x.rect(cx-12,cy-14,24,28);x.fill();x.stroke();
+  // 카메라 위치(정사영) — 정면 = 가운데 앞, 오른쪽 90 = 오른쪽 가장자리, 뒤 180 = 가운데 뒤(흐리게)
+  const th=A.h*Math.PI/180,ph=A.v*Math.PI/180,px=Math.sin(th)*Math.cos(ph),py=Math.sin(ph),pz=Math.cos(th)*Math.cos(ph);
+  const zr=1.15-A.zoom/10*.45,X=cx+R*px*zr,Y=cy-R*py*zr,front=pz>=-.01;
+  x.setLineDash([3,4]);x.strokeStyle='rgba(217,255,74,.45)';x.beginPath();x.moveTo(X,Y);x.lineTo(cx,cy);x.stroke();x.setLineDash([]);
+  x.save();x.globalAlpha=front?1:.45;x.shadowColor='#d9ff4a';x.shadowBlur=front?16:6;x.fillStyle='#d9ff4a';x.beginPath();x.roundRect?x.roundRect(X-11,Y-8,22,16,4):x.rect(X-11,Y-8,22,16);x.fill();x.restore();
+  x.fillStyle='#111';x.beginPath();x.arc(X,Y,4,0,Math.PI*2);x.fill();
+  const lp=$('#apos');if(lp)lp.textContent=st.angleBest?'12 best angles':angleLabel();}
+function setupAngleSphere(){const wrap=$('#asphW');let on=null;
+  wrap.addEventListener('pointerdown',e=>{if(e.target.closest('[data-ar]'))return;on={x:e.clientX,y:e.clientY,h:st.angle.h,v:st.angle.v};wrap.setPointerCapture(e.pointerId);});
+  wrap.addEventListener('pointermove',e=>{if(!on||st.angleBest)return;const dx=e.clientX-on.x,dy=e.clientY-on.y;setAngle({h:on.h+Math.round(dx/34)*45,v:on.v-Math.round(dy/34)*30});});
+  wrap.addEventListener('pointerup',()=>{on=null;});drawAngleSphere();}
 // ── Relight 조명 패드 (힉스필드 Relight 처럼 위치로 정한다) ── x:-1(왼)~1(오) · y:-1(아래)~1(위) · behind=피사체 뒤(림)
 const LIGHT_ROWS=[['intensity','Intensity',0,100,1],['softness','Softness',0,100,1],['kelvin','Color temp',2000,9000,100],['ambient','Ambient fill',0,100,1]];
 const LIGHT_COLORS=[['#ffffff','White'],['#ffd6a0','Warm'],['#ff9a4a','Sunset'],['#ff7eb6','Pink'],['#b18cff','Violet'],['#6aa8ff','Blue'],['#7dffcf','Mint']];
@@ -445,9 +482,13 @@ $('#body').addEventListener('click',e=>{
   const lb=e.target.closest('[data-lb]');if(lb){st.light.behind=lb.dataset.lb==='1';renderBody();draw();return;}
   const lc=e.target.closest('[data-lc]');if(lc){st.light.color=lc.dataset.lc;renderBody();draw();return;}
   const or=e.target.closest('[data-or]');if(or){orient(or.dataset.or);return;}
+  const ar=e.target.closest('[data-ar]');if(ar){if(st.angleBest)return;const A=st.angle,k=ar.dataset.ar;setAngle(k==='l'?{h:A.h-45}:k==='r'?{h:A.h+45}:k==='u'?{v:A.v+30}:{v:A.v-30});return;}
+  const ap=e.target.closest('[data-ap]');if(ap){st.angleBest=false;Object.assign(st.angle,ANGLE_PRESETS[+ap.dataset.ap][1]);renderBody();return;}
 });
 $('#body').addEventListener('input',e=>{
   if(e.target.id==='xsc'){st.expand.scale=+e.target.value;$('#xscV').textContent=Math.round(st.expand.scale*100)+'%';fit();return;}
+  if(e.target.dataset.ag){setAngle({[e.target.dataset.ag]:+e.target.value});return;}
+  if(e.target.id==='aBest'){st.angleBest=e.target.checked;renderBody();return;}
   if(e.target.dataset.lt){const k=e.target.dataset.lt;st.light[k]=+e.target.value;e.target.nextElementSibling.textContent=k==='kelvin'?e.target.value+'K':e.target.value;drawLightPad();draw();return;}
   if(e.target.dataset.adj){st.adj[e.target.dataset.adj]=+e.target.value;e.target.nextElementSibling.textContent=e.target.value;adjPreview();updateRun();return;}
 });
@@ -455,8 +496,8 @@ $('#body').addEventListener('change',e=>{if(e.target.id==='engSel'){st.engine[st
 function updateRun(){const t=toolDef(),b=$('#run'),n=$('#runNote');if(!t)return;
   if(!t.ai){b.innerHTML='Apply · free';b.disabled=!Object.values(st.adj).some(Boolean);n.textContent='Saved as a new version — download or run AI tools on it.';return;}
   if(t.id==='expand'&&st.expand.mode==='crop'){b.innerHTML='Crop · free';b.disabled=!st.crop;n.textContent=SIZES[st.expand.size][2]?`Exports at up to ${SIZES[st.expand.size][2]}×${SIZES[st.expand.size][3]}`:'';return;}
-  const e=engineFor(t.id),passes=t.id==='upscale'&&st.upF>4?2:1;b.disabled=!e||st.busy;b.innerHTML=`${esc(t.id==='expand'?'Expand':t.id==='upscale'?'Upscale ×'+st.upF:t.title)} <span class="c">◈ ${e?e.perImage*passes:'—'}</span>`;
-  n.textContent=e?`Runs on ${e.label}${passes>1?' · 2 passes (×4 then ×'+(st.upF/4)+')':''}${usesMask()?(hasMask()?' · brushed area only':' · whole photo'):''} · saved to your Library`:'Not configured on this server';
+  const e=engineFor(t.id),passes=t.id==='upscale'&&st.upF>4?2:t.id==='angles'&&st.angleBest?ANGLE_BEST.length:1;b.disabled=!e||st.busy;b.innerHTML=`${esc(t.id==='expand'?'Expand':t.id==='upscale'?'Upscale ×'+st.upF:t.id==='angles'?(st.angleBest?'Generate 12 angles':'Generate angle'):t.title)} <span class="c">◈ ${e?e.perImage*passes:'—'}</span>`;
+  n.textContent=e?`Runs on ${e.label}${t.id==='angles'?(st.angleBest?' · 12 images, each a new version':' · '+angleLabel()):passes>1?' · 2 passes (×4 then ×'+(st.upF/4)+')':''}${usesMask()?(hasMask()?' · brushed area only':' · whole photo'):''} · saved to your Library`:'Not configured on this server';
   const un=$('#upNote');if(un&&cur()){const v=cur();un.textContent=`${v.img.naturalWidth}×${v.img.naturalHeight} → ${v.img.naturalWidth*st.upF}×${v.img.naturalHeight*st.upF}${v.img.naturalWidth*st.upF>8192||v.img.naturalHeight*st.upF>8192?' · saved as JPEG':''}`;}}
 
 // ── 로컬 조정(무료) ──
@@ -488,6 +529,7 @@ $('#run').onclick=async()=>{
   const pr=$('#pr');if(pr&&pr.value.trim())fd.append('prompt',pr.value.trim());
   if(t.id==='fix_text'){const tx=$('#fxText').value.trim();if(!tx){toast('Type the exact label text first.');$('#fxText').focus();return;}fd.append('text',tx);}
   if(t.id==='upscale')fd.append('factor',String(st.upF));
+  if(t.id==='angles')fd.append('angle',JSON.stringify(st.angle));
   if(t.id==='relight')fd.append('light',JSON.stringify(st.light)); // (10-16) 조명 가이드(relightGuide)는 보내지 않는다 — 화면 미리보기가 약해 결과를 오히려 약하게 끌었다(실측). 서버는 guide 를 받을 수 있게 남겨 둠
   if(t.id==='inpaint'&&!(pr&&pr.value.trim())){toast(hasMask()?'Say what should appear in the brushed area.':'Describe the change — it applies to the whole photo.');pr&&pr.focus();return;}
   if(t.id==='erase'&&!hasMask()&&!(pr&&pr.value.trim())){toast('Brush what to erase, or name it in the box.');pr&&pr.focus();return;}
@@ -500,7 +542,9 @@ $('#run').onclick=async()=>{
     }
     if(v.idx)fd.append('sourceIdx',v.idx);
   }catch(e){toast('Could not read this image in the browser.');return;}
-  const eng=engineFor(t.id);busy(true,`${t.title} · ${eng?eng.label:''}…`);
+  const eng=engineFor(t.id);
+  if(t.id==='angles'&&st.angleBest){if(!confirm(`Generate 12 angles? This uses ◈${eng?eng.perImage*ANGLE_BEST.length:'—'} (◈${eng?eng.perImage:'—'} each).`))return;await runAngleBatch(fd,v);return;}
+  busy(true,`${t.title} · ${eng?eng.label:''}…`);
   try{const r=await longJob('/api/generate/edit',fd);const j=r.body||{};
     if(r.status===402){toast((j&&(j.error||j.message))||'Not enough credits.');return;}
     if(!r.ok||!j.success){toast((j&&(j.error||j.message))||('Edit failed ('+r.status+')'));return;}
@@ -512,6 +556,16 @@ $('#run').onclick=async()=>{
   }catch(e){toast('Network error — try again.');}
   finally{busy(false);updateRun();draw();}
 };
+// 12 best angles — 3개씩 동시에, 끝나는 대로 버전에 추가(실패한 각도는 건너뛰고 마지막에 알린다)
+async function runAngleBatch(fd0,v){const list=ANGLE_BEST.slice();let done=0,fail=0,spent=0,stop=false;busy(true,`Angles · 0 / ${list.length}…`);
+  const one=async a=>{const fd=new FormData();for(const [k,val] of fd0.entries())fd.append(k,val);fd.set('angle',JSON.stringify(a));
+    try{const r=await longJob('/api/generate/edit',fd);const j=r.body||{};if(r.status===402){stop=true;toast(j.error||'Not enough credits.');return;}
+      if(!r.ok||!j.success){fail++;return;}const img=await loadAny(j.data.url);spent+=j.data.cost||0;
+      pushVersion({img,src:j.data.url,idx:j.data.idx,label:`Angle · ${ANGLE_H[(a.h/45)%8]}${a.v?(a.v>0?' ↑':' ↓'):''}${a.zoom===10?' · close':''}`,local:false,name:v.name});
+    }catch(e){fail++;}finally{done++;$('#busyT').textContent=`Angles · ${done} / ${list.length}…`;}};
+  try{const q=list.slice();await Promise.all([0,1,2].map(async()=>{while(q.length&&!stop)await one(q.shift());}));
+    toast(`${done-fail} of ${list.length} angles saved to Library${fail?` · ${fail} failed (not charged)`:''} · ◈${spent}`);if(window.DoppiaNav)DoppiaNav.refreshCredits();}
+  finally{busy(false);updateRun();draw();}}
 $('#dl').onclick=()=>{const v=cur();if(!v)return;const a=document.createElement('a');a.href=v.img.src;a.download=`doppia-edit-${Date.now()}.png`;document.body.appendChild(a);a.click();a.remove();};
 
 // ── 부팅 ──

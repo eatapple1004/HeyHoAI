@@ -38,6 +38,7 @@ const IMG_CREDIT = {
   removebg: [30, 50], // BiRefNet(fal) 배경 제거 1장 — 자리값(실원가 ~$0.01)
   faceswap: [90, 150], // (10-16) Face swap(fal Easel/face-swap) 1장 — 자리값. 실원가 ~$0.03~0.05 → 바닥 ~68
   'bria-eraser': [90, 150], // (10-16) Bria Eraser(fal) 지우기 1장 — 자리값. 실원가 ~$0.04 → 바닥 55
+  'qwen-angles': [110, 180], // (10-16) Editor Angles — Qwen Image Edit 2511 Multiple-Angles(fal) 1장 — 자리값. 실원가 $0.035/MP × 사본 ≤1536(≈1.8MP) ≈ $0.065 → 바닥 ~90
   'flux-fill': [185, 300], // (10-16) FLUX.1 Fill pro(fal) Editor 마스크 채우기 1장 — 자리값. 실원가 $0.05/MP × 사본 ≤2.4MP(긴 변 1536) ≈ $0.12 → 바닥 163 → pro 동일가
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
