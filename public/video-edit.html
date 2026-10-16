@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=30" defer></script>
+<script src="/js/topnav.js?v=31" defer></script>
 <style>
 /* (2026-10-16) Video Editor — omniclip(오픈소스 웹 편집기, REA 캡처: 상단 Export · 툴바 Undo/Redo/Split/Delete/Zoom · 초 눈금 · 트랙) 구조 +
    힉스필드식 AI 패널. 좌 미디어(내 영상·업로드·텍스트·음악) · 가운데 캔버스 미리보기 · 우 AI 도구/속성 · 아래 타임라인(영상·텍스트·음악 트랙).
@@ -169,6 +169,7 @@ const AI=[
   {id:'extend',ic:'⧉',name:'Extend',title:'Extend',d:'Continue the shot from the end of the selected part — the new clip is added right after.',prompt:'optional — e.g. camera slowly pushes in on the product'},
   {id:'upscale',ic:'▲',name:'Upscale',title:'Upscale',d:'Sharper, larger video for the selected part (Topaz).'},
   {id:'productswap',ic:'⇄',name:'Swap',title:'Product swap',d:'Swap the product in the selected part for yours — hands, motion and camera stay. Add a product photo (upload or Library).'},
+  {id:'reframe',ic:'⤢',name:'Reframe',title:'Reframe',d:'Change the aspect ratio of the selected part — AI generates the new area, so nobody gets cropped out.'},
   {id:'motion',ic:'↷',name:'Motion',title:'Motion transfer',d:'Put this clip’s movement onto a model photo from your Library. People only — both need a visible upper body.'},
   {id:'captions',ic:'T',name:'Captions',title:'Auto captions',d:'Transcribe the speech in the selected clip and add timed captions to the text track. Free.'},
 ];
@@ -363,11 +364,19 @@ function renderRight(){
   if(a.id==='productswap')h+=`<div class="lbl">Your product</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${st.swapImg?`<img src="${esc(st.swapImg)}" style="width:54px;height:54px;object-fit:contain;background:#fff;border-radius:8px">`:''}<button class="ib" id="pickSwap">${st.swapImg?'Change':'Pick from Library'}</button><button class="ib" id="upSwap">Upload</button><input type="file" id="swapFile" accept="image/*" hidden></div>
     <div class="lbl">What to replace <i>· optional</i></div><input class="ff" id="swapTarget" maxlength="200" placeholder="e.g. the white bottle in her hand" value="${esc(st.swapTarget||'')}" style="min-height:0">
     <div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="500" placeholder="e.g. show the label facing the camera"></textarea>`;
+  if(a.id==='reframe'&&cat){const asp=[...new Set(cat.engines.flatMap(e=>e.aspects||[]))],ord=['9:16','4:5','3:4','1:1','5:4','4:3','16:9','21:9'];asp.sort((x,y)=>ord.indexOf(x)-ord.indexOf(y));
+    if(!st.rfAspect||!asp.includes(st.rfAspect))st.rfAspect=st.aspect==='16:9'?'9:16':'16:9';const eng=rfEngine(cat);
+    h+=`<div class="lbl">New ratio</div><div class="chips">${asp.map(x=>`<button class="chip ${st.rfAspect===x?'on':''}" data-rf="${x}">${x}</button>`).join('')}</div>`;
+    if(eng&&(eng.resolutions||[]).length)h+=`<div class="lbl">Quality</div><div class="chips">${eng.resolutions.map(x=>`<button class="chip ${(st.rfRes||eng.resolutions[0])===x?'on':''}" data-rr="${x}">${x}</button>`).join('')}</div>`;
+    if(eng&&!eng.noPrompt)h+=`<div class="lbl">Direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="500" placeholder="e.g. extend the beach and the sky on both sides"></textarea>`;
+    if(eng)h+=`<div class="ve-eng" style="color:var(--faint)">${esc(eng.label)} · up to ${eng.maxSec}s${c&&clipDur(c)>eng.maxSec?` <span style="color:var(--gold)">— only the first ${eng.maxSec}s of this part is used</span>`:''}</div>`;}
   if(a.id==='captions')h+=`<div class="ve-row"><label>Language</label><select class="sel" id="capLang"><option value="">Auto</option><option>Korean</option><option>English</option><option>Japanese</option></select></div>`;
   if(cat&&cat.engines.length)h+=`<div class="ve-eng">Engine<select id="engSel">${cat.engines.map((e,i)=>`<option value="${esc(e.id)}" ${(st.engine[a.id]||cat.engines[0].id)===e.id?'selected':''}>${i===0?'Auto · ':''}${esc(e.label)}</option>`).join('')}</select><div style="margin-top:4px">${esc(cat.why)}</div></div>`;
   b.innerHTML=h;
   const cost=cat&&cat.engines[0]?cat.engines[0].perDuration:null;
-  f.innerHTML=`<button class="gen" id="run" ${!c?'disabled':''}>${esc(a.title)}${a.id==='captions'?' <span class="c">free</span>':cost?` <span class="c">◈ ${c&&clipDur(c)>5.5&&a.id!=='extend'?cost[10]:cost[5]}</span>`:''}</button><div class="n">${a.id==='captions'?'Captions land on the Text track.':a.id==='extend'?'The new part is added after the clip when it’s ready.':'The result replaces the selected clip when it’s ready (Undo brings the original back).'} Results are also saved to your Library.</div>`;
+  let price=cost?(c&&clipDur(c)>5.5&&a.id!=='extend'?cost[10]:cost[5]):null;
+  if(a.id==='reframe'&&cat&&c){const e=rfEngine(cat);if(e){const d=Math.min(clipDur(c),e.maxSec);price=d>10&&e.billPer10s?Math.ceil(d/10)*e.perDuration[10]:(d>5.5?e.perDuration[10]:e.perDuration[5]);}}
+  f.innerHTML=`<button class="gen" id="run" ${!c?'disabled':''}>${esc(a.title)}${a.id==='captions'?' <span class="c">free</span>':price!=null?` <span class="c">◈ ${Number(price).toLocaleString()}</span>`:''}</button><div class="n">${a.id==='captions'?'Captions land on the Text track.':a.id==='extend'?'The new part is added after the clip when it’s ready.':'The result replaces the selected clip when it’s ready (Undo brings the original back).'} Results are also saved to your Library.</div>`;
 }
 $('#aiTools').onclick=e=>{const b=e.target.closest('[data-ai]');if(!b||b.disabled)return;st.tool=b.dataset.ai;if(st.sel&&st.sel.kind!=='clip')st.sel=st.clips[0]?{kind:'clip',id:(selClip()||st.clips[0]).id}:null;renderAll();};
 $('#body').addEventListener('input',e=>{const t=selText();
@@ -377,7 +386,10 @@ $('#body').addEventListener('input',e=>{const t=selText();
   if(e.target.id==='extSec'){st.extSec=+e.target.value;$('#extV').textContent=st.extSec+'s';}
   if(e.target.id==='swapTarget')st.swapTarget=e.target.value;});
 $('#body').addEventListener('change',e=>{if(e.target.id==='engSel')st.engine[st.tool]=e.target.value;if(e.target.dataset.tp||e.target.id==='txT'||e.target.dataset.ap)commit();});
-$('#body').addEventListener('click',e=>{const p=e.target.closest('[data-ps]');if(p){st.preset=+p.dataset.ps;renderRight();return;}const u=e.target.closest('[data-uf]');if(u){st.upF=+u.dataset.uf;renderRight();return;}
+// Reframe: 고른 비율을 지원하는 엔진(엔진 선택이 그 비율을 못 하면 지원하는 첫 엔진)
+function rfEngine(cat){const ok=cat.engines.filter(e=>(e.aspects||[]).includes(st.rfAspect));return ok.find(e=>e.id===st.engine.reframe)||ok[0]||null;}
+$('#body').addEventListener('click',e=>{const p=e.target.closest('[data-ps]');if(p){st.preset=+p.dataset.ps;renderRight();return;}
+  const rf=e.target.closest('[data-rf]');if(rf){st.rfAspect=rf.dataset.rf;renderRight();return;}const rr=e.target.closest('[data-rr]');if(rr){st.rfRes=rr.dataset.rr;renderRight();return;}const u=e.target.closest('[data-uf]');if(u){st.upF=+u.dataset.uf;renderRight();return;}
   if(e.target.id==='pickImg')pickImage();if(e.target.id==='pickSwap')pickImage('swapImg','Pick your product photo');if(e.target.id==='upSwap')$('#swapFile').click();});
 $('#body').addEventListener('change',async e=>{if(e.target.id!=='swapFile')return;const f=e.target.files[0];e.target.value='';if(!f)return;busy(true,'Uploading product photo…');
   try{const fd=new FormData();fd.append('file',f,f.name||'product.png');const r=await fetch('/api/generate/lens-upload',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(!r.ok||!j.success){toast(j.error||'Upload failed');return;}st.swapImg=j.data.url;renderRight();}
@@ -403,6 +415,7 @@ async function runAI(){const c=selClip(),a=AI.find(x=>x.id===st.tool);if(!c)retu
   if(a.id==='restyle'){if(st.preset==null){toast('Pick a look first.');return;}body.prompt=a.presets[st.preset][1];}
   if(a.id==='edit'&&!body.prompt){toast('Describe the change.');pr&&pr.focus();return;}
   if(a.id==='motion'){if(!st.motionImg){toast('Pick a model photo first.');return;}body.imageSrc=st.motionImg;}
+  if(a.id==='reframe'){const e=rfEngine(opCat('reframe'));if(!e){toast('Pick a ratio.');return;}body.aspectRatio=st.rfAspect;body.engine=e.id;if((e.resolutions||[]).length)body.resolution=st.rfRes||e.resolutions[0];}
   if(a.id==='productswap'){if(!st.swapImg){toast('Add a photo of your product first.');return;}body.imageSrc=st.swapImg;body.target=st.swapTarget=(($('#swapTarget')||{}).value||'').trim();}
   // 여러 장면이 섞인 구간은 AI 가 한 장면으로 뭉갠다 → 먼저 확인하고 나눌지 묻는다
   if(a.id!=='upscale'&&!c._sceneChecked){try{const r0=await fetch('/api/generate/video-edit/scenes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:c.src,in:c.in,out:c.out})});const j0=await r0.json().catch(()=>({}));
@@ -425,7 +438,9 @@ async function pollJob(job){while(job.status==='running'){await new Promise(x=>s
 async function applyResult(job){st.media.unshift({src:job.url,name:`${job.label} result`,from:'ai'});const m=await metaOf(job.url);const i=st.clips.findIndex(c=>c.id===job.clipId);
   commit();const n={id:uid(),src:job.url,name:`${job.label}`,in:0,out:m.duration||5,srcDur:m.duration||5,muted:false};
   if(job.op==='extend'||job.op==='motion'||i<0)st.clips.splice(i<0?st.clips.length:i+1,0,n);else st.clips.splice(i,1,n);
-  st.sel={kind:'clip',id:n.id};thumbsFor(n);renderAll();renderLeft();toast(`${job.label} ready on ${job.engine} — ${job.op==='extend'||job.op==='motion'?'added after the clip':'clip replaced'}`);}
+  st.sel={kind:'clip',id:n.id};thumbsFor(n);renderAll();renderLeft();toast(`${job.label} ready on ${job.engine} — ${job.op==='extend'||job.op==='motion'?'added after the clip':'clip replaced'}`);
+  // Reframe 결과 비율이 프로젝트 프레임과 다르면 프레임도 바꿀지 묻는다(편집기 프레임: 9:16·4:5·1:1·16:9)
+  const ar=job.body&&job.body.aspectRatio;if(job.op==='reframe'&&ar&&ar!==st.aspect&&[...$('#aspect').options].some(o=>o.value===ar)&&confirm(`Switch the project frame to ${ar} to match the reframed clip?`)){st.aspect=ar;$('#aspect').value=ar;sizeCanvas();save();}}
 function renderJobs(){const el=$('#jobs');el.hidden=!st.jobs.length;el.innerHTML=st.jobs.slice(0,8).map(j=>`<div><b>${esc(j.label)}</b><span>${esc(j.engine)} · ${j.status==='running'?'⏳ '+Math.round((Date.now()-j.t0)/1000)+'s':j.status==='done'?'✓ ready':'✕ '+esc(j.error||'')}</span></div>`).join('');}
 setInterval(()=>{if(st.jobs.some(j=>j.status==='running'))renderJobs();},1000);
 
@@ -444,6 +459,7 @@ async function boot(){st.T=window.DoppiaNav?await DoppiaNav.tools():{};
   try{const d=localStorage.getItem(DRAFT);if(d){restore(d);st.clips.forEach(thumbsFor);}}catch(e){}
   st._last=snap();syncUndo();sizeCanvas();
   const q=new URLSearchParams(location.search),v=q.get('video');if(v&&/^\/images\/[\w.-]+\.(mp4|webm|mov)$/i.test(v)){await addClip(v,'From Library');history.replaceState(null,'','/video-edit');}
+  const qt=q.get('tool');if(qt&&AI.some(a=>a.id===qt)&&(qt==='captions'||opCat(qt)))st.tool=qt;
   if(!opCat(st.tool)){const first=AI.find(a=>a.id==='captions'||opCat(a.id));st.tool=first?first.id:'captions';}
   renderAll();renderLeft();loadLibrary();
   new ResizeObserver(fitCanvasCss).observe($('#cwrap'));}

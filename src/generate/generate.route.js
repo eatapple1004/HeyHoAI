@@ -1139,6 +1139,8 @@ const VIDEO_EDIT_OPS = {
   upscale: { label: 'Upscale', engines: ['topaz-video'], slot: 'sourceVideo', min: 0.5, max: 30, why: 'Topaz Video sharpens real detail — ×2 or ×4.' },
   // (2026-10-16) Product swap — 힉스필드 Video to Video "AI Object Swap"(REA 캡처) 처럼 영상 + 제품 사진 → 영상 속 제품만 내 제품으로
   productswap: { label: 'Product swap', engines: ['kling-o3-edit', 'seedance-2.5-edit'], slot: 'sourceVideo', min: 3, max: 15, minShort: 720, why: 'Kling 3.0 Omni Edit swaps the product and keeps hands, motion and camera — the same engine Higgsfield uses.' },
+  // (2026-10-16) Reframe — 힉스필드 Reframe(REA 캡처). 비율 바꾸고 빈 영역을 AI 로 채움. 엔진별 지원 비율이 달라 비율로 엔진을 고른다
+  reframe: { label: 'Reframe', engines: ['ltx-reframe', 'luma-reframe'], slot: 'sourceVideo', min: 1, max: 60, why: 'LTX 2.3 Reframe changes the aspect ratio and generates the new area — nothing gets cropped out. Up to 60s.' },
   motion: { label: 'Motion transfer', engines: ['kling-motion', 'genjutsu'], slot: 'motionVideo', min: 3, max: 15, why: 'Kling Motion Control puts this clip’s movement onto a model photo (people only).' },
 };
 /** Product swap 지시문 — target(바꿀 대상, 비우면 화면의 주 제품) + 덧붙임 */
@@ -1160,7 +1162,8 @@ function videoEditCatalog() {
     const list = videoEditEngines(op);
     if (!list.length) return null;
     return { op, label: d.label, why: d.why, min: d.min, max: d.max,
-      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.videoCost(5, 'pro', false), 10: credit.videoCost(10, 'pro', false) } })) };
+      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.videoCost(5, 'pro', false), 10: credit.videoCost(10, 'pro', false) },
+        ...(op === 'reframe' ? { aspects: (t.controls && t.controls.aspectRatio) || [], resolutions: (t.controls && t.controls.resolution) || [], maxSec: t.controls && t.controls.durationRange ? t.controls.durationRange.max : d.max, billPer10s: !!t.billPer10s, noPrompt: !!t.noPrompt } : {}) })) };
   }).filter(Boolean);
 }
 
@@ -1207,13 +1210,19 @@ async function postVideoEditAiHandler(req, res, next) {
     const op = String(b.op || '');
     const def = VIDEO_EDIT_OPS[op];
     if (!def) return res.status(400).json({ success: false, error: 'Unknown AI tool' });
-    const list = videoEditEngines(op);
+    let list = videoEditEngines(op);
+    if (op === 'reframe') { // 고른 비율을 지원하는 엔진만
+      if (!b.aspectRatio) return res.status(400).json({ success: false, error: 'Pick an aspect ratio' });
+      list = list.filter((t) => ((t.controls && t.controls.aspectRatio) || []).includes(String(b.aspectRatio)));
+      if (!list.length) return res.status(400).json({ success: false, error: `No engine supports ${b.aspectRatio}` });
+    }
     const tool = list.find((t) => t.id === b.engine) || list[0];
     if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
     if ((op === 'edit' || op === 'restyle') && !String(b.prompt || '').trim()) return res.status(400).json({ success: false, error: 'Describe the change' });
     if (op === 'motion' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Pick a model photo for the motion to go onto' });
     if (op === 'productswap' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Add a photo of your product' });
-    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: def.max, minShort: def.minShort || 0 });
+    const toolMax = tool.controls && tool.controls.durationRange ? tool.controls.durationRange.max : def.max;
+    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: Math.min(def.max, toolMax), minShort: def.minShort || 0 });
     cutFile = c.path;
     if (op === 'motion' || op === 'productswap') imgFile = await ve.copyImage(b.imageSrc);
     const range = (tool.controls && tool.controls.durationRange) || null;
@@ -1226,6 +1235,7 @@ async function postVideoEditAiHandler(req, res, next) {
     if (op === 'edit' || op === 'restyle') prompt = `Edit @Video1: ${prompt}. Keep the same framing, timing and camera motion; change only what is asked.`;
     if (op === 'extend') prompt = prompt || 'Continue the shot naturally — same scene, lighting and camera motion.';
     if (op === 'productswap') prompt = productSwapPrompt(b.target, prompt);
+    if (op === 'reframe') prompt = tool.noPrompt ? '' : (prompt ? `Extend the scene to the new frame: ${prompt}` : 'Extend the scene naturally into the new frame — same place, lighting and style; keep every person and the product fully in frame.');
     const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const result = await videoJobService.submit({
       user: req.user, prompt, duration: String(duration), mode: 'pro', aspectRatio: b.aspectRatio || undefined, audio: b.audio === true || b.audio === 'true',
@@ -2573,13 +2583,14 @@ const reads = {
       ...(t.type === 'video' ? { refModel: !!t.refModel, refInput: t.refInput ? { max: t.refInput.max || 10 } : null, t2vModel: !!t.t2vModel, noPrompt: !!t.noPrompt } : {}) });
     return {
       image: listTools({ type: 'image', enabledOnly: true, availableOnly: true }).map(pub),
-      video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).filter((t) => !t.editorOnly).map(pub), // editorOnly = Video Editor·Product swap 전용 엔진은 Create Video·모델 목록에서 뺀다
       upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
       removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
       editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
       faceswap: require('../images/faceSwap.engine').engines().map(pub), // (10-16) Face swap 엔진 — 비어 있으면(PAUSED 포함) 메뉴 soon
       faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크)
-      productswap: videoEditEngines('productswap').map(pub), // (10-16) Video Product swap 엔진 — 비어 있으면 메뉴 soon
+      productswap: videoEditEngines('productswap').map(pub),
+      reframe: videoEditEngines('reframe').map(pub), // (10-16) Video Reframe 엔진 — 비어 있으면 메뉴 soon // (10-16) Video Product swap 엔진 — 비어 있으면 메뉴 soon
       videoEditor: videoEditCatalog(), // (10-16) Video Editor AI 도구별 엔진 — 비어 있어도 편집기 자체는 동작(로컬 편집·내보내기) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },

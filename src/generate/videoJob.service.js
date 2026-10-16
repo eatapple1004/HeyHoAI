@@ -194,7 +194,8 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
 
   const teamId = await teamCredit.activeTeamId(user.id);
   const charge = await teamCredit.chargeGeneration(
-    user, creditService.videoCost(dur, 'pro', isTemplate), `릴스 생성 (${dur}s, ${engine})`
+    // billPer10s(Reframe 등 길이를 원본에서 받는 툴) — 10초 넘으면 10초 블록 수만큼(자리값)
+    user, creditService.videoCost(Math.min(dur, 10), 'pro', isTemplate) * (tool && tool.billPer10s && dur > 10 ? Math.ceil(dur / 10) : 1), `릴스 생성 (${dur}s, ${engine})`
   );
   const chargeAmount = charge ? charge.amount : 0;
 
