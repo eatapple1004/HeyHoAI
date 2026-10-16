@@ -31,7 +31,10 @@ function presetFile(id) {
   return p ? path.join(process.cwd(), 'public', p.url.replace(/^\//, '')) : null;
 }
 
-function engines() { return listTools({ type: 'faceswap', enabledOnly: true, availableOnly: true }); }
+// (2026-10-16) 사용자 결정: Face swap 앱은 잠시 막고 메뉴엔 Coming soon. 다시 열 땐 false 로 — 메뉴·페이지·API 가 함께 열린다.
+//   ※ On Model 속옷 stage-2 faceswap(faceswapWorker)은 별개 기능이라 영향 없음.
+const PAUSED = true;
+function engines() { return PAUSED ? [] : listTools({ type: 'faceswap', enabledOnly: true, availableOnly: true }); }
 
 /** 얼굴 판별 — { faces, adult, realPhoto, gender } | null(판별 실패) */
 async function inspectFaces(buf) {
@@ -98,4 +101,4 @@ function readPreset(id) {
   return f && fs.existsSync(f) ? fs.readFileSync(f) : null;
 }
 
-module.exports = { PRESETS, engines, checkSourceFace, checkTarget, runSwap, readPreset };
+module.exports = { PAUSED, PRESETS, engines, checkSourceFace, checkTarget, runSwap, readPreset };
