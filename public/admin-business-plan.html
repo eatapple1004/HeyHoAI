@@ -358,7 +358,10 @@ function renderCal() {
     const its = byDate[date] || [];
     h += '<div class="day"><div class="dn">' + d + '</div>' + its.map((it) => {
       const md = mediaById.get(it.media_ids[0]);
+      // 결과가 아직 없으면 이 칸의 원본 사진을 흐리게 보여준다 — 어느 칸에 어떤 사진이 들어갔는지 한눈에
+      const src = !md && (it.source_media_ids || []).length ? mediaById.get(it.source_media_ids[0]) : null;
       const th = md ? (md.media_type === 'video' ? '<video class="th" src="' + esc(md.url) + '" muted></video>' : '<img class="th" src="' + esc(md.url) + '" alt="" loading="lazy">')
+        : src ? '<div style="position:relative"><img class="th" src="' + esc(src.url) + '" alt="" loading="lazy" style="opacity:.55;filter:grayscale(.3)"><span style="position:absolute;top:5px;left:5px;background:rgba(20,16,34,.85);color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:8px">원본 · 팩 전</span></div>'
         : '<div class="noth">' + esc((it.brief || '콘텐츠 없음').slice(0, 60)) + '</div>';
       return '<div class="it" onclick="openItem(\'' + it.id + '\')">' + th + '<div class="mt"><span class="fmt ' + it.format + '">' + FMT_KO[it.format] + '</span>'
         + '<span class="okdot ' + (readiness(it) ? 'y' : 'n') + '" title="' + (readiness(it) ? '준비됨' : '콘텐츠·캡션 필요') + '"></span>'
