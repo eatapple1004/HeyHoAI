@@ -162,13 +162,20 @@ button:disabled{opacity:.5;cursor:default}
       </div>
       <div class="card">
         <h2>새 달 플랜</h2>
-        <div class="field"><label>월</label><input type="month" id="nMonth" style="width:100%"></div>
+        <div class="field"><label>월</label><input type="month" id="nMonth" style="width:100%" onchange="previewCount()"></div>
         <div class="field"><label>주당 게시 수</label>
-          <select id="nPpw" style="width:100%"><option value="2">주 2회 (화·금)</option><option value="3" selected>주 3회 (월·수·금)</option><option value="4">주 4회</option><option value="5">주 5회 (평일)</option><option value="7">매일</option></select></div>
+          <select id="nPpw" style="width:100%" onchange="previewCount()"><option value="2">주 2회 (화·금)</option><option value="3" selected>주 3회 (월·수·금)</option><option value="4">주 4회</option><option value="5">주 5회 (평일)</option><option value="7">매일</option></select></div>
         <div class="field"><label>릴스 비율</label>
-          <select id="nReel" style="width:100%"><option value="0">0% (사진만)</option><option value="0.25">25%</option><option value="0.33" selected>33%</option><option value="0.5">50%</option></select></div>
+          <select id="nReel" style="width:100%" onchange="previewCount()"><option value="0">0% (사진만)</option><option value="0.25">25%</option><option value="0.33" selected>33%</option><option value="0.5">50%</option></select></div>
         <div class="field"><label>이번 달 강조할 것 (선택)</label><textarea id="nBrief" rows="3" placeholder="예: 가을 신메뉴 출시, 10월 말 할인 행사"></textarea></div>
-        <button class="primary" style="width:100%" onclick="createPlan()" id="createBtn">플랜 만들기</button>
+        <div class="packbox" style="margin-bottom:12px">
+          <div style="font-weight:700;font-size:.9rem" id="nNeed">이 달 게시물 계산 중…</div>
+          <div class="prog" style="margin:4px 0 8px">게시물 1개당 사진 1장. 올린 순서대로 날짜에 배치되고, AI가 사진을 보고 칸마다 주제·연출·캡션을 짭니다.</div>
+          <input type="file" id="nPhotos" accept="image/*" multiple style="width:100%" onchange="photoCount()">
+          <div class="prog" style="margin-top:6px" id="nPicked">선택 0장</div>
+        </div>
+        <button class="primary" style="width:100%" onclick="createFromPhotos()" id="createBtn" disabled>📷 사진으로 한 달 플랜 만들기</button>
+        <button class="sm" style="width:100%;margin-top:8px" onclick="createPlan()" id="createEmptyBtn">사진 없이 빈 플랜만 만들기</button>
       </div>
     </div>
 
@@ -314,7 +321,8 @@ function renderPlan() {
 
   const A = [];
   if (draft) {
-    A.push('<button class="primary" onclick="aiDraft()" id="aiBtn">✨ AI로 한 달 초안 짜기</button>');
+    A.push('<label class="primary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;font-weight:600;padding:9px 15px;border-radius:10px;background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff">📷 사진으로 짜기<input type="file" accept="image/*" multiple style="display:none" onchange="redraftFromPhotos(this)"></label>');
+    A.push('<button onclick="aiDraft()" id="aiBtn">✨ 글로만 초안 짜기</button>');
     A.push('<button onclick="addItem()">+ 칸 추가</button>');
     A.push('<button onclick="packAll()" id="packAllBtn">🎨 빈 칸 전부 팩으로</button>');
     A.push('<span style="flex:1"></span><button class="primary" onclick="move(\'doppia_approve\')">✓ Doppia 검수 완료</button>');
@@ -365,6 +373,61 @@ function renderCal() {
 }
 
 // ── 플랜 ──
+let need = 0;
+async function previewCount() {
+  const month = $('nMonth').value;
+  if (!month) return;
+  try {
+    const q = new URLSearchParams({ month, postsPerWeek: $('nPpw').value, reelRatio: $('nReel').value });
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/plan-preview?' + q.toString());
+    need = data.count;
+    $('nNeed').textContent = need ? '이 달 게시물 ' + need + '개 (사진 ' + (need - data.reels) + ' · 릴스 ' + data.reels + ') → 사진 ' + need + '장을 올려 주세요'
+      : '이 달에는 남은 게시 날짜가 없습니다(오늘 이후만 잡습니다)';
+  } catch (e) { $('nNeed').textContent = e.message; need = 0; }
+  photoCount();
+}
+function photoCount() {
+  const n = $('nPhotos').files.length;
+  $('nPicked').textContent = '선택 ' + n + ' / ' + need + '장' + (n > need && need ? ' — 앞의 ' + need + '장만 씁니다' : (n < need ? ' — ' + (need - n) + '장 더 필요' : ' ✓'));
+  $('createBtn').disabled = !need || n < need;
+}
+async function createFromPhotos() {
+  clearMsg();
+  const month = $('nMonth').value, files = $('nPhotos').files;
+  if (!month || files.length < need) return flash('err', '사진 ' + need + '장을 골라 주세요.');
+  $('createBtn').disabled = true; $('createBtn').textContent = '플랜 짜는 중… (사진 업로드 + AI, 1~2분)';
+  let planId = null;
+  try {
+    const { data } = await api(base(), { method: 'POST', body: JSON.stringify({ month, postsPerWeek: Number($('nPpw').value), reelRatio: Number($('nReel').value), brief: $('nBrief').value.trim() || undefined }) });
+    planId = data.id;
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f);
+    const res = await fetch(base() + '/' + planId + '/draft-photos', { method: 'POST', body: fd });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.success === false) throw new Error((Array.isArray(body.message) ? body.message.join(', ') : body.message) || body.error || '플랜 짜기 실패');
+    $('nBrief').value = ''; $('nPhotos').value = ''; photoCount();
+    flash('ok', month + ' 플랜을 사진 ' + need + '장으로 짰습니다. 칸마다 원본이 붙어 있으니 "빈 칸 전부 팩으로"로 콘텐츠를 만드세요.');
+    await loadPlans(planId);
+  } catch (e) {
+    flash('err', e.message + (planId ? ' — 플랜은 만들어졌으니 플랜 화면의 "📷 사진으로 짜기"로 다시 시도하세요.' : ''));
+    if (planId) await loadPlans(planId);
+  } finally { $('createBtn').textContent = '📷 사진으로 한 달 플랜 만들기'; photoCount(); }
+}
+/** 이미 만든 초안 플랜을 사진으로 다시 짜기 */
+async function redraftFromPhotos(input) {
+  clearMsg();
+  const files = input.files; if (!files.length) return;
+  if (cur.items.length && !confirm('지금 초안을 지우고 고른 사진 ' + files.length + '장으로 다시 짭니다. 계속할까요?')) { input.value = ''; return; }
+  flash('ok', '사진 업로드 + AI가 짜는 중… (1~2분)');
+  try {
+    const fd = new FormData(); for (const f of files) fd.append('files', f);
+    const res = await fetch(base() + '/' + cur.plan.id + '/draft-photos', { method: 'POST', body: fd });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.success === false) throw new Error((Array.isArray(body.message) ? body.message.join(', ') : body.message) || body.error || '플랜 짜기 실패');
+    await loadPlans(cur.plan.id); flash('ok', '사진으로 다시 짰습니다.');
+  } catch (e) { flash('err', e.message); }
+  finally { input.value = ''; }
+}
 async function createPlan() {
   clearMsg();
   const month = $('nMonth').value;
@@ -588,6 +651,7 @@ async function refreshPlan() {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
   const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   $('nMonth').value = next.toISOString().slice(0, 7);
+  previewCount();
   api('/api/admin/business/' + BIZ_ID).then((d) => { $('bizName').textContent = (d.business || {}).name || '사업체'; }).catch(() => {});
   loadPlans().catch((e) => flash('err', e.message));
 })();
