@@ -562,6 +562,8 @@ async function migrate() {
     ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS pack_id      TEXT;
     ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS video_job_id TEXT;
     ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS gen_stage    VARCHAR(20);
+    -- 게시물 전용 원본(2026-10-17): 칸마다 따로 올린 제품 사진 → 그 칸의 팩은 이 사진으로 돌린다
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS source_media_ids UUID[] NOT NULL DEFAULT '{}';
   `);
 
   // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.

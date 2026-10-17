@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, InternalServerErrorException, NotFound
 import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { BusinessRepository } from './business.repository';
+import { BusinessService } from './business.service';
 import { BusinessPlanRepository, MonthPlanVo, PlanItemVo } from './business-plan.repository';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -42,7 +43,11 @@ const PLANNER_SYSTEM = `너는 한국 소상공인·브랜드의 인스타그램
 @Injectable()
 export class BusinessPlanService {
   private client: Anthropic | null = null;
-  constructor(private readonly repo: BusinessPlanRepository, private readonly biz: BusinessRepository) {}
+  constructor(
+    private readonly repo: BusinessPlanRepository,
+    private readonly biz: BusinessRepository,
+    private readonly business: BusinessService,
+  ) {}
 
   private anthropic(): Anthropic {
     if (!this.client) {
@@ -205,6 +210,34 @@ export class BusinessPlanService {
       patch.gen_status = ids.length ? 'ready' : 'planned';
     }
     return this.repo.updateItem(item.id, patch);
+  }
+
+  /**
+   * 게시물 전용 원본 올리기(2026-10-17). 칸마다 실제로 찍을 제품 사진을 따로 받아 그 칸의 팩에 쓴다 —
+   * 사업체 공용 원본만 쓰면 AI가 기획한 제품과 팩이 찍는 제품이 어긋났다(단풍잎 북마크 ↔ 새 작품, 10-15 실측).
+   * 파일은 사업체 미디어로 저장(R2 영속)하고 칸의 source_media_ids에 덧붙인다. 초안에서만.
+   */
+  async addItemSources(businessId: string, planId: string, itemId: string, files: any[]): Promise<PlanItemVo> {
+    const plan = await this.assertPlan(businessId, planId);
+    this.assertDraft(plan);
+    const item = await this.assertItem(planId, itemId);
+    const images = (files || []).filter((f) => f && String(f.mimetype || '').startsWith('image/'));
+    if (!images.length) throw new BadRequestException('사진 파일(jpg·png·webp)을 올려 주세요');
+    const room = 10 - item.source_media_ids.length;
+    if (room <= 0) throw new BadRequestException('게시물 원본은 최대 10장입니다');
+    const d = new Date(new Date(item.post_at).getTime() + 9 * 3600 * 1000);
+    const caption = `게시물 원본 (${d.getUTCMonth() + 1}/${d.getUTCDate()} ${item.theme || ''})`.trim().slice(0, 200);
+    const added: string[] = [];
+    for (const f of images.slice(0, room)) added.push((await this.business.uploadMedia(businessId, f, false, caption)).id);
+    return this.repo.updateItem(item.id, { source_media_ids: [...item.source_media_ids, ...added] });
+  }
+
+  /** 게시물 원본에서 빼기 — 사업체 미디어 자체는 지우지 않는다(다른 칸·팩이 쓸 수 있다) */
+  async removeItemSource(businessId: string, planId: string, itemId: string, mediaId: string): Promise<PlanItemVo> {
+    const plan = await this.assertPlan(businessId, planId);
+    this.assertDraft(plan);
+    const item = await this.assertItem(planId, itemId);
+    return this.repo.updateItem(item.id, { source_media_ids: item.source_media_ids.filter((id) => id !== mediaId) });
   }
 
   async removeItem(businessId: string, planId: string, itemId: string): Promise<void> {

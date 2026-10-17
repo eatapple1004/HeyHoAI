@@ -198,7 +198,7 @@ export class BusinessService {
    * account_id는 비워둔다 — 계정 연동 전에도 자료를 받을 수 있어야 하고,
    * 발행 시점에 어느 계정으로 올릴지는 큐에서 따로 정한다.
    */
-  async uploadMedia(id: string, file: any, isBase: boolean): Promise<BusinessMediaVo> {
+  async uploadMedia(id: string, file: any, isBase: boolean, caption?: string | null): Promise<BusinessMediaVo> {
     await this.get(id);
     if (!file) throw new BadRequestException('파일이 필요합니다');
     const mediaType = file.mimetype?.startsWith('video') ? 'video'
@@ -211,7 +211,7 @@ export class BusinessService {
     const originalName = mediaType === 'audio' && file.originalname
       ? Buffer.from(file.originalname, 'latin1').toString('utf8').slice(0, 200) : null;
     const media = await this.repo.insertMedia({
-      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload', caption: originalName,
+      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload', caption: caption || originalName,
     });
     return isBase ? ((await this.repo.setBaseMedia(id, media.id)) as BusinessMediaVo) : media;
   }

@@ -47,10 +47,10 @@ export class BusinessPlanPackService {
     private readonly packFlow: BusinessPackService,
   ) {}
 
-  /** 칸 하나 시작. sourceMediaIds 없으면 사업체 기본 원본(★ 대표, 없으면 최근 원본 3장)을 쓴다. */
+  /** 칸 하나 시작. 원본 우선순위 = 화면에서 고른 사진 → 이 게시물 전용 원본 → 사업체 기본(★대표, 없으면 최근 3장) */
   async start(user: any, businessId: string, planId: string, itemId: string, sourceMediaIds?: string[]) {
     const { item } = await this.assert(businessId, planId, itemId);
-    const sources = await this.pickSources(businessId, sourceMediaIds);
+    const sources = await this.pickSources(businessId, sourceMediaIds && sourceMediaIds.length ? sourceMediaIds : item.source_media_ids);
     this.assertStartable(item);
     await this.plans.updateItem(item.id, { gen_status: 'generating', gen_stage: 'queued', gen_error: null });
     this.running.add(item.id);
@@ -63,17 +63,19 @@ export class BusinessPlanPackService {
     const plan = await this.plans.findPlan(planId);
     if (!plan || plan.business_id !== businessId) throw new NotFoundException('플랜을 찾을 수 없습니다');
     if (plan.status !== 'draft') throw new BadRequestException('초안 상태에서만 콘텐츠를 만들 수 있습니다');
-    const sources = await this.pickSources(businessId, sourceMediaIds);
+    // 칸마다 자기 원본이 있으면 그걸, 없으면 공용(화면에서 고른 것 → 사업체 기본)
+    const shared = await this.pickSources(businessId, sourceMediaIds);
     const targets = (await this.plans.itemsOf(planId)).filter((it) =>
       !it.media_ids.length && !(it.gen_status === 'generating' && !this.isStale(it)));
     for (const it of targets) await this.plans.updateItem(it.id, { gen_status: 'generating', gen_stage: 'queued', gen_error: null });
     targets.forEach((it) => this.running.add(it.id));
     setImmediate(async () => {
       for (const it of targets) {
-        try { await this.run(user, businessId, it.id, sources); } finally { this.running.delete(it.id); }
+        const own = it.source_media_ids && it.source_media_ids.length ? await this.pickSources(businessId, it.source_media_ids).catch(() => shared) : shared;
+        try { await this.run(user, businessId, it.id, own); } finally { this.running.delete(it.id); }
       }
     });
-    return { queued: targets.length, sources: sources.length };
+    return { queued: targets.length, withOwnSources: targets.filter((t) => t.source_media_ids && t.source_media_ids.length).length };
   }
 
   // ── 실행 ──

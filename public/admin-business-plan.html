@@ -205,9 +205,14 @@ button:disabled{opacity:.5;cursor:default}
     <div class="field"><label>제작 지시 (무엇을·어떤 장면으로)</label><textarea id="dBrief" rows="3"></textarea></div>
     <div class="field"><label>캡션</label><textarea id="dCaption" rows="4"></textarea></div>
     <div class="field"><label>해시태그 (공백 구분, # 없이)</label><input id="dTags" style="width:100%"></div>
+    <div class="packbox" id="dSrcBox">
+      <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:6px;font-weight:600">📷 이 게시물 원본 <span style="font-weight:400;color:var(--faint)">— 이 칸에서 실제로 찍을 제품 사진(최대 10장). 팩은 이 사진으로 돌아갑니다</span></label>
+      <div class="mtiles" id="dOwn" style="max-height:170px"></div>
+      <div class="row" style="margin-top:8px"><input type="file" id="dOwnFile" accept="image/*" multiple style="flex:1;min-width:0"><button class="sm" onclick="uploadOwn()" id="dOwnBtn">올리기</button></div>
+    </div>
     <div class="packbox" id="dPackBox">
       <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:6px;font-weight:600">🎨 콘텐츠 팩으로 만들기 <span style="font-weight:400;color:var(--faint)">— 위 주제·제작 지시대로 팩을 돌려 결과를 이 칸에 붙입니다 (릴스 칸은 광고 영상 1편)</span></label>
-      <div class="prog" style="margin-bottom:6px">원본 사진 고르기 (최대 10장 · 안 고르면 ★대표 원본, 없으면 최근 원본 3장)</div>
+      <div class="prog" style="margin-bottom:6px" id="dSrcHint">원본 사진 고르기 (최대 10장 · 안 고르면 ★대표 원본, 없으면 최근 원본 3장)</div>
       <div class="mtiles" id="dSrc" style="max-height:170px"></div>
       <div class="row" style="margin-top:8px"><button class="primary sm" onclick="runPack()" id="dPackBtn">🎨 이 칸 팩 돌리기</button><span class="st2" id="dPackSt"></span></div>
     </div>
@@ -351,6 +356,7 @@ function renderCal() {
       return '<div class="it" onclick="openItem(\'' + it.id + '\')">' + th + '<div class="mt"><span class="fmt ' + it.format + '">' + FMT_KO[it.format] + '</span>'
         + '<span class="okdot ' + (readiness(it) ? 'y' : 'n') + '" title="' + (readiness(it) ? '준비됨' : '콘텐츠·캡션 필요') + '"></span>'
         + (it.queue_id ? ' <span class="prog">예약됨</span>' : '')
+        + ((it.source_media_ids || []).length ? ' <span class="prog" title="이 게시물 전용 원본">📷' + it.source_media_ids.length + '</span>' : '')
         + (it.gen_status === 'generating' ? '<div class="stage">⏳ ' + esc(stageKo(it.gen_stage)) + '</div>' : '')
         + (it.gen_status === 'failed' ? '<div class="stage fail">⚠ 팩 실패</div>' : '')
         + '<div class="tt">' + esc(it.theme || '(주제 없음)') + '</div></div></div>';
@@ -446,7 +452,7 @@ function openItem(id) {
   renderPicker();
   srcPicked = [];
   $('dPackBox').style.display = draft ? '' : 'none';
-  renderSrc(); renderPackStatus();
+  renderSrc(); renderOwn(); renderPackStatus();
   $('drawer').classList.add('show');
 }
 function closeItem() { $('drawer').classList.remove('show'); editing = null; }
@@ -489,6 +495,42 @@ async function deleteItem() {
   catch (e) { flash('err', e.message); }
 }
 
+// ── 게시물 전용 원본 ──
+function renderOwn() {
+  const it = cur.items.find((x) => x.id === editing.id) || editing;
+  const draft = cur.plan.status === 'draft';
+  const byId = new Map(cur.media.map((m) => [m.id, m]));
+  const own = (it.source_media_ids || []).map((id) => byId.get(id)).filter(Boolean);
+  $('dOwn').innerHTML = own.length ? own.map((m) => '<div class="mt2"><img src="' + esc(m.url) + '" alt="" loading="lazy">'
+    + (draft ? '<span class="n" style="cursor:pointer;background:var(--red);color:#fff" title="이 게시물 원본에서 빼기" onclick="removeOwn(\'' + m.id + '\')">×</span>' : '') + '</div>').join('')
+    : '<div class="prog">아직 없습니다 — 이 게시물에 쓸 제품 사진을 올려 주세요. 없으면 사업체 ★대표 원본으로 돌립니다.</div>';
+  $('dOwnFile').disabled = $('dOwnBtn').disabled = !draft;
+  $('dSrcHint').textContent = own.length
+    ? '아래에서 따로 고르지 않으면 위 "이 게시물 원본" ' + own.length + '장으로 돌립니다'
+    : '원본 사진 고르기 (최대 10장 · 안 고르면 ★대표 원본, 없으면 최근 원본 3장)';
+}
+async function uploadOwn() {
+  clearMsg();
+  const files = $('dOwnFile').files;
+  if (!files.length) return flash('err', '올릴 사진을 고르세요.');
+  $('dOwnBtn').disabled = true; $('dOwnBtn').textContent = '올리는 중…';
+  try {
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f);
+    const res = await fetch(base() + '/' + cur.plan.id + '/items/' + editing.id + '/sources', { method: 'POST', body: fd });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.success === false) throw new Error((Array.isArray(body.message) ? body.message.join(', ') : body.message) || body.error || '업로드 실패');
+    $('dOwnFile').value = '';
+    await refreshPlan(); renderOwn();
+    flash('ok', files.length + '장을 이 게시물 원본으로 올렸습니다.');
+  } catch (e) { flash('err', e.message); }
+  finally { $('dOwnBtn').disabled = false; $('dOwnBtn').textContent = '올리기'; }
+}
+async function removeOwn(mediaId) {
+  try { await api(base() + '/' + cur.plan.id + '/items/' + editing.id + '/sources/' + mediaId, { method: 'DELETE' }); await refreshPlan(); renderOwn(); }
+  catch (e) { flash('err', e.message); }
+}
+
 // ── 콘텐츠 팩 ──
 const STAGE_KO = { queued: '차례 기다리는 중', classify: '원본 분석 중', ref: '기준 사진 굽는 중', cuts: '컷 만드는 중', video: '광고 영상 만드는 중', done: '완료', failed: '실패' };
 function stageKo(s) { return STAGE_KO[s] || '만드는 중'; }
@@ -528,7 +570,7 @@ async function packAll() {
   clearMsg();
   const empty = cur.items.filter((x) => !x.media_ids.length && x.gen_status !== 'generating').length;
   if (!empty) return flash('err', '콘텐츠가 비어 있는 칸이 없습니다.');
-  if (!confirm('콘텐츠가 비어 있는 ' + empty + '칸을 한 칸씩 순서대로 팩으로 만듭니다(★대표 원본 사용). 시간이 오래 걸리고 생성 비용이 듭니다. 계속할까요?')) return;
+  if (!confirm('콘텐츠가 비어 있는 ' + empty + '칸을 한 칸씩 순서대로 팩으로 만듭니다(칸마다 "이 게시물 원본"이 있으면 그 사진, 없으면 ★대표 원본). 시간이 오래 걸리고 생성 비용이 듭니다. 계속할까요?')) return;
   $('packAllBtn').disabled = true;
   try {
     const { data } = await api(base() + '/' + cur.plan.id + '/pack-all', { method: 'POST', body: JSON.stringify({}) });

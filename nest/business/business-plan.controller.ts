@@ -1,4 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UploadedFiles, UseGuards, UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ACCOUNT_UPLOAD_OPTIONS } from '../accounts/accounts.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { BusinessPlanService } from './business-plan.service';
@@ -65,6 +69,24 @@ export class BusinessPlanController {
   async removeItem(@Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string): Promise<ApiResponse<null>> {
     await this.plans.removeItem(id, planId, itemId);
     return { success: true, data: null };
+  }
+
+  /** 게시물 전용 원본 올리기(multipart `files`, 최대 10장) */
+  @UseInterceptors(FilesInterceptor('files', 10, ACCOUNT_UPLOAD_OPTIONS))
+  @Post(':id/plans/:planId/items/:itemId/sources')
+  @HttpCode(200)
+  async addSources(
+    @Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string, @UploadedFiles() files: any[],
+  ): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.plans.addItemSources(id, planId, itemId, files) };
+  }
+
+  /** 게시물 원본에서 한 장 빼기(사업체 미디어는 남김) */
+  @Delete(':id/plans/:planId/items/:itemId/sources/:mediaId')
+  async removeSource(
+    @Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string, @Param('mediaId') mediaId: string,
+  ): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.plans.removeItemSource(id, planId, itemId, mediaId) };
   }
 
   /** 칸 하나를 콘텐츠 팩으로 만든다(백그라운드). body.sourceMediaIds 없으면 사업체 기본 원본 */
