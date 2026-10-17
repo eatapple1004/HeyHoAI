@@ -98,17 +98,20 @@ app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_mod
 // ⚠️ /template(템플릿 상세)은 건드리지 않는다 — creation의 [View …]가 쓰는 살아있는 진입점이고,
 //    보유/구매 CTA를 자체적으로 갖고 있어 스토어 없이도 자립한다.
 // 롤백: 이 라우트 삭제 + js/rail.js 주석 복원 + studio.html SHOW_STORE=true.
-app.get('/store', (_req, res) => res.redirect(302, '/studio'));
+app.get('/store', (_req, res) => res.redirect(302, '/explore')); // (10-17) studio 닫힘 → 탐색으로
 
 // ─── 클린 URL: 확장자 없이 path로 페이지 로드 ───
 // `/studio` → public/studio.html 서빙, `/studio.html` → 301 `/studio` (쿼리스트링 보존).
 // 단일 세그먼트 GET만 대상이며, 정적 자원(css/js, /css/* 등 다중 세그먼트·확장자)은 건드리지 않는다.
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // (2026-10-16) 닫아 둔 기능 — 주소로 들어와도 Coming soon (nest/pages/pages.controller.ts 에 같은 목록 — 한쪽만 고치지 말 것)
-const CLOSED_PAGES = new Set(['pack']);
+const CLOSED_PAGES = new Set(['pack', 'studio']); // (10-17) studio(Shots) 닫음 — 사용자 요청
 app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
   const name = req.params[0];
-  if (CLOSED_PAGES.has(name.toLowerCase())) return res.sendFile(path.join(PUBLIC_DIR, 'coming-soon.html'));
+  if (CLOSED_PAGES.has(name.toLowerCase())) {
+    if (name.toLowerCase() === 'studio' && req.query.mode === 'ugc') return res.redirect(302, '/ad-video'); // 옛 광고영상 딥링크
+    return res.sendFile(path.join(PUBLIC_DIR, 'coming-soon.html'));
+  }
   if (req.params[1]) {
     // `.html`로 들어오면 확장자 없는 정규 URL로 영구 리다이렉트
     const q = req.originalUrl.indexOf('?');
