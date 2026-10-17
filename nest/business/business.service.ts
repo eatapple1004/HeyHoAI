@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs';
 import * as path from 'path';
 import { BusinessRepository, toFilePath } from './business.repository';
 import { BusinessCaptionService } from './business-caption.service';
@@ -22,6 +23,8 @@ const zernio = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'ze
 const accountRepo = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'account.repository.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const packRoute = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.route.js'));
 
 /** 큐가 가질 수 있는 상태 — 임의 문자열이 들어오면 스케줄러가 영영 안 집는다 */
 const QUEUE_STATUSES = ['pending', 'confirmed', 'scheduled', 'posted', 'cancelled'];
@@ -204,6 +207,8 @@ export class BusinessService {
     const mediaType = file.mimetype?.startsWith('video') ? 'video'
       : file.mimetype?.startsWith('audio') ? 'audio' : 'image';
 
+    // 사진은 Claude·인스타가 받는 형식으로 맞춰 저장한다(AVIF·HEIC 등 → JPEG) — 나중에 팩·발행에서 400 나지 않게
+    if (mediaType === 'image') await this.normalizeImage(file);
     // R2 영속화 — prd는 tmp/images 를 48시간마다 지운다(crontab). 안 올리면 원본·배경음악이 이틀 뒤 사라진다.
     try { await mediaStore.putFile(file.path); } catch (e) { /* best-effort: 미설정 환경은 no-op */ }
     // 배경음악은 목록에서 고를 때 알아볼 이름이 필요하다 — 저장 파일명은 UUID라 원래 이름을 caption에 둔다.
@@ -214,6 +219,24 @@ export class BusinessService {
       businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload', caption: caption || originalName,
     });
     return isBase ? ((await this.repo.setBaseMedia(id, media.id)) as BusinessMediaVo) : media;
+  }
+
+  /** JPEG·PNG·WEBP·GIF가 아니면 JPEG로 바꾸고 파일명도 .jpg로 — 웹 팩 업로드와 같은 정규화 */
+  private async normalizeImage(file: any): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      packRoute.normalizeUploads(
+        { files: [file] },
+        { status: () => ({ json: (b: any) => reject(new BadRequestException((b && b.error) || '읽을 수 없는 이미지입니다')) }) },
+        () => resolve(),
+      ).catch(reject);
+    });
+    if (file.mimetype === 'image/jpeg' && !/\.jpe?g$/i.test(file.filename || '')) {
+      const name = String(file.filename).replace(/\.[^.]*$/, '') + '.jpg';
+      const dest = path.join(path.dirname(file.path), name);
+      fs.renameSync(file.path, dest);
+      file.path = dest;
+      file.filename = name;
+    }
   }
 
   /** 이미 서버에 있는 파일(팩 자산·생성물)을 사업체 미디어로 편입 — 같은 파일이면 기존 행 재사용 */

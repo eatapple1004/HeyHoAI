@@ -222,6 +222,15 @@ export class BusinessPackService {
         originalname: filename,
       });
     }
+    // 🔴 확장자를 믿지 않는다 — 웹 팩 업로드와 같은 정규화(매직바이트 판정, HEIC·AVIF → JPEG)를 거친다.
+    //   안 거치면 AVIF 원본이 image/jpeg로 선언돼 Claude가 400을 낸다(2026-10-17 실제 발생).
+    await new Promise<void>((resolve, reject) => {
+      packRoute.normalizeUploads(
+        { files },
+        { status: () => ({ json: (b: any) => reject(new BadRequestException((b && b.error) || '읽을 수 없는 이미지입니다')) }) },
+        () => resolve(),
+      ).catch(reject);
+    });
     return files;
   }
 
