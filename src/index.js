@@ -175,11 +175,16 @@ app.get('/r/:code', async (req, res) => {
 });
 
 // 공개 인증 페이지 (게이팅 없음)
-app.get('/login', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+// (10-17) 옛 /login·/signup(한국어 전용) → 다국어 /saas-login 으로 (nest/pages/pages.controller.ts 와 같게)
+app.get('/login', (req, res) => {
+  const i = req.originalUrl.indexOf('?');
+  res.redirect(302, `/saas-login${i >= 0 ? req.originalUrl.slice(i) : ''}`);
 });
-app.get('/signup', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'signup.html'));
+app.get('/signup', (req, res) => {
+  const i = req.originalUrl.indexOf('?');
+  const q = new URLSearchParams(i >= 0 ? req.originalUrl.slice(i + 1) : '');
+  q.set('tab', 'signup');
+  res.redirect(302, `/saas-login?${q.toString()}`);
 });
 
 // 페이지 라우팅 (모두 로그인 필요 — 미인증 시 /login 리다이렉트)

@@ -1,4 +1,5 @@
 const { query } = require('../db/client');
+const { persistAvatar } = require('../lib/avatarCache'); // (10-17) 만료되는 인스타 프로필 사진 보관
 
 async function insert({ userId, platform, accountId, username, displayName, profileImage, followers, metadata }) {
   const result = await query(
@@ -12,7 +13,7 @@ async function insert({ userId, platform, accountId, username, displayName, prof
        metadata = EXCLUDED.metadata,
        updated_at = now()
      RETURNING *`,
-    [userId, platform, accountId, username, displayName, profileImage, followers || 0, JSON.stringify(metadata || {})]
+    [userId, platform, accountId, username, displayName, await persistAvatar(profileImage), followers || 0, JSON.stringify(metadata || {})]
   );
   return result.rows[0];
 }
