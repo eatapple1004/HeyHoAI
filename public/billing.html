@@ -405,7 +405,7 @@ function koNow(){ try{ return localStorage.getItem('doppia_lang')==='ko'; }catch
  *   같은 출처에서 넘어온 경우에만 back()을 쓰고, 그마저 안 먹으면 앱 화면으로 보낸다.
  */
 function goBack(){
-  var HOME='/studio';
+  var HOME='/explore'; // (10-17) studio 닫힘
   var same=false;
   try{ same = !!document.referrer && new URL(document.referrer).origin===location.origin; }catch(e){}
   if(!same){ location.href=HOME; return; }
