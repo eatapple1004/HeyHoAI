@@ -95,14 +95,14 @@ export class BusinessPlanController {
   async packItem(
     @Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string, @Body() body: any, @Req() req: any,
   ): Promise<ApiResponse<any>> {
-    return { success: true, data: await this.packs.start(req.user, id, planId, itemId, body && body.sourceMediaIds) };
+    return { success: true, data: await this.packs.start(req.user, id, planId, itemId) };
   }
 
   /** 콘텐츠가 없는 칸 전부를 한 칸씩 순서대로 팩으로 만든다 */
   @Post(':id/plans/:planId/pack-all')
   @HttpCode(200)
   async packAll(@Param('id') id: string, @Param('planId') planId: string, @Body() body: any, @Req() req: any): Promise<ApiResponse<any>> {
-    return { success: true, data: await this.packs.startAll(req.user, id, planId, body && body.sourceMediaIds) };
+    return { success: true, data: await this.packs.startAll(req.user, id, planId) };
   }
 
   /** 컨펌 단계 이동 — body.action = doppia_approve | send | customer_approve | request_changes */

@@ -204,8 +204,9 @@ export class BusinessPlanService {
     }
     if (body.mediaIds !== undefined) {
       const ids: string[] = Array.isArray(body.mediaIds) ? body.mediaIds : [];
-      const own = new Set((await this.biz.mediaOf(businessId)).map((m: any) => m.id));
-      if (ids.some((id) => !own.has(id))) throw new BadRequestException('이 사업체의 미디어가 아닙니다');
+      // 칸끼리 분리 — 이 칸의 원본·팩 결과·이미 붙은 것만 고를 수 있다(다른 칸·예전 작업 사진 금지)
+      const allowed = new Set([...(item.source_media_ids || []), ...(item.candidate_media_ids || []), ...(item.media_ids || [])]);
+      if (ids.some((id) => !allowed.has(id))) throw new BadRequestException('이 게시물의 원본·결과에서만 고를 수 있습니다');
       patch.media_ids = ids.slice(0, 10);
       patch.gen_status = ids.length ? 'ready' : 'planned';
     }
