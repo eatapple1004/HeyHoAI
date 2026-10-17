@@ -74,14 +74,18 @@ export class PagesController {
     return res.redirect('/');
   }
 
+  // (10-17) 옛 /login·/signup(한국어 전용 화면) → 다국어 로그인 /saas-login 으로 일원화. ?next 등 쿼리는 그대로 넘긴다
   @Get('login')
-  login(@Res() res: any) {
-    return res.sendFile(page('login.html'));
+  login(@Req() req: any, @Res() res: any) {
+    const q = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    return res.redirect(302, `/saas-login${q}`);
   }
 
   @Get('signup')
-  signup(@Res() res: any) {
-    return res.sendFile(page('signup.html'));
+  signup(@Req() req: any, @Res() res: any) {
+    const q = new URLSearchParams(req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?') + 1) : '');
+    q.set('tab', 'signup');
+    return res.redirect(302, `/saas-login?${q.toString()}`);
   }
 
   // ── 로그인 필요 ──

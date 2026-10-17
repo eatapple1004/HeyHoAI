@@ -201,9 +201,10 @@ const mask=document.createElement('canvas'),mctx=mask.getContext('2d',{willReadF
 let preview=null; // 조정 미리보기 캔버스
 
 // ── 랜딩 ──
-const CAPS=[['Relight','linear-gradient(135deg,#3b2a12,#d98b2b 55%,#ffe2a8)','golden-hour light, same product'],['Inpaint','linear-gradient(135deg,#0f2a2a,#2f8f86 60%,#bff3ea)','brush · describe · done'],['Replace background','linear-gradient(135deg,#1c1530,#6a40e0 55%,#ff7eb6)','same product, new scene'],['Fix label text','linear-gradient(135deg,#2a1212,#c0392b 55%,#ffd1c7)','exact spelling, same print'],['Expand','linear-gradient(135deg,#0d1b2a,#3a6ea5 60%,#cfe3ff)','4:5 · 9:16 · Coupang']];
+// (10-17) 카드 예시 = dev 에디터로 HALO LAB 세럼(자체 예시 제품)을 실제로 편집한 결과(public/img/edit-demo). 그라데이션은 로딩 전 바탕
+const CAPS=[['Relight','linear-gradient(135deg,#3b2a12,#d98b2b 55%,#ffe2a8)','golden-hour light, same product','/img/edit-demo/relight.webp'],['Inpaint','linear-gradient(135deg,#0f2a2a,#2f8f86 60%,#bff3ea)','brush · describe · done','/img/edit-demo/inpaint.webp'],['Replace background','linear-gradient(135deg,#1c1530,#6a40e0 55%,#ff7eb6)','same product, new scene','/img/edit-demo/replace-bg.webp'],['Fix label text','linear-gradient(135deg,#2a1212,#c0392b 55%,#ffd1c7)','exact spelling, same print','/img/edit-demo/fix-text.webp'],['Expand','linear-gradient(135deg,#0d1b2a,#3a6ea5 60%,#cfe3ff)','4:5 · 9:16 · Coupang','/img/edit-demo/expand.webp']];
 let capOn=2;
-function renderCar(){$('#car').innerHTML=CAPS.map((c,i)=>`<div class="ed-cap ${i===capOn?'on':''}" data-i="${i}"><div class="ed-art" style="background:${c[1]}"></div><span class="ed-tg">${esc(c[0])}</span><span class="ed-eg">${esc(c[2])}</span></div>`).join('');}
+function renderCar(){$('#car').innerHTML=CAPS.map((c,i)=>`<div class="ed-cap ${i===capOn?'on':''}" data-i="${i}"><div class="ed-art" style="background:${c[3]?`linear-gradient(180deg,rgba(0,0,0,.45),transparent 32%,transparent 58%,rgba(0,0,0,.7)),url(${c[3]}) center 40%/cover,`:''}${c[1]}"></div><span class="ed-tg">${esc(c[0])}</span><span class="ed-eg">${esc(c[2])}</span></div>`).join('');}
 renderCar();setInterval(()=>{if(!$('#landing').hidden){capOn=(capOn+1)%CAPS.length;renderCar();}},3200);
 $('#car').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c){capOn=+c.dataset.i;renderCar();}});
 $('#upBtn').onclick=()=>$('#file').click();
