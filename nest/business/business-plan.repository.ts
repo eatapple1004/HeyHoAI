@@ -34,6 +34,8 @@ export interface PlanItemVo {
   media_ids: string[];
   /** 이 게시물 전용 원본(칸마다 따로 올린 제품 사진) — 팩은 이걸 우선 쓴다 */
   source_media_ids: string[];
+  /** 이 칸의 팩이 만든 결과 전부(컷 후보) */
+  candidate_media_ids: string[];
   gen_status: string;
   gen_error: string | null;
   gen_stage: string | null;
@@ -115,10 +117,10 @@ export class BusinessPlanRepository {
 
   async updateItem(itemId: string, patch: Record<string, unknown>): Promise<PlanItemVo> {
     const allowed = ['post_at', 'format', 'theme', 'brief', 'caption', 'hashtags', 'media_ids',
-      'gen_status', 'gen_error', 'gen_stage', 'pack_id', 'video_job_id', 'feedback', 'queue_id', 'source_media_ids'];
+      'gen_status', 'gen_error', 'gen_stage', 'pack_id', 'video_job_id', 'feedback', 'queue_id', 'source_media_ids', 'candidate_media_ids'];
     const keys = Object.keys(patch).filter((k) => allowed.includes(k));
     if (!keys.length) return (await this.findItem(itemId)) as PlanItemVo;
-    const sets = keys.map((k, i) => (k === 'media_ids' || k === 'source_media_ids' ? `${k} = $${i + 2}::uuid[]` : `${k} = $${i + 2}`));
+    const sets = keys.map((k, i) => (k === 'media_ids' || k === 'source_media_ids' || k === 'candidate_media_ids' ? `${k} = $${i + 2}::uuid[]` : `${k} = $${i + 2}`));
     const r = await this.db.query<PlanItemVo>(
       `UPDATE business_plan_items SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 RETURNING *`,
       [itemId, ...keys.map((k) => patch[k])]);

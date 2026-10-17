@@ -47,10 +47,13 @@ export class BusinessPlanPackService {
     private readonly packFlow: BusinessPackService,
   ) {}
 
-  /** 칸 하나 시작. 원본 우선순위 = 화면에서 고른 사진 → 이 게시물 전용 원본 → 사업체 기본(★대표, 없으면 최근 3장) */
-  async start(user: any, businessId: string, planId: string, itemId: string, sourceMediaIds?: string[]) {
+  /**
+   * 칸 하나 시작 — **이 칸의 원본으로만** 돌린다(칸끼리 완전 분리, 2026-10-17 사용자 결정).
+   * 사업체 공용 사진으로 대신 돌리지 않는다: 다른 칸·예전 작업 사진이 섞이면 '개별 작업'이 아니다.
+   */
+  async start(user: any, businessId: string, planId: string, itemId: string) {
     const { item } = await this.assert(businessId, planId, itemId);
-    const sources = await this.pickSources(businessId, sourceMediaIds && sourceMediaIds.length ? sourceMediaIds : item.source_media_ids);
+    const sources = await this.ownSources(businessId, item);
     this.assertStartable(item);
     await this.plans.updateItem(item.id, { gen_status: 'generating', gen_stage: 'queued', gen_error: null });
     this.running.add(item.id);
@@ -58,24 +61,25 @@ export class BusinessPlanPackService {
     return { itemId: item.id, sources: sources.length };
   }
 
-  /** 아직 콘텐츠가 없는 칸 전부 — 순서대로 하나씩 */
-  async startAll(user: any, businessId: string, planId: string, sourceMediaIds?: string[]) {
+  /** 원본이 올라가 있고 아직 콘텐츠가 없는 칸 전부 — 순서대로 하나씩(원본 없는 칸은 건너뛴다) */
+  async startAll(user: any, businessId: string, planId: string) {
     const plan = await this.plans.findPlan(planId);
     if (!plan || plan.business_id !== businessId) throw new NotFoundException('플랜을 찾을 수 없습니다');
     if (plan.status !== 'draft') throw new BadRequestException('초안 상태에서만 콘텐츠를 만들 수 있습니다');
-    // 칸마다 자기 원본이 있으면 그걸, 없으면 공용(화면에서 고른 것 → 사업체 기본)
-    const shared = await this.pickSources(businessId, sourceMediaIds);
-    const targets = (await this.plans.itemsOf(planId)).filter((it) =>
+    const all = (await this.plans.itemsOf(planId)).filter((it) =>
       !it.media_ids.length && !(it.gen_status === 'generating' && !this.isStale(it)));
+    const targets = all.filter((it) => it.source_media_ids && it.source_media_ids.length);
+    const noSource = all.length - targets.length;
     for (const it of targets) await this.plans.updateItem(it.id, { gen_status: 'generating', gen_stage: 'queued', gen_error: null });
     targets.forEach((it) => this.running.add(it.id));
     setImmediate(async () => {
       for (const it of targets) {
-        const own = it.source_media_ids && it.source_media_ids.length ? await this.pickSources(businessId, it.source_media_ids).catch(() => shared) : shared;
-        try { await this.run(user, businessId, it.id, own); } finally { this.running.delete(it.id); }
+        try { await this.run(user, businessId, it.id, await this.ownSources(businessId, it)); }
+        catch (e: any) { await this.plans.updateItem(it.id, { gen_status: 'failed', gen_stage: 'failed', gen_error: String(e.message || e).slice(0, 500) }); }
+        finally { this.running.delete(it.id); }
       }
     });
-    return { queued: targets.length, withOwnSources: targets.filter((t) => t.source_media_ids && t.source_media_ids.length).length };
+    return { queued: targets.length, skippedNoSource: noSource };
   }
 
   // ── 실행 ──
@@ -115,15 +119,19 @@ export class BusinessPlanPackService {
         await set({ video_job_id: String(body.jobId) });
         const url = await this.waitVideo(user, String(body.jobId));
         mediaIds = [(await this.register(businessId, url, 'video')).id];
+        await set({ candidate_media_ids: mediaIds });
       } else {
         // ④-사진: 컷 생성
         await set({ gen_stage: 'cuts' });
         if (ready.status !== 'done') await this.packFlow.generate(user, businessId, packId, DEPTH[item.format] || 2);
         const done = await this.waitPack(user, businessId, packId, ['done']);
-        const urls: string[] = (done.stillUrls || []).slice(0, ATTACH[item.format] || 1);
-        if (!urls.length) throw new Error('팩이 컷을 만들지 못했습니다');
-        mediaIds = [];
-        for (const u of urls) mediaIds.push((await this.register(businessId, u, 'image')).id);
+        const all: string[] = done.stillUrls || [];
+        if (!all.length) throw new Error('팩이 컷을 만들지 못했습니다');
+        // 이 칸의 팩이 만든 컷은 전부 이 칸의 후보로 남긴다 — 편집창에서 이 중에서만 고른다
+        const cand: string[] = [];
+        for (const u of all.slice(0, 10)) cand.push((await this.register(businessId, u, 'image')).id);
+        await set({ candidate_media_ids: cand });
+        mediaIds = cand.slice(0, ATTACH[item.format] || 1);
       }
 
       // ⑤ 칸에 붙인다 — 그 사이 관리자가 직접 붙였으면 덮어쓰지 않는다
@@ -171,6 +179,13 @@ export class BusinessPlanPackService {
   }
 
   // ── 검증 ──
+
+  /** 이 칸의 원본(사진만). 없으면 시작하지 않는다 */
+  private async ownSources(businessId: string, item: PlanItemVo): Promise<string[]> {
+    const ids = item.source_media_ids || [];
+    if (!ids.length) throw new BadRequestException('이 게시물 원본을 먼저 올려 주세요 — 팩은 이 칸에 올린 사진으로만 만듭니다');
+    return this.pickSources(businessId, ids);
+  }
 
   private async pickSources(businessId: string, ids?: string[]): Promise<string[]> {
     const media = await this.biz.mediaOf(businessId);
