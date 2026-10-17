@@ -119,7 +119,7 @@ export class BusinessPlanPackService {
         await set({ video_job_id: String(body.jobId) });
         const url = await this.waitVideo(user, String(body.jobId));
         mediaIds = [(await this.register(businessId, url, 'video')).id];
-        await set({ candidate_media_ids: mediaIds });
+        await set({ candidate_media_ids: this.accumulate(item, mediaIds) });
       } else {
         // ④-사진: 컷 생성
         await set({ gen_stage: 'cuts' });
@@ -130,7 +130,8 @@ export class BusinessPlanPackService {
         // 이 칸의 팩이 만든 컷은 전부 이 칸의 후보로 남긴다 — 편집창에서 이 중에서만 고른다
         const cand: string[] = [];
         for (const u of all.slice(0, 10)) cand.push((await this.register(businessId, u, 'image')).id);
-        await set({ candidate_media_ids: cand });
+        // 다시 돌려도 이전 결과는 후보에 남긴다(새 것이 앞) — 이전 컷과 섞어 캐러셀을 꾸밀 수 있게
+        await set({ candidate_media_ids: this.accumulate(item, cand) });
         mediaIds = cand.slice(0, ATTACH[item.format] || 1);
       }
 
@@ -179,6 +180,11 @@ export class BusinessPlanPackService {
   }
 
   // ── 검증 ──
+
+  /** 새 후보 + 이전 후보(중복 제거, 최대 30) */
+  private accumulate(item: PlanItemVo, fresh: string[]): string[] {
+    return [...new Set([...fresh, ...(item.candidate_media_ids || [])])].slice(0, 30);
+  }
 
   /** 이 칸의 원본(사진만). 없으면 시작하지 않는다 */
   private async ownSources(businessId: string, item: PlanItemVo): Promise<string[]> {
