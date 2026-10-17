@@ -520,9 +520,10 @@ async function uploadOwn() {
     const res = await fetch(base() + '/' + cur.plan.id + '/items/' + editing.id + '/sources', { method: 'POST', body: fd });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || body.success === false) throw new Error((Array.isArray(body.message) ? body.message.join(', ') : body.message) || body.error || '업로드 실패');
+    const n = files.length; // 입력칸을 비우면 files도 0이 된다 — 먼저 센다
     $('dOwnFile').value = '';
     await refreshPlan(); renderOwn();
-    flash('ok', files.length + '장을 이 게시물 원본으로 올렸습니다.');
+    flash('ok', n + '장을 이 게시물 원본으로 올렸습니다.');
   } catch (e) { flash('err', e.message); }
   finally { $('dOwnBtn').disabled = false; $('dOwnBtn').textContent = '올리기'; }
 }
