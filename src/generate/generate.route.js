@@ -215,6 +215,7 @@ const withUploadCleanup = (handler) => async (req, res, next) => {
 
 const postRootHandler = withUploadCleanup(async (req, res, next) => {
   try {
+    if (!req.body || typeof req.body !== 'object') req.body = {}; // (10-17) 본문 없이(Content-Type 없음) 오면 구조분해가 터져 500 → 아래 'Prompt is required' 400 으로
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     // enhance 토글(기본 ON): OFF면 인물 정체성 고정 프리픽스를 빼고 사용자 프롬프트 원문 그대로 생성(완전 raw)
     const enhance = !(req.body.enhance === 'false' || req.body.enhance === false);

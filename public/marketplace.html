@@ -178,7 +178,7 @@ function render(){
     if(!TEMPLATES.length){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--faint);padding:40px 0;text-align:center">No templates yet.</div>`;return;}
     grid.innerHTML=TEMPLATES.map(t=>`
       <div class="card">
-        <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${t.thumb?`<img class="pv-img" src="${esc(t.thumb)}" loading="lazy" alt="" onerror="this.remove()">`:''}${esc(t.emoji||'🎨')}</div>
+        <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${t.thumb?`<img class="pv-img" src="${esc(/^\/img\//.test(t.thumb)?t.thumb.replace(/^\/img\//,'/img/t/480/'):t.thumb)}" data-full="${esc(t.thumb)}" loading="lazy" alt="" onerror="if(this.dataset.full&&this.src.indexOf('/img/t/')>=0){this.src=this.dataset.full}else{this.remove()}">`:''}${esc(t.emoji||'🎨')}</div>
         <div class="meta">
           <div class="rname">${esc(t.name)}</div>
           <div class="creator">by <b>${esc(t.creator_handle)}</b>${t.is_official?' · ✓ official':''}${t.mine?' · Mine':''}</div>
