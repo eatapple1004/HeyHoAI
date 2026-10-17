@@ -90,6 +90,8 @@ function setTab(t){
     :`New here? <a onclick="setTab('signup')">Create an account</a>`;
   showErr('');
 }
+// (10-17) /signup 에서 넘어오면(?tab=signup) 가입 탭으로 연다
+if(new URLSearchParams(location.search).get('tab')==='signup')setTab('signup');
 function showErr(msg){
   const el=document.getElementById('errMsg');
   el.textContent=msg;el.classList.toggle('hidden',!msg);

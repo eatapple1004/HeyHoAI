@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import * as path from 'path';
 import { DbService } from '../db/db.service';
 import { SocialAccountVo, AccountMediaVo, PostQueueItemVo, ReelTemplateVo, OutfitPromptVo } from './vo/account.vo';
+// (10-17) 인스타 CDN 프로필 사진은 며칠 뒤 만료 → 저장할 때 우리 저장소로 옮긴다(src/lib/avatarCache.js)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { persistAvatar } = require(path.join(__dirname, '..', '..', 'src', 'lib', 'avatarCache.js'));
 
 /**
  * 계정 워크플로 저장소 — social_accounts · account_media · reel_templates · outfit_prompts · post_queue.
@@ -33,6 +37,7 @@ export class AccountsRepository {
     userId: string; platform: string; accountId: string; username: string;
     displayName: string; profileImage: string | null; followers: number; metadata: unknown;
   }): Promise<SocialAccountVo> {
+    const profileImage = await persistAvatar(d.profileImage);
     const r = await this.db.query<SocialAccountVo>(
       `INSERT INTO social_accounts (user_id, platform, account_id, username, display_name, profile_image, followers, metadata)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -44,7 +49,7 @@ export class AccountsRepository {
          metadata = EXCLUDED.metadata,
          updated_at = now()
        RETURNING *`,
-      [d.userId, d.platform, d.accountId, d.username, d.displayName, d.profileImage,
+      [d.userId, d.platform, d.accountId, d.username, d.displayName, profileImage,
        d.followers || 0, JSON.stringify(d.metadata || {})]);
     return r.rows[0];
   }
