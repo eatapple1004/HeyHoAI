@@ -148,12 +148,24 @@ async function normalizeUploads(req, res, next) {
       let buf = fs.readFileSync(f.path);
       let mime = sniffMime(buf);
       if (!mime && isHeif(buf)) {
-        const jpeg = await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.92 });
-        buf = await sharp(jpeg).rotate().jpeg({ quality: 92, mozjpeg: true }).toBuffer();  // 회전 정리 + 용량 절감
-        fs.writeFileSync(f.path, buf);
-        f.size = buf.length;
-        mime = 'image/jpeg';
-        logger.info?.(`[pack] HEIC → JPEG 변환: ${f.originalname || f.filename} (${Math.round(buf.length / 1024)}KB)`);
+        try {
+          const jpeg = await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.92 });
+          buf = await sharp(jpeg).rotate().jpeg({ quality: 92, mozjpeg: true }).toBuffer();  // 회전 정리 + 용량 절감
+          fs.writeFileSync(f.path, buf);
+          f.size = buf.length;
+          mime = 'image/jpeg';
+          logger.info?.(`[pack] HEIC → JPEG 변환: ${f.originalname || f.filename} (${Math.round(buf.length / 1024)}KB)`);
+        } catch (_) { /* AVIF도 HEIF 계열(ftyp)이라 여기로 온다 — heic-convert는 못 읽음 → 아래 sharp로 */ }
+      }
+      if (!mime) {
+        // AVIF·TIFF 등 Claude가 못 받는 형식 — sharp가 읽을 수 있으면 JPEG로 바꾼다(2026-10-17 AVIF 원본으로 플랜 팩 400)
+        try {
+          buf = await sharp(buf).rotate().jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+          fs.writeFileSync(f.path, buf);
+          f.size = buf.length;
+          mime = 'image/jpeg';
+          logger.info?.(`[pack] 비지원 형식 → JPEG 변환: ${f.originalname || f.filename}`);
+        } catch (_) { /* sharp도 못 읽음 → 아래에서 거절 */ }
       }
       if (!mime) { rejected.push(f.originalname || '파일'); continue; }
       f.mimetype = mime;   // 🔑 브라우저가 말한 것 말고 **실제 바이트**로 교정(분류 경로가 이걸 그대로 쓴다)
