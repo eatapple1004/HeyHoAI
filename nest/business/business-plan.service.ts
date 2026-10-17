@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs';
 import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { BusinessRepository } from './business.repository';
@@ -110,6 +111,102 @@ export class BusinessPlanService {
     const plan = await this.assertPlan(businessId, planId);
     if (plan.status === 'scheduled') throw new BadRequestException('이미 예약된 플랜은 지울 수 없습니다 — 발행 큐에서 먼저 취소하세요');
     await this.repo.deletePlan(planId);
+  }
+
+  // ── 사진으로 한 달 짜기(2026-10-17) ──
+
+  /** 이 달에 몇 칸이 잡히는지 — 새 플랜 화면이 '사진 N장 올려 주세요'를 말하려고 쓴다(서버와 같은 규칙) */
+  preview(month: string, postsPerWeek: any, reelRatio: any) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(month || ''))) throw new BadRequestException('month는 YYYY-MM 형식이어야 합니다');
+    const s = this.slots(month, this.clampPpw(postsPerWeek), this.clampRatio(reelRatio));
+    return { count: s.length, reels: s.filter((x) => x.kind === 'reel').length, dates: s.map((x) => x.date) };
+  }
+
+  /**
+   * 사진 N장(= 이 달 칸 수)을 받아 한 달을 짠다. 올린 순서대로 날짜 칸에 한 장씩 배치하고,
+   * 각 사진을 그 칸의 '이 게시물 원본'으로 묶는다. Claude가 **사진을 직접 보고** 주제·제작 지시·캡션을 쓴다 —
+   * 사진에 없는 제품을 지어내던 문제(단풍잎 북마크 ↔ 새 작품)를 원천 차단한다.
+   * 8장씩 나눠 동시에 보낸다 — 한 번에 13~30장을 보내면 Cloudflare 100초 제한에 걸릴 수 있다.
+   */
+  async draftFromPhotos(businessId: string, planId: string, files: any[]) {
+    const business = await this.assertBusiness(businessId);
+    const plan = await this.assertPlan(businessId, planId);
+    this.assertDraft(plan);
+    const images = (files || []).filter((f) => f && String(f.mimetype || '').startsWith('image/'));
+    const slots = this.slots(plan.month, plan.posts_per_week, Number(plan.reel_ratio));
+    if (!slots.length) throw new BadRequestException('이 달에는 남은 게시 날짜가 없습니다(오늘 이후 날짜만 잡습니다)');
+    if (images.length < slots.length) {
+      throw new BadRequestException(`이 달 게시물은 ${slots.length}개라 사진 ${slots.length}장이 필요합니다 (올린 사진 ${images.length}장)`);
+    }
+    const use = images.slice(0, slots.length);
+
+    // 사진 → 사업체 미디어(R2 영속) + Claude에 보낼 축소본
+    const [, mm] = plan.month.split('-').map(Number);
+    const media: { id: string; b64: string }[] = [];
+    for (let i = 0; i < use.length; i++) {
+      const f = use[i];
+      const b64 = await this.visionJpeg(f.path);
+      const m = await this.business.uploadMedia(businessId, f, false, `${mm}월 플랜 원본 #${i + 1} (${slots[i].date.slice(5)})`);
+      media.push({ id: m.id, b64 });
+    }
+
+    const head = [
+      `사업체: ${business.name}`,
+      business.industry ? `업종: ${business.industry}` : '',
+      business.memo ? `참고사항: ${business.memo}` : '',
+      plan.brief ? `이번 달 강조할 것: ${plan.brief}` : '',
+      plan.customer_feedback ? `고객이 남긴 수정 요청(반드시 반영): ${plan.customer_feedback}` : '',
+      `월: ${plan.month} · 전체 ${slots.length}칸: ` + slots.map((s, i) => `i=${i} ${s.date.slice(5)}(${DOW_KO[s.dow]}) ${s.kind}`).join(', '),
+    ].filter(Boolean).join('\n');
+    const RULE = '각 칸에는 그 번호의 사진이 붙어 있다. 그 칸의 주인공은 반드시 그 사진 속 실제 제품이다 — 사진에 없는 제품·소품을 지어내지 마라. '
+      + '제작 지시는 그 사진 속 제품을 어떤 장면·구도·분위기로 연출할지 쓴다. 한 달 전체가 겹치지 않는 흐름이 되게 하라.';
+
+    const batches: number[][] = [];
+    for (let i = 0; i < slots.length; i += 8) batches.push(slots.slice(i, i + 8).map((_, k) => i + k));
+    const results = await Promise.all(batches.map(async (idxs) => {
+      const content: any[] = [{ type: 'text', text: `${head}\n\n${RULE}\n\n이번에 채울 칸: ${idxs.join(', ')}` }];
+      for (const i of idxs) {
+        content.push({ type: 'text', text: `i=${i} | ${slots[i].date}(${DOW_KO[slots[i].dow]}) | ${slots[i].kind} — 이 칸의 사진:` });
+        content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: media[i].b64 } });
+      }
+      content.push({ type: 'text', text: '반환 형식: {"monthTheme":"이번 달 한 줄 테마","items":[{"i":0,"format":"image|carousel|reel","theme":"주제(20자 이내)","brief":"제작 지시","caption":"캡션","hashtags":["태그"]}]}' });
+      const response = await this.anthropic().messages.create({
+        model: env.CLAUDE_MODEL, max_tokens: 6000, system: PLANNER_SYSTEM, messages: [{ role: 'user', content }],
+      });
+      const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('');
+      const match = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+      if (!match) throw new InternalServerErrorException('플랜 생성 실패 — 모델이 JSON을 반환하지 않았습니다');
+      try { return JSON.parse(match[1]); } catch (e) { throw new InternalServerErrorException('플랜 생성 실패 — JSON을 읽을 수 없습니다'); }
+    }));
+
+    const byI = new Map<number, any>();
+    results.forEach((r) => (r.items || []).forEach((x: any) => byI.set(Number(x.i), x)));
+    await this.repo.clearDraftItems(planId);
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      const x = byI.get(i) || {};
+      const format = s.kind === 'reel' ? 'reel' : (x.format === 'carousel' ? 'carousel' : 'image');
+      const { sanitizedHashtags } = sanitizeCaptionHashtags({ hashtags: Array.isArray(x.hashtags) ? x.hashtags : [] });
+      const it = await this.repo.insertItem(planId, {
+        postAt: s.postAt, format,
+        theme: x.theme ? String(x.theme).slice(0, 200) : null,
+        brief: x.brief ? String(x.brief).slice(0, 2000) : null,
+        caption: x.caption ? String(x.caption).slice(0, 2200) : null,
+        hashtags: sanitizedHashtags,
+      });
+      await this.repo.updateItem(it.id, { source_media_ids: [media[i].id] });
+    }
+    const theme = results.map((r) => r.monthTheme).find(Boolean);
+    if (theme && !plan.brief) await this.repo.updatePlan(planId, { brief: `[AI 테마] ${String(theme).slice(0, 300)}` });
+    return this.detail(businessId, planId);
+  }
+
+  /** Claude 비전용 축소본(긴 변 768px JPEG) — 원본 그대로 보내면 토큰·시간이 커진다 */
+  private async visionJpeg(filePath: string): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const sharp = require('sharp');
+    const buf = await sharp(fs.readFileSync(filePath)).rotate().resize(768, 768, { fit: 'inside' }).jpeg({ quality: 82 }).toBuffer();
+    return buf.toString('base64');
   }
 
   // ── AI 초안 ──

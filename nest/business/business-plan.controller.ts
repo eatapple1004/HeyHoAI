@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UploadedFiles, UseGuards, UseInterceptors,
+  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ACCOUNT_UPLOAD_OPTIONS } from '../accounts/accounts.service';
@@ -17,6 +17,20 @@ import { BusinessPlanPackService } from './business-plan-pack.service';
 @UseGuards(AdminGuard)
 export class BusinessPlanController {
   constructor(private readonly plans: BusinessPlanService, private readonly packs: BusinessPlanPackService) {}
+
+  /** 이 달에 몇 칸이 잡히는지(새 플랜 화면의 '사진 N장 올려 주세요') — `plans/:planId`와 안 겹치게 별도 세그먼트 */
+  @Get(':id/plan-preview')
+  async preview(@Param('id') id: string, @Query() q: any): Promise<ApiResponse<any>> {
+    return { success: true, data: this.plans.preview(q.month, q.postsPerWeek, q.reelRatio) };
+  }
+
+  /** 사진 N장(= 이 달 칸 수)으로 한 달을 짠다(multipart `files`) — 올린 순서대로 칸에 배치 */
+  @UseInterceptors(FilesInterceptor('files', 31, ACCOUNT_UPLOAD_OPTIONS))
+  @Post(':id/plans/:planId/draft-photos')
+  @HttpCode(200)
+  async draftPhotos(@Param('id') id: string, @Param('planId') planId: string, @UploadedFiles() files: any[]): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.plans.draftFromPhotos(id, planId, files) };
+  }
 
   @Get(':id/plans')
   async list(@Param('id') id: string): Promise<ApiResponse<any>> {
