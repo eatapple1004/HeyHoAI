@@ -60,6 +60,8 @@ const IMG_CACHE_MS = 1000 * 60 * 60 * 24 * 30; // 30일
 app.get('/images/t/:w/:file', require('./lib/thumbs').handler);
 // (2026-10-17) 카드 재생용 가벼운 영상(720·~1.8Mbps·faststart) — 없으면 원본으로 302 하고 뒤에서 만든다
 app.get('/images/v/:file', require('./lib/thumbs').previewHandler);
+// (10-17) public/img 정적 사진 썸네일(WebP) — Marketplace 대표 사진 등
+app.get('/img/t/:w/*rest', require('./lib/thumbs').staticHandler);
 app.get('/images/:file', async (req, res, next) => {
   const name = path.basename(req.params.file); // path traversal 방지
   const local = path.join(IMAGES_DIR, name);

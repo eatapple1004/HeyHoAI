@@ -142,4 +142,36 @@ function previewHandler(req, res, next) {
   return res.redirect(302, `/images/${encodeURIComponent(name)}`);
 }
 
-module.exports = { handler, previewHandler, WIDTHS };
+/**
+ * ─── 정적 사진 썸네일 (2026-10-17) — GET /img/t/<w>/<public/img 아래 경로> ───
+ * Marketplace 템플릿 대표 사진(public/img/… PNG 최대 770KB)이 폰에서 늦게 떠 한동안 이모지만 보이던 것.
+ * public/img 안의 사진만, 폭 w WebP 로 줄여 tmp/thumbs/static 에 캐시(파일이 바뀌면 mtime 이 달라져 다시 만든다).
+ */
+const PUBLIC_IMG = path.join(process.cwd(), 'public', 'img');
+async function staticHandler(req, res, next) {
+  const w = parseInt(req.params.w, 10);
+  const rest = req.params.rest; // Express 5 이름 붙은 와일드카드 = 경로 조각 배열
+  const rel = Array.isArray(rest) ? rest.join('/') : String(rest || '');
+  if (!WIDTHS.has(w) || !IMG_RE.test(rel)) return next();
+  const src = path.resolve(PUBLIC_IMG, rel);
+  if (!src.startsWith(PUBLIC_IMG + path.sep) || !fs.existsSync(src)) return next(); // 경로 탈출·없는 파일 → 404
+  const mtime = Math.floor(fs.statSync(src).mtimeMs);
+  const out = path.join(THUMBS_DIR, 'static', String(w), `${rel.replace(/[^\w.-]+/g, '_')}.${mtime}.webp`);
+  const send = () => res.sendFile(out, { maxAge: 24 * 3600 * 1000, headers: { 'Content-Type': 'image/webp' } });
+  try {
+    if (fs.existsSync(out)) return send();
+    await acquire();
+    try {
+      fs.mkdirSync(path.dirname(out), { recursive: true });
+      // eslint-disable-next-line global-require
+      const sharp = require('sharp');
+      await sharp(src).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 78 }).toFile(`${out}.${process.pid}.tmp`);
+      fs.renameSync(`${out}.${process.pid}.tmp`, out);
+    } finally { release(); }
+    return send();
+  } catch (e) {
+    return res.redirect(302, `/img/${rel}`);
+  }
+}
+
+module.exports = { handler, previewHandler, staticHandler, WIDTHS };
