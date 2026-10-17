@@ -32,7 +32,7 @@ const page = (name: string) => path.join(PUBLIC_DIR, name);
 const metaDirectOn = () => Boolean(cfg.env.META_DIRECT_ENABLED);
 
 /** (2026-10-16) 닫아 둔 기능 페이지 — 클린 URL·.html 어느 쪽으로 와도 public/coming-soon.html. 다시 열 땐 여기서 뺀다(src/index.js 도). */
-const CLOSED_PAGES = new Set(['pack']);
+const CLOSED_PAGES = new Set(['pack', 'studio']); // (10-17) studio(Shots) 닫음 — 사용자 요청
 
 @Controller()
 @UseFilters(PageExceptionFilter)
@@ -58,7 +58,7 @@ export class PagesController {
    */
   @Get('store')
   store(@Res() res: any) {
-    return res.redirect(302, '/studio');
+    return res.redirect(302, '/explore'); // (10-17) studio 닫힘 → 탐색으로
   }
 
   /** 추천 링크 — 클릭 기록 + 60일 쿠키 후 랜딩. 추적이 실패해도 방문은 막지 않는다. */
@@ -238,7 +238,11 @@ export class PagesController {
     if (!metaDirectOn() && /^admin-business-meta(-detail)?$/i.test(base)) throw new NotFoundException();
     if (!CLEAN_URL_RE.test(base)) return next();
     // (2026-10-16) 닫아 둔 기능 — 주소로 들어와도 Coming soon (src/index.js 에 같은 목록 — 한쪽만 고치지 말 것)
-    if (CLOSED_PAGES.has(base.toLowerCase())) return res.sendFile(page('coming-soon.html'));
+    if (CLOSED_PAGES.has(base.toLowerCase())) {
+      // 옛 광고영상 딥링크(/studio?mode=ugc…)는 Ad Video 화면으로
+      if (base.toLowerCase() === 'studio' && /[?&]mode=ugc\b/.test(req.originalUrl)) return res.redirect(302, '/ad-video');
+      return res.sendFile(page('coming-soon.html'));
+    }
     if (html) {
       const q = req.originalUrl.indexOf('?');
       return res.redirect(301, `/${base}${q >= 0 ? req.originalUrl.slice(q) : ''}`);

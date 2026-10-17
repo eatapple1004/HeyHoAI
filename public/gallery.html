@@ -172,7 +172,7 @@
     <div class="empty hidden" id="empty">
       <div class="ico">🖼️</div><h3>Your library is waiting</h3>
       <p>Your very first result comes out watermark-free — make something you can post today.</p>
-      <a href="/studio" class="btn btn-primary">Open Shots →</a>
+      <a href="/image" class="btn btn-primary">Create Image →</a>
       <div class="empty-hooks">
         <div class="eh">Turn one look into a full week's set in a tap</div>
         <div class="eh">4 categories · dozens of templates, zero prompts</div>
@@ -396,7 +396,7 @@ function cardHtml(it){
   const vp=(it.visibility==='private');
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
   const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
-  const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
+  const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/ad-video" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
   const bgBtn=(it.type==='photo'&&EDITOR)?`<a class="rc-btn rc-up" href="/image-edit?tool=removebg&idx=${it.idx}&u=${encodeURIComponent(it.url)}" title="Remove background in Editor" onclick="event.stopPropagation()"><b>✂</b></a>`:'';
   const vupBtn=(it.type==='reel'&&VUPSCALE)?`<a class="rc-btn rc-up" href="/video?tool=topaz-video&video=${encodeURIComponent(it.url)}" title="Upscale video (Topaz)" onclick="event.stopPropagation()">${RC_SVG.up}<b>HD</b></a>`:'';
   const upBtn=(it.type==='photo'&&EDITOR)?`<a class="rc-btn rc-up" href="/image-edit?tool=upscale&idx=${it.idx}&u=${encodeURIComponent(it.url)}" title="Upscale in Editor (Topaz ×2 · ×4)" onclick="event.stopPropagation()">${RC_SVG.up}</a>`:'';
