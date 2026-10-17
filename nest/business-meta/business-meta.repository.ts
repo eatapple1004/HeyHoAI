@@ -5,6 +5,8 @@ import { DbService } from '../db/db.service';
 // 트랜잭션이 필요해 풀에 직접 접근한다 — DbService.query는 단건 실행만 제공한다.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const dbClient = require(path.join(__dirname, '..', '..', 'src', 'db', 'client.js'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { persistAvatar } = require(path.join(__dirname, '..', '..', 'src', 'lib', 'avatarCache.js')); // (10-17) 만료되는 인스타 프로필 사진 보관
 import { AuthMode } from './meta-ig.client';
 
 /**
@@ -68,7 +70,7 @@ export class BusinessMetaRepository {
              updated_at = now()
        RETURNING id`,
       [META_PLATFORM, input.accountId, input.username, input.displayName,
-        input.profileImage, input.followers, JSON.stringify(input.metadata), input.userId],
+        await persistAvatar(input.profileImage), input.followers, JSON.stringify(input.metadata), input.userId],
     );
     return rows[0];
   }
