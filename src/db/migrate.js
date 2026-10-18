@@ -458,6 +458,9 @@ async function migrate() {
         UNIQUE (channel, external_id)
     );
   `);
+  // (10-18) LINE 은 Lens(제품컷)만 — 대표 실측: Shoot 경로(인물·프리셋·입히기)는 채팅에서 안 돌아 v1에서 뺐다. menu = Lens 스타일 slug(16→32), last_input = 마지막 제품 사진(스타일 바꿔 다시 만들기용)
+  await pool.query(`ALTER TABLE messenger_users ALTER COLUMN menu TYPE VARCHAR(32);`);
+  await pool.query(`ALTER TABLE messenger_users ADD COLUMN IF NOT EXISTS last_input TEXT;`);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
   await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);

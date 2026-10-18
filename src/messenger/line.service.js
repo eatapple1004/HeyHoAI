@@ -1,15 +1,15 @@
 /**
  * ─── LINE 입구 (2026-10-18, 기획 = docs/카톡_LINE_연동_기획_2026-10-17.md + 작전판 아티팩트) ───
- * 메신저는 새 기능이 아니라 입구. 안에서 도는 건 Lens(제품컷)·Shoot(AI 인물) 그대로. 여기 코드는 다섯 조각뿐:
+ * 메신저는 새 기능이 아니라 입구. 안에서 도는 건 Lens(제품컷) 그대로. 여기 코드는 다섯 조각뿐:
  *   받기(웹훅, 서명 검증) → 접수 응답(reply token, 약 1분) → 비동기 생성 → 돌려주기(push) → 계정 묶기(섀도 계정).
  *
+ * (10-18 저녁) v1 = **Doppia Lens 만**. 대표 실측에서 Shoot 경로(AI 인물 캐러셀·장면 프리셋·입히기)는 채팅에서 안 돌았고
+ *   "일단 렌즈만 LINE에서" 로 결정 → Shoot 코드는 전부 걷어냈다(git 에 남아 있다, 카톡/v2 때 다시 꺼낸다).
  * 흐름(v1):
- *   follow            → 인사 + 퀵리플라이(제품컷 · AI 인물 고르기 · 사용법)
- *   postback menu=…   → 메뉴 전환
- *   postback model=…  → AI 인물 선택 → 그 인물의 인사 + 장면 칩 6개
- *   postback preset=… → 고른 인물로 그 장면 촬영(Shoot shot)
- *   text              → 인물이 골라져 있으면 그 글대로 촬영, 아니면 안내
- *   image             → 메뉴가 shoot 이고 인물이 있으면 입히기(Outfit, NB Pro) / 아니면 제품컷(Lens 'clean-studio')
+ *   follow / text        → 안내 + 스타일 칩(공식 Lens 제품 스타일 5개)
+ *   image                → 고른 스타일(기본 Clean Studio)로 제품컷 1장 → push
+ *   postback style=slug  → 스타일 저장. 마지막 사진이 있으면 그 사진으로 바로 다시 만든다(사진 다시 안 보내도 됨)
+ *   postback again       → 마지막 사진 + 현재 스타일로 다시
  * 계정: 첫 메시지에 섀도 계정 자동 생성(가입 보너스 크레딧) — 무료 3턴은 free_left 로 센다(지금은 안내만, 과금은 크레딧이 한다).
  * 결과 이미지 URL: /images 공개 URL 은 클라우드플레어가 봇을 막으므로(10-16 실측) R2 서명 URL 을 준다.
  * 언어: LINE 프로필 language(ja/ko/en) → 없으면 ja. 대표가 ko 로 테스트하므로 ko 도 완비.
@@ -23,55 +23,47 @@ const mediaStore = require('../storage/mediaStore');
 const teamCredit = require('../teams/team.credit');
 const repo = require('./messenger.repository');
 const userRepo = require('../auth/user.repository');
-const shootRepo = require('../shoot/shootModel.repository');
-const shoot = require('../shoot/shootModel.service');
 const lens = require('../lens/lens.service');
 
 const API = 'https://api.line.me/v2/bot';
 const DATA = 'https://api-data.line.me/v2/bot';
 const CHANNEL = 'line';
 const NOTICE = { ko: 'AI로 제작한 이미지입니다', ja: 'AIで生成した画像です', en: 'Made with AI' };
-// 채팅용 장면 칩 6 — 웹 Shoot 프리셋 28 중(기획 작전판 결정 9, 안이 확정되면 여기만 고친다)
-const PRESETS = [
-  ['paris', { ko: '파리 거리', ja: 'パリの街', en: 'Paris street' }, 'in front of Haussmann buildings on a Paris street, trench coat, soft overcast light, candid'],
-  ['cafe', { ko: '카페', ja: 'カフェ', en: 'Cafe window' }, 'by a cafe window in a white shirt, holding a coffee, soft smile, morning light'],
-  ['studio', { ko: '스튜디오', ja: 'スタジオ', en: 'Studio' }, 'in a clean grey studio, three-quarter portrait, soft beauty light, black turtleneck, calm gaze into the lens'],
-  ['night', { ko: '밤거리', ja: '夜の街', en: 'Night out' }, 'on a neon-lit street at night, satin shirt, wet pavement reflections, looking over the shoulder'],
-  ['beach', { ko: '해변', ja: 'ビーチ', en: 'Beach' }, 'walking along the shoreline at sunset in a light shirt, hair blowing, golden backlight'],
-  ['office', { ko: '사무실', ja: 'オフィス', en: 'Office' }, 'at a desk in a modern office in a smart shirt, laptop open, thoughtful look, window light'],
+// 채팅용 스타일 칩 — 공식 Lens 제품 스타일 중 product 입력 1장짜리만(사람 사진이 필요한 street-snap · 4컷 세트 · 영상은 제외)
+const STYLES = [
+  ['clean-studio', { ko: '흰 배경', ja: '白背景', en: 'Clean studio' }],
+  ['marble-vanity', { ko: '화장대', ja: '洗面台', en: 'Marble vanity' }],
+  ['in-hand', { ko: '손에 든', ja: '手持ち', en: 'In hand' }],
+  ['flat-lay', { ko: '플랫레이', ja: '俯瞰', en: 'Flat lay' }],
+  ['holiday-gift', { ko: '선물', ja: 'ギフト', en: 'Gift' }],
 ];
+const DEFAULT_STYLE = 'clean-studio';
 const STR = {
   ko: {
-    hello: 'Doppia예요 👋 사진 한 장이면 제품컷을, AI 인물을 고르면 모델컷을 만들어 드려요. 무료 3번.',
-    product: '제품컷', shootPick: 'AI 인물 고르기', help: '사용법',
-    sendProduct: '제품 사진을 보내주세요. 흰 배경 스튜디오 컷으로 돌려드릴게요.',
-    howto: '① 제품 사진을 보내면 제품컷 ② "AI 인물 고르기"로 모델을 고른 뒤 옷 사진을 보내면 입히기, 장면을 고르면 촬영, 글을 보내면 그대로 촬영. 결과는 30초쯤 걸려요.',
-    pickTitle: '모델을 골라주세요', pickBtn: '이 모델로', more: '더 보기 (웹)',
-    modelHi: (n) => `안녕, 나는 ${n}이에요 👋 옷 사진을 보내면 입어볼게요. 아니면 장면을 골라주세요.`,
-    received: '접수했어요. 30초쯤 걸려요 ⏳', noModel: '먼저 "AI 인물 고르기"로 모델을 골라주세요.',
-    failed: '이번엔 만들지 못했어요. 다른 사진으로 다시 보내주세요.', again: '다시', other: '다른 인물', web: '웹에서 더 보기',
+    hello: 'Doppia Lens예요 👋 제품 사진 한 장을 보내면 판매용 제품컷으로 돌려드려요. 무료 3장.',
+    sendProduct: '제품 사진을 보내주세요. 스타일은 아래에서 고를 수 있어요(기본: 흰 배경).',
+    howto: '제품 사진을 보내면 30초쯤 뒤 제품컷이 와요. 아래 칩으로 스타일을 바꾸면 같은 사진으로 바로 다시 만들어요.',
+    styleSet: (n) => `스타일: ${n}. 제품 사진을 보내주세요.`,
+    received: '접수했어요. 30초쯤 걸려요 ⏳',
+    failed: '이번엔 만들지 못했어요. 다른 사진으로 다시 보내주세요.', again: '다시', web: '웹에서 더 보기',
     noCredit: '무료 횟수를 다 썼어요. 웹에서 이어서 쓸 수 있어요.',
   },
   ja: {
-    hello: 'Doppiaです 👋 写真1枚で商品ショット、AIモデルを選べばモデルショットを作ります。無料3回。',
-    product: '商品ショット', shootPick: 'AIモデルを選ぶ', help: '使い方',
-    sendProduct: '商品の写真を送ってください。白背景のスタジオショットでお返しします。',
-    howto: '① 商品写真を送ると商品ショット ② 「AIモデルを選ぶ」でモデルを選び、服の写真を送ると着せ替え、シーンを選ぶと撮影、文章を送るとその通りに撮影。結果は30秒ほどです。',
-    pickTitle: 'モデルを選んでください', pickBtn: 'このモデルで', more: 'もっと見る（Web）',
-    modelHi: (n) => `こんにちは、${n}です 👋 服の写真を送ってくれたら着てみます。または、シーンを選んでください。`,
-    received: '受け付けました。30秒ほどお待ちください ⏳', noModel: 'まず「AIモデルを選ぶ」でモデルを選んでください。',
-    failed: '今回は作れませんでした。別の写真でもう一度送ってください。', again: 'もう一度', other: '別のモデル', web: 'Webでもっと見る',
+    hello: 'Doppia Lensです 👋 商品写真を1枚送ると、販売用の商品ショットにしてお返しします。無料3枚。',
+    sendProduct: '商品の写真を送ってください。スタイルは下から選べます（初期設定: 白背景）。',
+    howto: '商品写真を送ると30秒ほどで商品ショットが届きます。下のチップでスタイルを変えると、同じ写真ですぐ作り直します。',
+    styleSet: (n) => `スタイル: ${n}。商品の写真を送ってください。`,
+    received: '受け付けました。30秒ほどお待ちください ⏳',
+    failed: '今回は作れませんでした。別の写真でもう一度送ってください。', again: 'もう一度', web: 'Webでもっと見る',
     noCredit: '無料回数を使い切りました。Webで続けられます。',
   },
   en: {
-    hello: "This is Doppia 👋 Send one product photo for a product shot, or pick an AI model for model shots. 3 free.",
-    product: 'Product shot', shootPick: 'Pick an AI model', help: 'How it works',
-    sendProduct: 'Send a product photo. You get a clean white-studio shot back.',
-    howto: '① Send a product photo → product shot ② "Pick an AI model", then send a garment photo to dress them, pick a scene to shoot, or type a line to shoot it. About 30 seconds.',
-    pickTitle: 'Pick a model', pickBtn: 'Use this model', more: 'More (web)',
-    modelHi: (n) => `Hi, I'm ${n} 👋 Send a garment photo and I'll wear it, or pick a scene.`,
-    received: 'Got it. About 30 seconds ⏳', noModel: 'Pick an AI model first.',
-    failed: "That one didn't work. Try another photo.", again: 'Again', other: 'Other model', web: 'See more on the web',
+    hello: "This is Doppia Lens 👋 Send one product photo and get a sellable product shot back. 3 free.",
+    sendProduct: 'Send a product photo. Pick a style below (default: clean studio).',
+    howto: 'Send a product photo and the shot arrives in about 30 seconds. Change the style with the chips to redo the same photo.',
+    styleSet: (n) => `Style: ${n}. Send a product photo.`,
+    received: 'Got it. About 30 seconds ⏳',
+    failed: "That one didn't work. Try another photo.", again: 'Again', web: 'See more on the web',
     noCredit: 'Free shots used up. Continue on the web.',
   },
 };
@@ -127,21 +119,8 @@ async function ensureLocal(urlOrName) {
 const quick = (items) => ({ items: items.map(([label, data]) => ({ type: 'action', action: { type: 'postback', label: label.slice(0, 20), data, displayText: label } })) });
 const text = (s, qr) => Object.assign({ type: 'text', text: s }, qr ? { quickReply: qr } : {});
 const image = (url) => ({ type: 'image', originalContentUrl: url, previewImageUrl: url });
-const menuQuick = (L) => quick([[L.product, 'menu=product'], [L.shootPick, 'menu=shoot'], [L.help, 'menu=help']]);
-const presetQuick = (lang, L) => quick(PRESETS.map(([key, names]) => [names[lang] || names.ja, `preset=${key}`]).concat([[L.other, 'menu=shoot']]));
-const afterQuick = (L, hasModel) => quick([[L.again, 'again'], ...(hasModel ? [[L.other, 'menu=shoot']] : [[L.shootPick, 'menu=shoot']]), [L.product, 'menu=product']]);
-
-async function modelCarousel(lang) {
-  const L = t(lang);
-  const rows = (await shootRepo.findOfficial()).slice(0, 9); // 캐러셀 최대 10 — 마지막 칸은 "더 보기"
-  const columns = [];
-  for (const m of rows) {
-    const thumb = m.avatar && m.avatar.startsWith('/images/') ? await fetchable(m.avatar.split('/').pop()) : `${site()}${m.avatar}`;
-    columns.push({ thumbnailImageUrl: thumb, title: m.name.slice(0, 40), text: shoot.profileLine(m.profile).slice(0, 60), actions: [{ type: 'postback', label: L.pickBtn, data: `model=${m.id}`, displayText: m.name }] });
-  }
-  columns.push({ title: 'Doppia Shoot', text: L.more, actions: [{ type: 'uri', label: L.more, uri: `${site()}/shoot` }] });
-  return { type: 'template', altText: L.pickTitle, template: { type: 'carousel', imageAspectRatio: 'square', imageSize: 'cover', columns } };
-}
+const styleName = (slug, lang) => { const st = STYLES.find(([k]) => k === slug); return st ? (st[1][lang] || st[1].ja) : slug; };
+const styleQuick = (lang, L, withAgain) => quick([...(withAgain ? [[L.again, 'again']] : []), ...STYLES.map(([key, names]) => [names[lang] || names.ja, `style=${key}`])]);
 
 // ── 계정 ──
 async function ensureUser(externalId) {
@@ -159,50 +138,42 @@ async function ensureUser(externalId) {
 }
 
 // ── 생성 ──
-/** 제품컷 = 공식 Lens 'clean-studio' 프롬프트 + 사용자 사진(product) → Nano Banana Pro 1장 */
-async function productCut(row, absPath) {
+const SIZE = { '1:1': [1024, 1024], '4:5': [832, 1040], '3:4': [768, 1024] };
+/** 제품컷 = 공식 Lens 스타일 프롬프트 + 사용자 사진(product) → Nano Banana Pro 1장(비율은 스타일 설정을 따른다) */
+async function productCut(row, absPath, slug) {
   // eslint-disable-next-line global-require
   const nano = require('../images/providers/nanoBanana.provider');
   // eslint-disable-next-line global-require
   const credit = require('../credits/credit.service');
-  const cfg = (lens.OFFICIAL.find((o) => o.slug === 'clean-studio') || {}).config;
+  const off = lens.OFFICIAL.find((o) => o.slug === slug) || lens.OFFICIAL.find((o) => o.slug === DEFAULT_STYLE);
+  const cfg = off.config;
+  const [width, height] = SIZE[cfg.aspect] || SIZE['1:1'];
   const prompt = lens.buildImagePrompt(cfg, { slots: ['product'], refCount: 0 });
-  await teamCredit.chargeGeneration({ id: row.user_id }, credit.imageCost('pro', 1, false), 'LINE product shot');
-  const out = await nano.generate({ prompt, references: [{ path: absPath, kind: 'product' }], model: 'gemini-3-pro-image-preview', width: 1024, height: 1024, imageSize: '1K' });
+  await teamCredit.chargeGeneration({ id: row.user_id }, credit.imageCost('pro', 1, false), `LINE product shot: ${off.slug}`);
+  const out = await nano.generate({ prompt, references: [{ path: absPath, kind: 'product' }], model: 'gemini-3-pro-image-preview', width, height, imageSize: '1K' });
   const abs = out.url.replace('file://', '');
   await mediaStore.putFile(abs).catch(() => {});
   return path.basename(abs);
-}
-/** 입히기 = 고른 AI 인물의 거리컷(또는 마지막 결과) 위에 옷 사진을 입힌다(웹 Shoot Outfit 과 같은 문구) */
-async function outfit(row, model, garmentAbs) {
-  // eslint-disable-next-line global-require
-  const nano = require('../images/providers/nanoBanana.provider');
-  // eslint-disable-next-line global-require
-  const credit = require('../credits/credit.service');
-  const baseUrl = row.last_result || (model.bank.find((b) => b.key === 'street') || model.bank[0] || {}).url;
-  const baseAbs = baseUrl && await ensureLocal(baseUrl);
-  if (!baseAbs) throw new Error('no base image for outfit');
-  const who = `${shoot.profileLine(model.profile)}. `;
-  const prompt = `${who}Image 1 is the photo to edit. Dress the person in image 1 in the garment from image 2, reproduced faithfully — same color, print, logo placement and proportions. Replace only what the garment covers; keep the rest of the outfit, pose, background, lighting and camera. Keep the same face and identity.`;
-  await teamCredit.chargeGeneration({ id: row.user_id }, credit.imageCost('pro', 1, false), `LINE outfit: ${model.name}`);
-  const out = await nano.generate({ prompt, references: [{ path: baseAbs, kind: 'person' }, { path: garmentAbs, kind: 'product' }], model: 'gemini-3-pro-image-preview', width: 768, height: 1024, imageSize: '1K' });
-  const abs = out.url.replace('file://', '');
-  await mediaStore.putFile(abs).catch(() => {});
-  return path.basename(abs);
-}
-/** 촬영 = Shoot shot(Soul 2 + 공식 AI 인물) — Library 에도 저장된다 */
-async function shot(row, modelId, prompt) {
-  const r = await shoot.shot({ id: row.user_id }, modelId, { prompt, count: 1, aspectRatio: '3:4', privateMode: true });
-  const ok = r.results.find((x) => x.success);
-  if (!ok) throw new Error((r.results[0] && r.results[0].error) || 'shot failed');
-  return ok.url.split('/').pop();
 }
 
-async function deliver(row, name, lang, hasModel) {
+async function deliver(row, name, lang) {
   const L = t(lang);
   const url = await fetchable(name);
   await repo.update(row.id, { last_result: `/images/${name}` });
-  await push(row.external_id, [image(url), text(`${NOTICE[lang] || NOTICE.ja} · ${L.web}: ${site()}/gallery`, afterQuick(L, hasModel))]);
+  await push(row.external_id, [image(url), text(`${NOTICE[lang] || NOTICE.ja} · ${L.web}: ${site()}/gallery`, styleQuick(lang, L, true))]);
+}
+/** 마지막 사진 + 스타일로 만들어 보낸다. 실패 사유가 크레딧이면 그 안내로. */
+async function run(row, lang, inputName, slug) {
+  const L = t(lang);
+  try {
+    const abs = await ensureLocal(`/images/${inputName}`);
+    if (!abs) throw new Error('input photo missing');
+    await deliver(row, await productCut(row, abs, slug), lang);
+  } catch (err) {
+    logger.warn({ err: String(err.message || err), slug }, 'line product shot failed');
+    const insufficient = /credit|크레딧/i.test(String(err.message || ''));
+    await push(row.external_id, [text(insufficient ? L.noCredit : L.failed, styleQuick(lang, L, false))]);
+  }
 }
 
 // ── 이벤트 ──
@@ -211,63 +182,37 @@ async function onEvent(ev) {
   if (!externalId) return;
   const row = await ensureUser(externalId);
   const lang = row.lang || 'ja'; const L = t(lang);
-  const model = row.model_id ? await shootRepo.findById(row.model_id) : null;
+  const slug = STYLES.some(([k]) => k === row.menu) ? row.menu : DEFAULT_STYLE;
 
-  if (ev.type === 'follow') return reply(ev.replyToken, [text(L.hello, menuQuick(L))]);
+  if (ev.type === 'follow') return reply(ev.replyToken, [text(L.hello, styleQuick(lang, L, false))]);
 
   if (ev.type === 'postback') {
     const d = String(ev.postback && ev.postback.data || '');
-    if (d === 'menu=product') { await repo.update(row.id, { menu: 'product' }); return reply(ev.replyToken, [text(L.sendProduct)]); }
-    if (d === 'menu=help') return reply(ev.replyToken, [text(L.howto, menuQuick(L))]);
-    if (d === 'menu=shoot') { await repo.update(row.id, { menu: 'shoot' }); return reply(ev.replyToken, [await modelCarousel(lang)]); }
-    if (d.startsWith('model=')) {
-      const m = await shootRepo.findById(d.slice(6));
-      if (!m || !m.official) return reply(ev.replyToken, [text(L.noModel, menuQuick(L))]);
-      await repo.update(row.id, { menu: 'shoot', model_id: m.id, last_result: null });
-      return reply(ev.replyToken, [text(L.modelHi(m.name), presetQuick(lang, L))]);
-    }
-    if (d.startsWith('preset=')) {
-      if (!model) return reply(ev.replyToken, [text(L.noModel, menuQuick(L))]);
-      const p = PRESETS.find(([k]) => k === d.slice(7));
-      if (!p) return;
-      await reply(ev.replyToken, [text(L.received)]);
-      try { await deliver(row, await shot(row, model.id, p[2]), lang, true); } catch (err) { logger.warn({ err: String(err.message || err) }, 'line preset shot failed'); await push(externalId, [text(L.failed, afterQuick(L, true))]); }
-      return;
+    if (d.startsWith('style=')) {
+      const next = d.slice(6);
+      if (!STYLES.some(([k]) => k === next)) return;
+      await repo.update(row.id, { menu: next });
+      if (!row.last_input) return reply(ev.replyToken, [text(L.styleSet(styleName(next, lang)), styleQuick(lang, L, false))]);
+      await reply(ev.replyToken, [text(L.received)]); // 사진이 있으면 그 사진으로 바로 — 스타일 비교가 채팅의 핵심 경험
+      return run(row, lang, row.last_input, next);
     }
     if (d === 'again') {
-      // 마지막 입력을 따로 저장하지 않는다(v1) — 인물이 있으면 기본 장면으로 다시, 없으면 사진을 다시 요청
-      if (!model) return reply(ev.replyToken, [text(L.sendProduct)]);
+      if (!row.last_input) return reply(ev.replyToken, [text(L.sendProduct, styleQuick(lang, L, false))]);
       await reply(ev.replyToken, [text(L.received)]);
-      try { await deliver(row, await shot(row, model.id, PRESETS[0][2]), lang, true); } catch (err) { await push(externalId, [text(L.failed, afterQuick(L, true))]); }
-      return;
+      return run(row, lang, row.last_input, slug);
     }
     return;
   }
 
   if (ev.type !== 'message' || !ev.message) return;
   const msg = ev.message;
-
-  if (msg.type === 'text') {
-    const s = String(msg.text || '').trim();
-    if (!model) return reply(ev.replyToken, [text(L.howto, menuQuick(L))]);
-    await reply(ev.replyToken, [text(L.received)]);
-    try { await deliver(row, await shot(row, model.id, s.slice(0, 500)), lang, true); } catch (err) { logger.warn({ err: String(err.message || err) }, 'line text shot failed'); await push(externalId, [text(L.failed, afterQuick(L, true))]); }
-    return;
-  }
-
+  if (msg.type === 'text') return reply(ev.replyToken, [text(L.howto, styleQuick(lang, L, !!row.last_input))]);
   if (msg.type === 'image') {
     await reply(ev.replyToken, [text(L.received)]);
-    try {
-      const name = await fetchContent(msg.id);
-      const abs = path.join(process.cwd(), 'tmp', 'images', name);
-      const useOutfit = row.menu === 'shoot' && model;
-      const out = useOutfit ? await outfit(row, model, abs) : await productCut(row, abs);
-      await deliver(row, out, lang, !!model);
-    } catch (err) {
-      logger.warn({ err: String(err.message || err) }, 'line image failed');
-      const insufficient = /credit|크레딧/i.test(String(err.message || ''));
-      await push(externalId, [text(insufficient ? L.noCredit : L.failed, afterQuick(L, !!model))]);
-    }
+    let name;
+    try { name = await fetchContent(msg.id); } catch (err) { logger.warn({ err: String(err.message || err) }, 'line image fetch failed'); return push(externalId, [text(L.failed, styleQuick(lang, L, false))]); }
+    await repo.update(row.id, { last_input: name });
+    return run(row, lang, name, slug);
   }
 }
 
@@ -278,4 +223,4 @@ function handleWebhook(body) {
   return { received: events.length };
 }
 
-module.exports = { configured, verifySignature, handleWebhook, PRESETS };
+module.exports = { configured, verifySignature, handleWebhook, STYLES };

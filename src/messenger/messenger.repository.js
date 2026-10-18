@@ -1,11 +1,12 @@
 /**
  * ─── 메신저(카톡·LINE) 사용자 저장소 ───
  * (2026-10-18) messenger_users — 채널 사용자(external_id) ↔ Doppia 섀도 계정. 세션(고른 메뉴·AI 인물·마지막 결과·언어)도 여기.
- *   channel: 'line' | 'kakao' · lang: 'ko'|'ja'|'en' · menu: 'product'|'shoot' · model_id: 고른 공식 AI 인물(shoot_models.id)
+ *   channel: 'line' | 'kakao' · lang: 'ko'|'ja'|'en' · menu: (10-18) Lens 스타일 slug(clean-studio …) · last_input: 마지막 제품 사진 파일명
+ *   model_id 는 v1에서 안 쓴다(Shoot 경로를 뺐다, 컬럼은 둔다 — 카톡/v2 때 다시)
  */
 const { query } = require('../db/client');
 
-const COLS = 'id, channel, external_id, user_id, lang, menu, model_id, last_result, free_left, created_at, updated_at';
+const COLS = 'id, channel, external_id, user_id, lang, menu, model_id, last_result, last_input, free_left, created_at, updated_at';
 
 async function find(channel, externalId) {
   const r = await query(`SELECT ${COLS} FROM messenger_users WHERE channel = $1 AND external_id = $2`, [channel, externalId]);
