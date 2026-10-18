@@ -389,9 +389,11 @@ function renderRight(){
   b.innerHTML=h;
   const cost=cat&&cat.engines[0]?cat.engines[0].perDuration:null;
   let price=cost?(c&&clipDur(c)>5.5&&a.id!=='extend'?cost[10]:cost[5]):null;
-  if(a.id==='reframe'&&cat&&c){const e=rfEngine(cat);if(e){const d=Math.min(clipDur(c),e.maxSec);price=d>10&&e.billPer10s?Math.ceil(d/10)*e.perDuration[10]:(d>5.5?e.perDuration[10]:e.perDuration[5]);}}
+  {const e0=(a.id==='reframe'&&cat&&c&&rfEngine(cat))||(cat&&(cat.engines.find(x=>x.id===st.engine[a.id])||cat.engines[0]));if(e0&&e0.perSec)price=secCost(e0.perSec,a.id==='extend'?(st.extSec||5):(c?Math.min(clipDur(c),e0.maxSec||60):5),st.rfRes||(e0.resolutions||[])[0]||'');} // (10-18) 엔진별 초당 단가
+  if(price==null&&a.id==='reframe'&&cat&&c){const e=rfEngine(cat);if(e){const d=Math.min(clipDur(c),e.maxSec);price=d>10&&e.billPer10s?Math.ceil(d/10)*e.perDuration[10]:(d>5.5?e.perDuration[10]:e.perDuration[5]);}}
   f.innerHTML=`<button class="gen" id="run" ${!c?'disabled':''}>${esc(a.title)}${a.id==='captions'?' <span class="c">free</span>':price!=null?` <span class="c">◈ ${Number(price).toLocaleString()}</span>`:''}</button><div class="n">${a.id==='captions'?'Captions land on the Text track.':a.id==='extend'?'The new part is added after the clip when it’s ready.':'The result replaces the selected clip when it’s ready (Undo brings the original back).'} Results are also saved to your Library.</div>`;
 }
+function secCost(ps,dur,res){if(!ps)return null;const r=ps[String(res||'').toLowerCase()]??ps['*'];return Math.max(50,Math.ceil(r*Math.max(1,Math.ceil(+dur||5))/5)*5);} // (10-18) 서버 engineVideoCost 와 같은 계산(초당 단가 × 길이, 5 단위 올림, 최소 50)
 $('#aiTools').onclick=e=>{const b=e.target.closest('[data-ai]');if(!b||b.disabled)return;st.tool=b.dataset.ai;if(st.sel&&st.sel.kind!=='clip')st.sel=st.clips[0]?{kind:'clip',id:(selClip()||st.clips[0]).id}:null;renderAll();};
 $('#body').addEventListener('input',e=>{const t=selText();
   if(t&&e.target.id==='txT'){t.text=e.target.value;renderTimeline();draw();save();return;}
