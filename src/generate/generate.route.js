@@ -1683,6 +1683,16 @@ const deleteCreationsHandler = async (req, res, next) => {
     // reviews는 no-cascade FK → 먼저 제거. likes·reports는 ON DELETE CASCADE로 자동 정리. 템플릿(from_creation_idx)은 FK 없어 남음.
     await query('DELETE FROM reviews WHERE result_idx = $1', [idx]);
     await query('DELETE FROM generation_results WHERE idx = $1', [idx]);
+    // (2026-10-18) 파일도 지운다 — 행만 지우면 /images/<name> 으로 여전히 열린다(사고 이미지가 남는 구멍). 같은 파일을 쓰는 다른 결과가 없을 때만.
+    const name = String(r.file_path || '').split('/').pop();
+    if (name) {
+      const shared = await query('SELECT 1 FROM generation_results WHERE file_path LIKE $1 LIMIT 1', [`%${name}`]);
+      if (!shared.rows.length) {
+        try { fs.unlinkSync(path.join(process.cwd(), 'tmp', 'images', name)); } catch (_) {}
+        // eslint-disable-next-line global-require
+        await require('../storage/mediaStore').del(name).catch(() => {});
+      }
+    }
     res.json({ success: true, data: { idx } });
   } catch (err) { next(err); }
 };

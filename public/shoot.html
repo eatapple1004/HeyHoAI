@@ -64,6 +64,7 @@
 .bubble .b{position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.5}
 .bubble .b:before{content:'';position:absolute;left:-7px;top:16px;border:7px solid transparent;border-right-color:var(--border2);border-left:0}
 .bubble .q{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bubble .q button{font-size:12px;padding:5px 10px}
+.stage .cur .curwrap{position:relative;display:inline-block;max-width:100%}.stage .cur .del{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:15px}.stage .cur .del:hover{background:#b3261e}
 .stage .cur img.intro{animation:pop .35s ease}@keyframes pop{from{opacity:.2;transform:scale(.97)}to{opacity:1;transform:none}}
 .mk{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
 .mk h2{font-family:'Sora',sans-serif;font-size:24px;margin:0 0 4px}.mk p{color:var(--dim);margin:0 0 14px;line-height:1.5}
@@ -322,10 +323,16 @@ const SHOT_COST=10; // credit.service IMG_CREDIT.soul(10-18 v2)과 같이 간다
 function renderGo(){const t=tool(),L={shot:'Shoot',outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act],shot=st.act==='shot';$('#go').disabled=st.busy||!ready()||(!shot&&!t);$('#go').firstChild.textContent=L+' ';$('#cost').textContent=shot?(SHOT_COST*st.shotN).toLocaleString('en-US'):t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
-function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
+function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<div class="curwrap"><img src="${v.url}" alt="" class="${anim?'intro':''}">${v.idx?`<button type="button" class="del" id="delCur" title="Delete this image">🗑</button>`:''}</div>`;
+  const del=$('#delCur');if(del)del.onclick=()=>removeResult(v.idx);
   $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${x.url}" alt=""><small>${esc(x.label)}</small></button>`).join('');
   $('#note').textContent=st.versions.length>1?`${st.versions.length} versions · pick one to continue from it`:'';}
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.intro++;st.cur=+b.dataset.i;renderStage();});
+// (10-18) 삭제 — 결과 행 + 파일(서버가 tmp·R2 까지 지운다). 사고 이미지가 피드·라이브러리·URL 어디에도 안 남게.
+async function removeResult(idx){if(!idx||!confirm('Delete this image? It is removed from your library and the feed.'))return;
+  const r=await fetch('/api/generate/creations/'+idx,{method:'DELETE'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success){toast(d.error||'Delete failed');return}
+  const was=st.versions.findIndex(v=>v.idx===idx);if(was>=0){st.versions.splice(was,1);if(!st.versions.length)st.versions=[...st.model.bank];st.cur=Math.min(Math.max(0,was-1),st.versions.length-1);}
+  $$('#feed [data-del="'+idx+'"]').forEach(x=>x.closest('.rt').remove());toast('Deleted');renderStage();}
 $$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stage .tabs [data-f]').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;$('#stageView').hidden=f!=='stage';$('#feedView').hidden=f!=='mine';if(f==='mine')loadFeed();}));
 
 // ── 프롬프트(10-16 실측 틀): 이미지 1 = 현재 버전 보존, 바꿀 것만 ──
@@ -349,7 +356,7 @@ async function refs(){const base=await(await fetch(cur().url)).blob();const out=
 async function shoot(){const res=await fetch('/api/shoot/models/'+encodeURIComponent(st.model.id)+'/shot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:st.shot.trim(),count:st.shotN,aspectRatio:st.shotAspect,privateMode:st.priv})});
   const d=await res.json().catch(()=>({}));if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});if(!res.ok||!d.success)throw new Error(d.error||'shoot failed');
   const ok=d.data.results.filter(r=>r.success&&r.url);if(!ok.length)throw new Error((d.data.results[0]&&d.data.results[0].error)||'no result');
-  const label=st.shot.trim().slice(0,24);ok.forEach(r=>st.versions.push({url:r.url,label}));st.cur=st.versions.length-ok.length;if(ok.length<d.data.results.length)toast((d.data.results.length-ok.length)+' failed');}
+  const label=st.shot.trim().slice(0,24);ok.forEach(r=>st.versions.push({url:r.url,label,idx:r.idx}));st.cur=st.versions.length-ok.length;if(ok.length<d.data.results.length)toast((d.data.results.length-ok.length)+' failed');}
 $('#go').addEventListener('click',async()=>{const t=tool();if(!ready()||st.busy||(st.act!=='shot'&&!t))return;st.intro++;st.busy=true;renderGo();renderStage();say(SAY.busy);
   try{if(st.act==='shot'){await shoot();DoppiaNav.refreshCredits();say(SAY.done());return}
     const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt());fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
@@ -359,14 +366,14 @@ $('#go').addEventListener('click',async()=>{const t=tool();if(!ready()||st.busy|
     if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
     if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
     const r=(d.results||[]).find(x=>x.success&&x.url);if(!r)throw new Error((d.results||[])[0]&&d.results[0].error||'no result');
-    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.slots={};DoppiaNav.refreshCredits();say(SAY.done());}
+    st.versions.push({url:r.url,label:label(),idx:r.resultIdx});st.cur=st.versions.length-1;if(st.act==='outfit')st.slots={};DoppiaNav.refreshCredits();say(SAY.done());}
   catch(e){toast(e.message||'failed');say(SAY[st.act]);if(e.c402)setTimeout(()=>location.href='/billing',1200)}
   finally{st.busy=false;renderStage();renderPanel();}});
 
 // ── 피드(이 페이지 결과만) ──
-function card(r){const u='/images/'+String(r.file_path||'').split('/').pop();return `<div class="rt" onclick="location.href='/creation?idx=${r.idx}'"><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r.model||'')}</span><span class="a"><span title="Continue from this" data-u="${esc(u)}">↩</span><span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
+function card(r){const u='/images/'+String(r.file_path||'').split('/').pop();return `<div class="rt" onclick="location.href='/creation?idx=${r.idx}'"><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r.model||'')}</span><span class="a"><span title="Continue from this" data-u="${esc(u)}">↩</span><span title="Delete" data-del="${r.idx}">🗑</span><span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
 async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const d=(await(await fetch('/api/generate/results?type=photo&limit=120')).json()).data||[];const rows=d.filter(r=>r.file_path&&r.template_name===TEMPLATE);if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(card).join('');}catch(e){$('#feedEmpty').hidden=false}}
-$('#feed').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;e.stopPropagation();st.versions.push({url:b.dataset.u,label:'From Library'});st.cur=st.versions.length-1;$$('.stage .tabs [data-f]')[0].click();renderStage();});
+$('#feed').addEventListener('click',e=>{const x=e.target.closest('[data-del]');if(x){e.stopPropagation();removeResult(+x.dataset.del);return}const b=e.target.closest('[data-u]');if(!b)return;e.stopPropagation();st.versions.push({url:b.dataset.u,label:'From Library'});st.cur=st.versions.length-1;$$('.stage .tabs [data-f]')[0].click();renderStage();});
 
 // ── 부팅 ──
 function boot(){loadMine().then(renderHello);DoppiaNav.tools().then(T=>{st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length);st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);if(st.model)renderPanel();});}
