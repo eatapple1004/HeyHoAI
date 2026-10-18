@@ -158,7 +158,7 @@ app.use('/hansung', (req, res, next) => {
 
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
-app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
+app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, setHeaders: require('./lib/staticCache').setStaticCache })); // (10-18) 사진·영상 CDN 캐시
 
 // 메인페이지 — SaaS 랜딩
 app.get('/', (_req, res) => {

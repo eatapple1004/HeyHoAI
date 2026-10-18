@@ -109,7 +109,9 @@ async function bootstrap() {
     return next();
   });
 
-  app.useStaticAssets(PUBLIC_DIR, { index: false });
+  // (10-18) 사진·영상·폰트는 Cloudflare 가 캐시하도록(기본 max-age=0 이라 매번 서버 재확인 → 장당 0.5~1초)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  app.useStaticAssets(PUBLIC_DIR, { index: false, setHeaders: require(path.join(__dirname, '..', 'src', 'lib', 'staticCache.js')).setStaticCache });
   app.useStaticAssets(path.join(process.cwd(), 'tmp', 'bgm'), { prefix: '/bgm' });
   // ffmpeg.wasm 자체 호스팅 — Worker는 동일 출처여야 로드된다.
   app.useStaticAssets(path.join(process.cwd(), 'node_modules/@ffmpeg/ffmpeg/dist/esm'), { prefix: '/vendor/ffmpeg' });
