@@ -130,7 +130,7 @@ const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(temp
 // 모델 = GET /api/shoot/models 한 줄: 공식 로스터(official — 유나 + Soul 2 앵커를 같은 공정으로 학습, 모두에게 보임) 뒤에 내 것(src/shoot/shootModel.service.js).
 //   bank = 같은 사람·같은 옷으로 장면마다 Soul 2 로 뽑아 둔 사진들. 옛 로스터 200명은 기준 미달(사용자 10-16)이라 안 쓴다. 진행 중이면 6초마다 다시 본다.
 let MINE=[];const BUSY=['angles','training','bank'];const STATUS={training:'Training…',bank:'Shooting scenes',failed:'Failed'};
-const TRAIN_COST=3310,ANGLES_COST=2760; // credit.service IMG_CREDIT['shoot-train'](10-18 v2)  · 다각도 = pro 115 × 24 컷(얼굴 학습셋)
+const TRAIN_COST=2170,ANGLES_COST=2760; // credit.service IMG_CREDIT['shoot-train'](10-18 v2)  · 다각도 = pro 115 × 24 컷(얼굴 학습셋)
 const toModel=m=>({id:m.id,name:m.name,tag:(m.official?'Doppia model · ':'Your model · ')+(m.profileLine||'a person'),profileLine:m.profileLine,avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
@@ -318,7 +318,7 @@ $('#tgrid').addEventListener('click',e=>{const b=e.target.closest('.tc');if(!b)r
 $('#tplModal').addEventListener('click',e=>{if(e.target.closest('[data-close]')||e.target===e.currentTarget)$('#tplModal').hidden=true;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#tplModal').hidden=true;});
 function ready(){return st.act==='shot'?!!st.shot.trim():st.act==='outfit'?filled().length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
-const SHOT_COST=185; // credit.service IMG_CREDIT.soul 자리값과 같이 간다
+const SHOT_COST=10; // credit.service IMG_CREDIT.soul(10-18 v2)과 같이 간다
 function renderGo(){const t=tool(),L={shot:'Shoot',outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act],shot=st.act==='shot';$('#go').disabled=st.busy||!ready()||(!shot&&!t);$('#go').firstChild.textContent=L+' ';$('#cost').textContent=shot?(SHOT_COST*st.shotN).toLocaleString('en-US'):t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)

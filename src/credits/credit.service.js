@@ -21,7 +21,7 @@ const IMG_CREDIT = {
   'pro-4k': [205, 310],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
   'gpt-image-2': [60, 90],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [215, 325],  // 상위 티어 — gpt-image 계열 high 1536px 공시 최대 ≈$0.25 → 바닥 340
-  'shoot-train': [3310, 3310],   // (10-18) 실원가 ≈$3.89 × 850 (경쟁사 Freepik 학습 $2.18·Krea LoRA $1.00 — 원가가 더 높아 바닥가)
+  'shoot-train': [2170, 2170],   // (10-18 v2) Soul ID 학습 $2.50 + 뱅크 8장면 × $0.006 = $2.55 × 850. 다각도 24장은 따로(pro × 24) 받으므로 여기 안 넣는다
   // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. 원가 확정 전 pro 근사(placeholder, CLAUDE.md 가격 규칙).
   //   실원가 참고: Seedream v4.5(fal) $0.03/장 · FLUX dev(fal) $0.025/장 · FLUX 1.1 Pro(Replicate) $0.04/장 → 전부 pro보다 싸서 마진 바닥 위.
   seedream: [35, 55],    // (10-18 fal 단가 API) $0.04/장
@@ -39,7 +39,7 @@ const IMG_CREDIT = {
   recraft: [30, 45],             // $0.035/장
   'z-image': [10, 15],           // $0.005/MP — 최소 단가 20
   'grok-imagine': [70, 105],    // xAI 공시 $0.04~0.08 → 최대치 기준
-  soul: [115, 175],              // Higgsfield 단가 미공개 — pro 근사 유지
+  soul: [10, 15],               // (10-18 v2) Higgsfield Soul 2 실원가 ≈$0.006/장(shootModel.service 기록) × 850 → 최소 단가 10. Shoot 1컷도 이 값
   upscale: [140, 210], // Topaz(fal) $0.01/출력MP — 4배(≈16MP) $0.16 → 바닥 218
   removebg: [10, 15], // BiRefNet(fal) $0.000575/계산초 — 1장 <$0.01, 최소 단가 20
   faceswap: [45, 70], // fal face-swap $0.001/장 · Easel 고급형 ≈$0.05 → 둘 중 비싼 쪽 바닥 68
