@@ -22,7 +22,7 @@ const cookieParser = require('cookie-parser');
 //   ⚠️ **더 이상 게이트가 아니다**(2026-08-11 프론트 이관). 이제 웹훅을 뺀 모든 요청이 Nest로 먼저 들어가고,
 //      Nest가 못 잡은 것만 정적 → 레거시 순으로 흘러내린다(아래 bootstrap 참고).
 //      배열은 "무엇을 Nest가 소유하는가"를 기록·로깅하는 원장으로 남긴다.
-const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard', '/api/brand-kit', '/api/teams', '/api/affiliate', '/api/recipes', '/api/studio', '/api/marketplace', '/api/characters', '/api/images', '/api/videos', '/api/visuals', '/api/template-data', '/api/admin/trials', '/api/trial', '/api/contents', '/api/publish-jobs', '/api/admin/creations', '/api/admin/stats', '/api/admin/usage', '/api/admin/proposal', '/api/admin/refine', '/api/admin/refunds', '/api/admin/users', '/api/admin/business-meta', '/api/admin/business', '/api/auth', '/api/pack', '/api/accounts', '/api/generate', '/api/ad-studio', '/api/diagnose', '/api/admin/diagnose', '/api/shoot'];
+const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard', '/api/brand-kit', '/api/teams', '/api/affiliate', '/api/recipes', '/api/studio', '/api/marketplace', '/api/characters', '/api/images', '/api/videos', '/api/visuals', '/api/template-data', '/api/admin/trials', '/api/trial', '/api/contents', '/api/publish-jobs', '/api/admin/creations', '/api/admin/stats', '/api/admin/usage', '/api/admin/proposal', '/api/admin/refine', '/api/admin/refunds', '/api/admin/users', '/api/admin/business-meta', '/api/admin/business', '/api/auth', '/api/pack', '/api/accounts', '/api/generate', '/api/ad-studio', '/api/diagnose', '/api/admin/diagnose', '/api/shoot', '/api/messenger'];
 // /api/billing 접두사에 걸리지만 레거시로 남겨둘 경로 = 웹훅(raw body·무인증, index.js에 json 파싱 전 직접 마운트).
 //   Nest로 넘기면 body가 json 파싱돼 서명검증이 깨지고 가드가 401을 냄 → 반드시 예외 처리.
 const NEST_EXCLUDE = ['/api/billing/webhook', '/api/billing/eximbay/status', '/api/billing/portone/webhook'];
@@ -55,7 +55,8 @@ async function bootstrap() {
   //   ⚠️ 파싱은 Nest 경로에만 적용 — 레거시 경로는 레거시 자체 파서가 처리(이중파싱/limit 충돌 회피).
   const cookieMw = cookieParser();
   // 바디 상한도 레거시(src/index.js)와 동일하게 50mb — 10mb였을 때 제안서 저장 등 큰 data URL 요청이 413으로 깨졌다(실측).
-  const jsonMw = express.json({ limit: '50mb' });
+  // (10-18) rawBody — LINE 웹훅 서명(HMAC of raw body) 검증용. verify 는 파싱 전 원문 버퍼를 req.rawBody 에 둔다.
+  const jsonMw = express.json({ limit: '50mb', verify: (req: any, _res: any, buf: Buffer) => { req.rawBody = buf; } });
   server.use((req: any, res: any, next: any) => {
     const p = req.path || req.url || '';
     // 웹훅만 레거시로 직행한다 — **파싱하기 전에** 넘겨야 raw body 서명검증이 살아 있다.

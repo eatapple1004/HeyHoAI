@@ -441,6 +441,23 @@ async function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_shoot_angle_jobs_user ON shoot_angle_jobs(user_id);
   `);
+  // (2026-10-18) 메신저 입구(LINE 먼저, 카톡 뒤) — src/messenger/messenger.repository.js. 채널 사용자 ↔ 섀도 계정 + 세션
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messenger_users (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        channel       VARCHAR(16) NOT NULL,
+        external_id   VARCHAR(128) NOT NULL,
+        user_id       UUID NOT NULL,
+        lang          VARCHAR(8) NOT NULL DEFAULT 'ja',
+        menu          VARCHAR(16),
+        model_id      UUID,
+        last_result   TEXT,
+        free_left     INT NOT NULL DEFAULT 3,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (channel, external_id)
+    );
+  `);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
   await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);

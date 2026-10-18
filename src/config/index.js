@@ -112,6 +112,9 @@ const envSchema = z.object({
   FAL_MODEL: z.string().default('fal-ai/flux/dev'),
   // (2026-10-13) xAI(Grok Imagine)·Higgsfield(Soul) — 키가 없으면 registry.isToolAvailable 이 해당 툴을 목록에서 뺀다.
   XAI_API_KEY: z.string().optional(),
+  // (2026-10-18) LINE Messaging API — 메신저 입구(src/messenger/line.service.js). 둘 다 있어야 켜진다.
+  LINE_CHANNEL_SECRET: z.string().optional(),
+  LINE_CHANNEL_ACCESS_TOKEN: z.string().optional(),
   HIGGSFIELD_API_KEY: z.string().optional(), // open.higgsfield.ai 콘솔이 주는 키 한 줄. 문서상 "Key <id>:<secret>" 형식이면 그대로(콜론 포함) 넣는다.
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_IMAGE_MODEL: z.string().default('gemini-2.5-flash-image'),

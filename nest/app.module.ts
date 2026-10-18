@@ -33,6 +33,7 @@ import { BusinessModule } from './business/business.module';
 import { BusinessMetaModule } from './business-meta/business-meta.module';
 import { AdminUsersModule } from './admin-users/admin-users.module';
 import { ShootModule } from './shoot/shoot.module';
+import { MessengerModule } from './messenger/messenger.module';
 
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
@@ -67,6 +68,7 @@ import { ShootModule } from './shoot/shoot.module';
     BusinessMetaModule,  // Meta 직결 인스타 연동(/api/admin/business-meta) — Zernio 대안 실측용
     AdminUsersModule,    // 환경별 사용자·생성물 조회(/api/admin/users)
     ShootModule,         // (2026-10-16) Doppia Shoot — 내 모델 만들기(Soul ID 학습 + 장면 뱅크, /api/shoot)
+    MessengerModule,     // (2026-10-18) 메신저 입구 — LINE 웹훅(/api/messenger), 카톡은 뒤에
     AdminPaymentsModule, // 환경별 결제 조회(/api/admin/payments)
     DiagnoseModule,      // 진단 퍼널 저장(/api/diagnose 공개 · /api/admin/diagnose 관리자)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
