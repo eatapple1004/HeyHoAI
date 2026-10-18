@@ -621,7 +621,7 @@ let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
 let gatePassed = false;                // 레퍼 소프트 게이트 통과 여부
 let gateDepth = 0, gateTotal = 0;      // 게이트에서 고른 컷 수 / 전체
 let gateVideo = false;                 // 게이트에서 "영상도 같이" 선택 여부(기본 꺼짐 — 명시 선택만 과금)
-const PACK_CUT_CR = 300;               // 컷 1장 크레딧(= 서버 credit.service IMG_CREDIT['pro'][1] template). 변경 시 동기화.
+const PACK_CUT_CR = 175;               // 컷 1장 크레딧(= 서버 credit.service IMG_CREDIT['pro'][1] template). 변경 시 동기화.
 const verIdx = {};                     // slotId → 보고 있는 버전 인덱스(기본 최신)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
