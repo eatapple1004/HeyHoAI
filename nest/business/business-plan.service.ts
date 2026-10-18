@@ -286,7 +286,7 @@ export class BusinessPlanService {
     const item = await this.assertItem(planId, itemId);
     // 피드백(수정 요청 메모)은 어느 단계에서나 남길 수 있다 — 고객 확인 중에 받은 의견을 적어 두는 칸이다.
     const onlyFeedback = Object.keys(body).every((k) => k === 'feedback');
-    if (!onlyFeedback) this.assertDraft(plan);
+    if (!onlyFeedback) { this.assertDraft(plan); this.assertNotPublished(item); }
 
     const patch: Record<string, unknown> = {};
     if (body.postAt !== undefined) patch.post_at = this.parsePostAt(body.postAt, plan.month);
@@ -319,6 +319,7 @@ export class BusinessPlanService {
     const plan = await this.assertPlan(businessId, planId);
     this.assertDraft(plan);
     const item = await this.assertItem(planId, itemId);
+    this.assertNotPublished(item);
     const images = (files || []).filter((f) => f && String(f.mimetype || '').startsWith('image/'));
     if (!images.length) throw new BadRequestException('사진 파일(jpg·png·webp)을 올려 주세요');
     const room = 10 - item.source_media_ids.length;
@@ -335,13 +336,14 @@ export class BusinessPlanService {
     const plan = await this.assertPlan(businessId, planId);
     this.assertDraft(plan);
     const item = await this.assertItem(planId, itemId);
+    this.assertNotPublished(item);
     return this.repo.updateItem(item.id, { source_media_ids: item.source_media_ids.filter((id) => id !== mediaId) });
   }
 
   async removeItem(businessId: string, planId: string, itemId: string): Promise<void> {
     const plan = await this.assertPlan(businessId, planId);
     this.assertDraft(plan);
-    await this.assertItem(planId, itemId);
+    this.assertNotPublished(await this.assertItem(planId, itemId));
     await this.repo.deleteItem(itemId);
   }
 
@@ -373,11 +375,14 @@ export class BusinessPlanService {
       return this.repo.updatePlan(planId, { status: 'approved', customer_approved_at: now });
     }
     if (action === 'request_changes') {
-      if (!['doppia_approved', 'sent', 'approved'].includes(plan.status)) throw new BadRequestException('이 단계에서는 수정 요청을 받을 수 없습니다');
-      return this.repo.updatePlan(planId, {
+      if (!['doppia_approved', 'sent', 'approved', 'scheduled'].includes(plan.status)) throw new BadRequestException('이 단계에서는 수정 요청을 받을 수 없습니다');
+      // 예약 완료에서 되돌리면: 아직 안 올라간 예약은 발행 큐에서 빼고, 이미 게시(중)된 칸은 잠근 채 남긴다
+      const unscheduled = plan.status === 'scheduled' ? await this.unschedule(planId) : null;
+      const updated = await this.repo.updatePlan(planId, {
         status: 'draft', customer_feedback: body.feedback ? String(body.feedback).slice(0, 2000) : plan.customer_feedback,
-        doppia_approved_at: null, sent_at: null, customer_approved_at: null,
+        doppia_approved_at: null, sent_at: null, customer_approved_at: null, scheduled_at: null,
       });
+      return unscheduled ? { ...updated, unscheduled } : updated;
     }
     throw new BadRequestException('action은 doppia_approve | send | customer_approve | request_changes');
   }
@@ -416,6 +421,28 @@ export class BusinessPlanService {
   }
 
   // ── 내부 ──
+
+  /** 플랜의 예약을 거둔다 → { cancelled, kept }. kept = 이미 게시됐거나 게시 중이라 못 거둔 칸 */
+  private async unschedule(planId: string) {
+    let cancelled = 0;
+    const kept: string[] = [];
+    for (const it of await this.repo.itemsOf(planId)) {
+      if (!it.queue_id) continue;
+      const q = await this.biz.findQueue(it.queue_id);
+      if (!q || (await this.biz.removeQueueIfUnpublished(it.queue_id))) {
+        await this.repo.updateItem(it.id, { queue_id: null });
+        if (q) cancelled += 1;
+      } else {
+        kept.push(this.label(it) + (q.status === 'posted' ? '(게시됨)' : '(게시 중)'));
+      }
+    }
+    return { cancelled, kept };
+  }
+
+  /** 이미 발행 큐에 들어간(=게시됐거나 게시 중인) 칸은 고칠 수 없다 */
+  private assertNotPublished(item: PlanItemVo) {
+    if (item.queue_id) throw new BadRequestException('이미 게시됐거나 게시 중인 칸은 수정할 수 없습니다');
+  }
 
   /** 칸마다 무엇이 비었는지 사람이 읽을 문장으로 */
   private readiness(items: PlanItemVo[], media: any[]): string[] {

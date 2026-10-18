@@ -53,6 +53,7 @@ export class BusinessPlanPackService {
    */
   async start(user: any, businessId: string, planId: string, itemId: string) {
     const { item } = await this.assert(businessId, planId, itemId);
+    if (item.queue_id) throw new BadRequestException('이미 게시됐거나 게시 중인 칸은 다시 만들 수 없습니다');
     const sources = await this.ownSources(businessId, item);
     this.assertStartable(item);
     await this.plans.updateItem(item.id, { gen_status: 'generating', gen_stage: 'queued', gen_error: null });
