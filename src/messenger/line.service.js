@@ -179,6 +179,8 @@ async function run(row, lang, inputName, slug) {
 // ── 이벤트 ──
 async function onEvent(ev) {
   const externalId = ev.source && ev.source.userId;
+  // (10-18) 이벤트 종류 로그 — "친구추가 뒤 아무것도 안 온다" 추적용(follow 가 서버까지 오는지 / 어떤 메시지 타입인지). 사용자 ID 는 앞 6자만
+  logger.info({ type: ev.type, msg: ev.message && ev.message.type, data: ev.postback && ev.postback.data, who: String(externalId || '').slice(0, 6) }, 'line event');
   if (!externalId) return;
   const row = await ensureUser(externalId);
   const lang = row.lang || 'ja'; const L = t(lang);
