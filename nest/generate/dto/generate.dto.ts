@@ -11,7 +11,7 @@ export interface ToolDto {
   controls: Record<string, unknown>;
   imageSlots: unknown[];
   /** 커스텀 생성 단가(◈). image=장당, video=길이별 */
-  pricing: { perImage?: number; perDuration?: Record<string, number> };
+  pricing: { perImage?: number; perDuration?: Record<string, number>; perSec?: Record<string, number> | null };
   /** 영상만: 레퍼런스 이미지 받는지(reference-to-video) · 최대 장수 · 시작 프레임 없이 생성 가능한지(text-to-video) */
   refModel?: boolean;
   refInput?: { max: number } | null;
@@ -33,7 +33,7 @@ export interface ToolsDto {
   /** Face swap 대상 프리셋(우리 모델) */
   faceswapTargets: { id: string; label: string; url: string }[];
   /** Video Editor AI 도구(op)별 사용 가능 엔진 */
-  videoEditor: { op: string; label: string; why: string; min: number; max: number; engines: { id: string; label: string; provider: string; perDuration: Record<string, number> }[] }[];
+  videoEditor: { op: string; label: string; why: string; min: number; max: number; engines: { id: string; label: string; provider: string; perDuration: Record<string, number>; perSec?: Record<string, number> | null }[] }[];
 }
 
 /** Image Editor op 1개 — engine = 자동 선택(마스크 있을 때), engineNoMask = 마스크 없을 때 다른 경우만 */

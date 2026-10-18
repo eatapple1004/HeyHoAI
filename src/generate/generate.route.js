@@ -254,6 +254,8 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
       ? (sizeList.map((x) => String(x).toUpperCase()).includes(reqSize) && reqSize !== '1K' ? reqSize : null)
       : ((model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null);
     const extras = pickExtras(toolDef, req.body.extras) || {}; // 엔진 고유 옵션(registry 선언분만) — 어댑터/OpenAI 파라미터에 합친다
+    // (2026-10-18) GPT Image 화질 high 이상 = 원가 ~3배(1536px 최대 ≈$0.25) → 상위 티어로 청구. 그리는 모델은 registry.model 이라 영향 없음
+    if (toolDef && toolDef.provider === 'openai' && ['high', 'xhigh', 'max'].includes(String(extras.quality || '')) && model !== 'gpt-image-2.5-sunburst') model = 'gpt-image-2-high';
     // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
     const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
 
@@ -1183,7 +1185,7 @@ function videoEditCatalog() {
     const list = videoEditEngines(op);
     if (!list.length) return null;
     return { op, label: d.label, why: d.why, min: d.min, max: d.max,
-      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.videoCost(5, 'pro', false), 10: credit.videoCost(10, 'pro', false) },
+      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.engineVideoCost(t.id, 5, ((t.controls && t.controls.resolution) || [])[0], false), 10: credit.engineVideoCost(t.id, 10, ((t.controls && t.controls.resolution) || [])[0], false) }, perSec: credit.engineVideoRates(t.id), // (10-18) 엔진별 초당 단가
         ...(op === 'reframe' ? { aspects: (t.controls && t.controls.aspectRatio) || [], resolutions: (t.controls && t.controls.resolution) || [], maxSec: t.controls && t.controls.durationRange ? t.controls.durationRange.max : d.max, billPer10s: !!t.billPer10s, noPrompt: !!t.noPrompt } : {}) })) };
   }).filter(Boolean);
 }
@@ -2597,7 +2599,8 @@ const reads = {
     // eslint-disable-next-line global-require
     const credit = require('../credits/credit.service');
     const pricing = (t) => (t.type === 'video'
-      ? { perDuration: Object.fromEntries(((t.controls && t.controls.duration) || [5]).map((d) => [String(d), credit.videoCost(d, 'pro', false)])) }
+      // (10-18) 엔진별 초당 단가 — perDuration = 기본 해상도 칩 값, perSec = {해상도: 초당 크레딧}(화면이 길이·해상도로 계산)
+      ? { perDuration: Object.fromEntries(((t.controls && t.controls.duration) || [5]).map((d) => [String(d), credit.engineVideoCost(t.id, d, ((t.controls && t.controls.resolution) || [])[0], false)])), perSec: credit.engineVideoRates(t.id) }
       : { perImage: credit.imageCost(t.costKey || 'pro', 1, false) }); // image·upscale = 장당
     const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t),
       // (2026-10-13) 영상: 레퍼런스 줄(refModel 있으면 노출, refInput.max 장수) · 시작 프레임 없이도 가능(t2vModel). 엔드포인트 경로 자체는 프론트가 안 쓴다 — 불리언/장수만.

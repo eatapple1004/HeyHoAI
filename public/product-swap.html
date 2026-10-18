@@ -183,7 +183,8 @@ function probeAndSet(url){const v=document.createElement('video');v.preload='met
 
 // ── 엔진·비용 ──
 function clipLen(){const v=st.video;return v?Math.min(MAX,(v.duration||MAX)-(v.in||0)):5;}
-function costOf(id){const e=engines().find(x=>x.id===id)||engines()[0];if(!e||!e.pricing||!e.pricing.perDuration)return null;const p=e.pricing.perDuration;return clipLen()>5.5?(p['10']||p['15']):p['5'];}
+function secCost(ps,dur,res){if(!ps)return null;const r=ps[String(res||'').toLowerCase()]??ps['*'];return Math.max(50,Math.ceil(r*Math.max(1,Math.ceil(+dur||5))/5)*5);} // (10-18) 서버 engineVideoCost 와 같은 계산(초당 단가 × 길이, 5 단위 올림, 최소 50)
+function costOf(id){const e=engines().find(x=>x.id===id)||engines()[0];if(e&&e.pricing&&e.pricing.perSec)return secCost(e.pricing.perSec,clipLen(),'');if(!e||!e.pricing||!e.pricing.perDuration)return null;const p=e.pricing.perDuration;return clipLen()>5.5?(p['10']||p['15']):p['5'];}
 function sync(){const has=engines().length;const ok=has&&st.video&&st.product&&!st.busy;$('#go').disabled=!ok;
   const c=costOf($('#eng').value);$('#cost').textContent=c!=null?c.toLocaleString():'—';
   const n=$('#goNote');if(!has)n.textContent='Product swap is not configured on this server yet.';else if(!st.video)n.textContent='Add a 3–15 second video first.';else if(!st.product)n.textContent='Add a photo of your product.';else n.textContent='Takes 2–6 minutes. The result is saved to your Library — you can leave this page.';}

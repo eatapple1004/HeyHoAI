@@ -97,11 +97,12 @@ function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
   $('#engNote').textContent=NOTE[t.provider]||'';renderSel();cost();}
 $('#durs').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||!b.dataset.v)return;st.dur=b.dataset.v;applyTool()}); // 칩 모드(현재 미사용)
 $('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;chips('#ratios',tool().controls.aspectRatio,st.ratio)});
-$('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.res=b.dataset.v;chips('#ress',tool().controls.resolution,st.res)});
+$('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.res=b.dataset.v;chips('#ress',tool().controls.resolution,st.res);cost();renderSel()});
 $('#audioLock').addEventListener('click',()=>{st.audio=!st.audio;$('#audioLock').classList.toggle('on',st.audio)});
 $('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
 // 길이별 단가 — 서버 videoCost 와 같은 규칙(표에 없는 길이는 5초 초과면 10초 티어, 아니면 5초 티어)
-function costOf(t,dur){const pd=(t&&t.pricing&&t.pricing.perDuration)||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(dur)];if(v==null&&keys.length){const k=+dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}return v||0;}
+function secCost(ps,dur,res){if(!ps)return null;const r=ps[String(res||'').toLowerCase()]??ps['*'];return Math.max(50,Math.ceil(r*Math.max(1,Math.ceil(+dur||5))/5)*5);} // (10-18) 서버 engineVideoCost 와 같은 계산(초당 단가 × 길이, 5 단위 올림, 최소 50)
+function costOf(t,dur){if(t&&t.pricing&&t.pricing.perSec)return secCost(t.pricing.perSec,dur,st.res||((t.controls&&t.controls.resolution)||[])[0]);const pd=(t&&t.pricing&&t.pricing.perDuration)||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(dur)];if(v==null&&keys.length){const k=+dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}return v||0;}
 function cost(){const t=tool();if(!t)return;$('#cost').textContent=costOf(t,st.dur).toLocaleString('en-US');}
 // (2026-10-13) 엔진 고유 옵션 렌더 — registry controls.extras 정본. 타입: values(칩) · toggle(.lock) · number(입력) · text(입력). 값은 st.extras 에, 전송은 FormData 'extras' JSON.
 function renderExtras(host,defs,st){defs=defs||[];st.extras=st.extras||{};const keep={};defs.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;

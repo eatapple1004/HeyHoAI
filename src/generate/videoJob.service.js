@@ -21,6 +21,7 @@ const mediaStore = require('../storage/mediaStore');
 //   ⚠️ 어댑터마다 시작 프레임을 받는 방식이 다르다 — seedance·veo·sora는 data URL/로컬 경로를 삼키지만,
 //   runway·minimax는 API가 직접 받아가는 **공개 URL**이 필요하다(PUBLIC_URL 없으면 제출 거부).
 const resultOrigin = require('./resultOrigin'); // (10-16) 결과물 출처
+const { probeDurationMs } = require('../ugc/assembler/ffmpeg.assembler'); // (10-18) 영상 입력 툴 과금 길이
 const videoProviders = {
   runway: require('../videos/providers/runway.provider'),
   minimax: require('../videos/providers/minimax.provider'),
@@ -192,10 +193,18 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   const aspect = aspectRatio || '9:16';
   const [w, h] = aspect === '16:9' ? [1280, 720] : aspect === '1:1' ? [1024, 1024] : [720, 1280];
 
+  // (2026-10-18) 엔진별 초당 단가(credit.service VIDEO_USD_PER_SEC). 길이 필드가 없는 영상 입력 툴(편집·Reframe·업스케일·모션)은
+  //   결과 길이 = 원본 길이라 화면이 보낸 값 대신 원본을 직접 재서 청구한다.
+  let billDur = dur;
+  const srcVideo = sourceVideoPath || motionVideoPath;
+  if (wantsVideo && srcVideo && !(tool && tool.falInput && tool.falInput.duration)) {
+    const ms = await probeDurationMs(srcVideo);
+    if (ms > 0) billDur = Math.min(toolMax || 60, Math.ceil(ms / 1000));
+  }
+  const billRes = resolution || (Array.isArray(tc.resolution) && tc.resolution[0]) || null;
   const teamId = await teamCredit.activeTeamId(user.id);
   const charge = await teamCredit.chargeGeneration(
-    // billPer10s(Reframe 등 길이를 원본에서 받는 툴) — 10초 넘으면 10초 블록 수만큼(자리값)
-    user, creditService.videoCost(Math.min(dur, 10), 'pro', isTemplate) * (tool && tool.billPer10s && dur > 10 ? Math.ceil(dur / 10) : 1), `릴스 생성 (${dur}s, ${engine})`
+    user, creditService.engineVideoCost(tool ? tool.id : engine, billDur, billRes, isTemplate), `릴스 생성 (${billDur}s${billRes ? ' ' + billRes : ''}, ${engine})`
   );
   const chargeAmount = charge ? charge.amount : 0;
 

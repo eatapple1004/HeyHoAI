@@ -15,31 +15,32 @@ const IMG_CREDIT = {
   pro: [185, 300],                 // Nano Banana Pro (3 Pro Image) 1K/2K — 스튜디오 기본. 원가 $0.134
   'pro-4k': [330, 540],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
   'gpt-image-2': [185, 300],       // pro 티어 근사(별도 원가 확정 전)
-  'gpt-image-2-high': [330, 540],  // 상위 티어 근사
-  'shoot-train': [1500, 1500],     // (2026-10-16) Shoot 내 모델 만들기 1회(자리값). 실원가 ≈ Soul ID 학습 $2.50 + 장면 8장 $0.05 + 다각도 10장 $1.34(사진 1장 경로)
+  'gpt-image-2-high': [345, 555],  // 상위 티어 — gpt-image 계열 high 1536px 공시 최대 ≈$0.25 → 바닥 340
+  'shoot-train': [5300, 5300],   // (2026-10-18) 1500→5300 — 실원가 ≈$3.89(Soul ID $2.50 + 장면 $0.05 + 다각도 $1.34) × 1,361. 1500은 Elite 기준 -43% 역마진이었다     // (2026-10-16) Shoot 내 모델 만들기 1회(자리값). 실원가 ≈ Soul ID 학습 $2.50 + 장면 8장 $0.05 + 다각도 10장 $1.34(사진 1장 경로)
   // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. 원가 확정 전 pro 근사(placeholder, CLAUDE.md 가격 규칙).
   //   실원가 참고: Seedream v4.5(fal) $0.03/장 · FLUX dev(fal) $0.025/장 · FLUX 1.1 Pro(Replicate) $0.04/장 → 전부 pro보다 싸서 마진 바닥 위.
-  seedream: [185, 300],
-  flux: [185, 300],
-  replicate: [185, 300],
-  // (2026-10-13) 2차분 — 전부 자리값. 실원가(벤더 공시): Seedream 5 Pro $0.0675~0.135 · FLUX.2 Pro ~$0.03 · FLUX 3 미확인 · Recraft ~$0.04
+  seedream: [55, 90],    // (10-18 fal 단가 API) $0.04/장
+  flux: [55, 90],        // $0.025/MP × ≈1.5MP = $0.038
+  replicate: [55, 90],   // FLUX 1.1 Pro $0.04/장
+  // (2026-10-18) 이미지 단가 재설정 — fal 단가 API·구글 단가표 실측. 규칙: 커스텀 = 원가$ × 1,361(Elite 마진 50% 바닥)을 5 단위 올림, 템플릿 ≈ 커스텀 × 1.6.
+  // (2026-10-13) 2차분 — 아래 주석의 벤더 공시는 당시 기록. 실원가(벤더 공시): Seedream 5 Pro $0.0675~0.135 · FLUX.2 Pro ~$0.03 · FLUX 3 미확인 · Recraft ~$0.04
   //   · Z-Image ~$0.005 · Grok Imagine 2 $0.04~0.08 · GPT Image 2.5 미확인 · Soul 미확인. 싼 것(flash급)은 flash, 나머지는 pro 근사.
-  'nano-banana-2.1': [55, 90],
+  'nano-banana-2.1': [70, 115],   // (10-18 구글 단가표) 1K $0.0336 · 2K $0.0504 → 바닥 69. 4K($0.113)는 generate.route 가 pro-4k 로 청구
   'gpt-image-2.5-sunburst': [330, 540],
-  'gpt-image-2.5-flare': [185, 300],
-  'seedream-5-pro': [185, 300],
-  'flux-2-pro': [185, 300],
-  'flux-3': [185, 300],
-  recraft: [185, 300],
-  'z-image': [55, 90],
-  'grok-imagine': [185, 300],
-  soul: [185, 300],
-  upscale: [90, 150], // Topaz(fal) 업스케일 1장 — 자리값(실원가 ~$0.05~0.1)
-  removebg: [30, 50], // BiRefNet(fal) 배경 제거 1장 — 자리값(실원가 ~$0.01)
-  faceswap: [90, 150], // (10-16) Face swap(fal Easel/face-swap) 1장 — 자리값. 실원가 ~$0.03~0.05 → 바닥 ~68
-  'bria-eraser': [90, 150], // (10-16) Bria Eraser(fal) 지우기 1장 — 자리값. 실원가 ~$0.04 → 바닥 55
-  'qwen-angles': [110, 180], // (10-16) Editor Angles — Qwen Image Edit 2511 Multiple-Angles(fal) 1장 — 자리값. 실원가 $0.035/MP × 사본 ≤1536(≈1.8MP) ≈ $0.065 → 바닥 ~90
-  'flux-fill': [185, 300], // (10-16) FLUX.1 Fill pro(fal) Editor 마스크 채우기 1장 — 자리값. 실원가 $0.05/MP × 사본 ≤2.4MP(긴 변 1536) ≈ $0.12 → 바닥 163 → pro 동일가
+  'gpt-image-2.5-flare': [185, 300],   // OpenAI 단가 미공개 — pro 근사 유지
+  'seedream-5-pro': [185, 300],  // $0.0675/장(2K) · 4K 최대 $0.135 → 바닥 184
+  'flux-2-pro': [125, 200],      // $0.03/처리MP — 참조 포함 ≈3MP = $0.09
+  'flux-3': [135, 215],          // $0.048/MP × 2MP = $0.096
+  recraft: [50, 80],             // $0.035/장
+  'z-image': [20, 35],           // $0.005/MP — 최소 단가 20
+  'grok-imagine': [110, 175],    // xAI 공시 $0.04~0.08 → 최대치 기준
+  soul: [185, 300],              // Higgsfield 단가 미공개 — pro 근사 유지
+  upscale: [220, 350], // Topaz(fal) $0.01/출력MP — 4배(≈16MP) $0.16 → 바닥 218
+  removebg: [20, 35], // BiRefNet(fal) $0.000575/계산초 — 1장 <$0.01, 최소 단가 20
+  faceswap: [70, 115], // fal face-swap $0.001/장 · Easel 고급형 ≈$0.05 → 둘 중 비싼 쪽 바닥 68
+  'bria-eraser': [55, 90], // Bria Eraser(fal) $0.04/장 → 바닥 55
+  'qwen-angles': [90, 145], // Qwen Multiple-Angles(fal) $0.035/MP × ≈1.8MP = $0.063 → 바닥 86
+  'flux-fill': [165, 265], // FLUX.1 Fill pro(fal) $0.05/MP × ≤2.4MP = $0.12 → 바닥 163
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
@@ -54,6 +55,49 @@ const VIDEO_CREDIT = {
   5: [820, 1250],
   10: [1580, 2500],
 };
+// ─── 엔진별 영상 단가 (2026-10-18) — 초당 원가(USD)·해상도별. fal 모델 페이지/단가 API·구글 단가표 실측.
+//   크레딧 = 초당 원가 × 길이 × 1,361(Elite 마진 50% 바닥) → 5 단위 올림. 템플릿 = ×1.5. 최소 50.
+//   키 = 해상도(소문자), '*' = 그 외/기본. 여기 없는 엔진(kling 직결)은 VIDEO_CREDIT 표를 쓴다.
+//   (추정) 표시 = 벤더 미공개라 비슷한 엔진 단가로 근사.
+const CR_PER_USD = 1361;
+const VIDEO_USD_PER_SEC = {
+  runway: { '*': 0.05 },                                        // gen4_turbo 5cr/s × $0.01
+  veo: { '*': 0.40, '4k': 0.60 },                               // Veo 3.1 Standard(오디오 포함)
+  minimax: { '*': 0.072 },                                      // Hailuo 01 ≈ $0.43/6초 (추정)
+  seedance: { '480p': 0.212, '*': 0.3024, '1080p': 0.605 },     // Seedance 2.0 — 720p 는 URL to Ad 와 같은 값, 480p·1080p 는 0.7·2배 (추정)
+  'seedance-2.5': { '480p': 0.2205, '*': 0.473, '1080p': 1.164 }, // 토큰 과금($0.0214/1K) 16:9 환산
+  'seedance-2.5-edit': { '480p': 0.2205, '*': 0.473, '1080p': 1.164 },
+  'seedance-2.5-extend': { '480p': 0.2205, '*': 0.473, '1080p': 1.164 },
+  'wan-3': { '480p': 0.05, '*': 0.10, '1080p': 0.20 },
+  'hailuo-2.3': { '*': 0.0467 },                                // $0.28/6초
+  'minimax-h3': { '480p': 0.05, '*': 0.06, '2k': 0.13, '4k': 0.16 },
+  'grok-video': { '480p': 0.0504, '*': 0.0704 },                // + 입력 이미지 $0.002
+  happyhorse: { '*': 0.14, '1080p': 0.18 },
+  'flux-3-video': { '*': 0.17, '1080p': 0.29, '2k': 0.32, '4k': 0.47 },
+  'kling-motion': { '*': 0.168 },
+  'kling-o3-edit': { '*': 0.14 },
+  'kling-edit': { '*': 0.168 },                                 // Higgsfield 미공개 — fal Kling v3 Pro 근사 (추정)
+  genjutsu: { '*': 0.168 },                                     // Higgsfield 미공개 (추정)
+  'ltx-reframe': { '*': 0.10, '1080p': 0.20 },                  // 입력 영상 길이 기준
+  'luma-reframe': { '*': 0.20 },                                // (숨김) 미확인 — 보수값
+  'topaz-video': { '*': 0.16 },                                 // 1080p 초과 출력 $0.08/s × 60fps 2배
+  'gemini-omni': { '*': 0.40 },                                 // (숨김) 미확인 — Veo 급 보수값
+};
+const ceil5 = (n) => Math.ceil(n / 5) * 5;
+/** 엔진 영상 1편 비용. 표에 없는 엔진은 레거시 videoCost(Kling 5/10초 표). */
+function engineVideoCost(engine, durationSec, resolution, isTemplate = false) {
+  const t = VIDEO_USD_PER_SEC[engine];
+  const d = Math.max(1, Math.ceil(Number(durationSec) || 5));
+  if (!t) return videoCost(d, 'pro', isTemplate);
+  const usd = t[String(resolution || '').toLowerCase()] ?? t['*'];
+  const custom = Math.max(50, ceil5(usd * d * CR_PER_USD));
+  return isTemplate ? ceil5(custom * 1.5) : custom;
+}
+/** 화면용 — 해상도별 초당 크레딧(소수 둘째 자리). 화면은 ceil5(perSec × 길이)로 서버와 같은 값을 낸다. */
+function engineVideoRates(engine) {
+  const t = VIDEO_USD_PER_SEC[engine];
+  return t ? Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v * CR_PER_USD])) : null;
+}
 // ─── Ad Video 화질 티어 (2026-07-27) — low=Flash프레임+Kling Std / high=Pro2K프레임+Kling Pro. 5s 씬·커스텀 기준.
 //   근거: docs/티어_low_high_가격설계_2026-07-27.md. 원가$×1,361(Elite 50% 바닥). low $0.459→625 · high $0.694→945.
 //   ⚠️ 팩 비디오는 미적용 — quality 미지정 시 videoCost(레거시 810) 유지(팩 현행 보존).
@@ -301,6 +345,9 @@ module.exports = {
   getLedger,
   addCredits,
   deductCredits,
+  engineVideoCost,
+  engineVideoRates,
+  VIDEO_USD_PER_SEC,
   charge,
   chargeForGeneration,
   grantSignupBonus,
