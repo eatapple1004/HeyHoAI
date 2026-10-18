@@ -407,6 +407,13 @@ export class BusinessRepository {
     return r.rows[0] || null;
   }
 
+  /** 아직 발행 전인 큐만 지운다(조건부 DELETE — 스케줄러가 집어 간 publishing·posted는 건드리지 않는다) */
+  async removeQueueIfUnpublished(id: string): Promise<BusinessQueueVo | null> {
+    const r = await this.db.query<BusinessQueueVo>(
+      `DELETE FROM post_queue WHERE id = $1 AND status NOT IN ('publishing', 'posted') RETURNING *`, [id]);
+    return r.rows[0] || null;
+  }
+
   async removeQueue(id: string): Promise<BusinessQueueVo | null> {
     const r = await this.db.query<BusinessQueueVo>(
       'DELETE FROM post_queue WHERE id = $1 RETURNING *', [id]);

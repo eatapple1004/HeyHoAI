@@ -337,7 +337,8 @@ function renderPlan() {
     A.push('<button onclick="requestChanges()">↩ 초안으로 (수정)</button><span style="flex:1"></span>');
     A.push('<button class="primary" onclick="schedule()" id="schBtn">📅 발행 큐에 일괄 예약</button>');
   } else if (p.status === 'scheduled') {
-    A.push('<span class="ready">예약 완료 — 날짜마다 자동으로 게시됩니다. 진행 상황은 <a href="/admin-business/' + BIZ_ID + '">사업체 화면의 발행 큐</a>에서 봅니다.</span>');
+    A.push('<button onclick="unschedule()">↩ 예약 취소하고 수정</button>');
+    A.push('<span class="ready" style="margin-left:8px">예약 완료 — 날짜마다 자동으로 게시됩니다. 진행 상황은 <a href="/admin-business/' + BIZ_ID + '">사업체 화면의 발행 큐</a>에서 봅니다.</span>');
   }
   if (p.status !== 'scheduled') A.push('<button class="sm danger" onclick="deletePlan()" style="margin-left:6px">플랜 삭제</button>');
   $('actions').innerHTML = A.join('');
@@ -365,7 +366,7 @@ function renderCal() {
         : '<div class="noth">' + esc((it.brief || '콘텐츠 없음').slice(0, 60)) + '</div>';
       return '<div class="it" onclick="openItem(\'' + it.id + '\')">' + th + '<div class="mt"><span class="fmt ' + it.format + '">' + FMT_KO[it.format] + '</span>'
         + '<span class="okdot ' + (readiness(it) ? 'y' : 'n') + '" title="' + (readiness(it) ? '준비됨' : '콘텐츠·캡션 필요') + '"></span>'
-        + (it.queue_id ? ' <span class="prog">예약됨</span>' : '')
+        + (it.queue_id ? ' <span class="prog">' + (cur.plan.status === 'scheduled' ? '예약됨' : '🔒게시됨') + '</span>' : '')
         + ((it.source_media_ids || []).length ? ' <span class="prog" title="이 게시물 전용 원본">📷' + it.source_media_ids.length + '</span>' : '')
         + (it.gen_status === 'generating' ? '<div class="stage">⏳ ' + esc(stageKo(it.gen_stage)) + '</div>' : '')
         + (it.gen_status === 'failed' ? '<div class="stage fail">⚠ 팩 실패</div>' : '')
@@ -465,6 +466,18 @@ async function move(action) {
   try { await api(base() + '/' + cur.plan.id + '/status', { method: 'POST', body: JSON.stringify({ action }) }); await loadPlans(cur.plan.id); flash('ok', '단계를 넘겼습니다.'); }
   catch (e) { flash('err', e.message); }
 }
+/** 예약 완료 → 초안. 아직 안 올라간 예약은 발행 큐에서 빼고, 이미 게시(중)된 칸은 잠긴 채 남는다 */
+async function unschedule() {
+  clearMsg();
+  const fb = prompt('예약을 취소하고 초안으로 되돌립니다.\n아직 게시되지 않은 예약은 발행 큐에서 빠지고, 이미 게시된 칸은 그대로 남습니다.\n\n수정 이유 (선택)', '');
+  if (fb === null) return;
+  try {
+    const { data } = await api(base() + '/' + cur.plan.id + '/status', { method: 'POST', body: JSON.stringify({ action: 'request_changes', feedback: fb.trim() || undefined }) });
+    await loadPlans(cur.plan.id);
+    const u = data.unscheduled || { cancelled: 0, kept: [] };
+    flash('ok', '초안으로 되돌렸습니다 — 예약 ' + u.cancelled + '건 취소' + (u.kept.length ? ' · 이미 게시돼 남긴 칸: ' + u.kept.join(', ') : '') + '. 고친 뒤 다시 검수 → 승인 → 예약하면 됩니다.');
+  } catch (e) { flash('err', e.message); }
+}
 async function requestChanges(fromCustomer) {
   const fb = prompt(fromCustomer ? '고객이 요청한 수정 내용을 적어 주세요 (AI 재초안에도 반영됩니다)' : '수정 이유 (선택)', '');
   if (fb === null) return;
@@ -501,10 +514,11 @@ async function addItem() {
 function openItem(id) {
   editing = cur.items.find((x) => x.id === id);
   if (!editing) return;
-  const draft = cur.plan.status === 'draft';
+  const draft = editable(editing);
   picked = [...editing.media_ids];
   const d = kst(editing.post_at);
-  $('dTitle').textContent = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '(' + DOW[d.getUTCDay()] + ') 게시물' + (draft ? '' : ' — 보기 전용');
+  $('dTitle').textContent = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '(' + DOW[d.getUTCDay()] + ') 게시물'
+    + (draft ? '' : editing.queue_id && cur.plan.status === 'draft' ? ' — 이미 게시됨(수정 불가)' : ' — 보기 전용');
   $('dWhen').value = kstLocalInput(editing.post_at);
   $('dFmt').value = editing.format;
   $('dTheme').value = editing.theme || '';
@@ -519,10 +533,12 @@ function openItem(id) {
   renderOwn(); renderPackStatus();
   $('drawer').classList.add('show');
 }
+/** 고칠 수 있는 칸 = 초안 플랜 + 아직 발행 큐에 없는 칸(예약을 거둬도 이미 게시된 칸은 남는다) */
+function editable(it) { return cur.plan.status === 'draft' && !(it && it.queue_id); }
 function closeItem() { $('drawer').classList.remove('show'); editing = null; }
 function renderPicker() {
-  const fmt = $('dFmt').value, draft = cur.plan.status === 'draft';
   const it = cur.items.find((x) => x.id === editing.id) || editing;
+  const fmt = $('dFmt').value, draft = editable(it);
   const mine = new Set([...(it.source_media_ids || []), ...(it.candidate_media_ids || []), ...(it.media_ids || [])]);
   const pool = cur.media.filter((m) => mine.has(m.id) && m.media_type !== 'audio' && (fmt === 'reel' ? m.media_type === 'video' : m.media_type !== 'video'));
   $('dPickLbl').textContent = fmt === 'reel' ? '릴스 영상 고르기 (1개)' : fmt === 'carousel' ? '캐러셀 사진 고르기 (2~10장, 고른 순서 = 슬라이드 순서)' : '사진 고르기 (1장)';
@@ -543,7 +559,7 @@ function togglePick(id) {
 }
 async function saveItem() {
   clearMsg();
-  const draft = cur.plan.status === 'draft';
+  const draft = editable(editing);
   const body = draft ? {
     postAt: fromLocalInput($('dWhen').value), format: $('dFmt').value, theme: $('dTheme').value.trim(), brief: $('dBrief').value.trim(),
     caption: $('dCaption').value.trim(), hashtags: $('dTags').value.trim(), mediaIds: picked, feedback: $('dFeedback').value.trim(),
@@ -564,7 +580,7 @@ async function deleteItem() {
 // ── 게시물 전용 원본 ──
 function renderOwn() {
   const it = cur.items.find((x) => x.id === editing.id) || editing;
-  const draft = cur.plan.status === 'draft';
+  const draft = editable(it);
   const byId = new Map(cur.media.map((m) => [m.id, m]));
   const own = (it.source_media_ids || []).map((id) => byId.get(id)).filter(Boolean);
   $('dOwn').innerHTML = own.length ? own.map((m) => '<div class="mt2"><img src="' + esc(m.url) + '" alt="" loading="lazy">'
@@ -606,7 +622,7 @@ let pollTimer = null;
 function renderPackStatus() {
   if (!editing) return;
   const it = cur.items.find((x) => x.id === editing.id) || editing;
-  const draft = cur.plan.status === 'draft';
+  const draft = editable(it);
   const busy = it.gen_status === 'generating';
   const hasOwn = (it.source_media_ids || []).length > 0;
   $('dPackBtn').disabled = !draft || busy || !hasOwn;
