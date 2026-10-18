@@ -1732,8 +1732,8 @@
         <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
           <span style="font-size:12.5px;color:var(--text);font-weight:600">Video quality</span>
           <select id="ugcQuality" onchange="ugcSyncGenCost()" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
-            <option value="low" selected>Basic — ◈625 / scene</option>
-            <option value="high">Premium — crisper frames &amp; smoother motion · ◈945 / scene</option>
+            <option value="low" selected>Basic — ◈390 / scene</option>
+            <option value="high">Premium — crisper frames &amp; smoother motion · ◈590 / scene</option>
           </select>
         </label>
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
@@ -2459,7 +2459,7 @@ function genCost(r){
   const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
   if(type==='reel'){
     const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;
-    const vt=(c.video&&c.video[dur])||[820,1250];
+    const vt=(c.video&&c.video[dur])||[480,720];
     return (isTpl?vt[1]:vt[0])+cap;
   }
   const mk=(curSize()==='4K')?'pro-4k':effModelKey(); // 4K=pro-4k 티어(백엔드 generate.route:428과 동일). 4K는 pro 전용이라 curSize=4K면 항상 pro-4k.
@@ -6637,7 +6637,7 @@ function ugcGenCost(){
   if(!scenes.length)return null;
   var q=((document.getElementById('ugcQuality')||{}).value==='high')?'high':'low';
   var av=(CREDITS&&CREDITS.costs&&CREDITS.costs.adVideo)||null;
-  var per=(av&&av[q])||(q==='high'?{5:945,10:1705}:{5:625,10:1195}); // 폴백=검증 단가
+  var per=(av&&av[q])||(q==='high'?{5:590,10:1065}:{5:390,10:750}); // 폴백=검증 단가
   return scenes.reduce(function(sum,s){var d=(Number(s.durationSec)>5)?10:5;return sum+(per[d]||per[5]);},0);
 }
 // 버튼 라벨에 비용 반영 — 화질 셀렉터 변경 시에도 호출(가격 즉시 갱신).
@@ -7029,7 +7029,7 @@ const UGC_AUTO_MAX_SCENES=6; // ⚠️ 서버 ugcScript.builder.AUTO_MAX_SCENES 
 function ugcUnitCost(){
   const q=((document.getElementById('ugcQuality')||{}).value==='high')?'high':'low';
   const av=(CREDITS&&CREDITS.costs&&CREDITS.costs.adVideo)||null;
-  return (av&&av[q])||(q==='high'?{5:945,10:1705}:{5:625,10:1195}); // 폴백=검증 단가
+  return (av&&av[q])||(q==='high'?{5:590,10:1065}:{5:390,10:750}); // 폴백=검증 단가
 }
 /** 총 T초로 만들 수 있는 모든 씬 배치 중 최저/최고 비용. 배치는 씬당 2~10초·합 정확히 T·개수 ≤ 상한. */
 function ugcCostBounds(T){

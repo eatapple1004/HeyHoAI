@@ -179,7 +179,7 @@ function kickAngles(id) {
     } finally {
       runningAngles.delete(id);
       const missing = ANGLES.length - job.results.length;
-      if (job.charged && missing > 0) await teamCredit.refundGeneration({ id: job.user_id }, credit().imageCost('pro', missing, false), 'Shoot angles: blocked angles refunded').catch(() => {}); // 못 만든 장수만큼 환불
+      if (job.charged && missing > 0) await teamCredit.refundGeneration({ id: job.user_id }, credit().imageCost('pro', 1, false) * missing, 'Shoot angles: blocked angles refunded').catch(() => {}); // 못 만든 장수만큼 환불. (10-18) 장당 × 장수 — imageCost(count)는 8장 상한이라 24장 중 8장 값만 받던 것
     }
   })();
 }
@@ -188,7 +188,7 @@ async function startAngles(user, file) {
   if (!env.PUBLIC_URL) throw httpError(400, 'Angle shots need PUBLIC_URL');
   if (!file) throw httpError(400, 'Add a photo');
   const name = await keep(file);
-  const charge = await teamCredit.chargeGeneration(user, credit().imageCost('pro', ANGLES.length, false), `Shoot angles ×${ANGLES.length}`); // 관리자는 null
+  const charge = await teamCredit.chargeGeneration(user, credit().imageCost('pro', 1, false) * ANGLES.length, `Shoot angles ×${ANGLES.length}`); // 관리자는 null
   const job = await repo.insertAngleJob({ userId: user.id, source: publicUrl(name), charged: !!charge });
   kickAngles(job.id);
   return pubAngles(job);

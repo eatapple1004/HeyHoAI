@@ -157,7 +157,7 @@ const OPTS=()=>[
   ['lang','A',st.lang==='ko'?'한국어':'English',[['ko','한국어'],['en','English']]],
   ['review','✎',st.review?'Review script':'One-shot',[[false,'One-shot','render right away'],[true,'Review script first','edit scenes before rendering']]],
 ];
-function scenePrice(q){const c=st.costs&&st.costs.adVideo&&st.costs.adVideo[q];return c?c[5]:(q==='high'?945:625);}
+function scenePrice(q){const c=st.costs&&st.costs.adVideo&&st.costs.adVideo[q];return c?c[5]:(q==='high'?590:390);}
 // 씬 수 = 과금 단위(씬당 단가). steady/fast 는 서버에 sceneCount·sceneDuration 을 고정해 보내 예상 = 실제가 되게 한다(10s 가 2초 씬 5개로 쪼개져 2.5배 과금된 dev 실측).
 function paceSpec(){if(st.pace==='fast')return{n:Math.max(2,Math.min(12,Math.round(st.dur/3))),d:3};if(st.pace==='auto')return null;return{n:Math.max(1,Math.min(12,Math.ceil(st.dur/5))),d:5};}
 function estScenes(){const p=paceSpec();return p?p.n:Math.max(1,Math.min(6,Math.round(st.dur/5)));}
