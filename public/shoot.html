@@ -192,7 +192,7 @@ let pollT=null;
 async function loadMine(){try{MINE=((await(await fetch('/api/shoot/models')).json()).data)||[];}catch(e){MINE=[];}}
 function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;$('#create').hidden=true;$('#mgrid').hidden=false;
   const card=m=>{const img=m.avatar||(m.bank[0]&&m.bank[0].url)||m.photos[0]||'';const st=m.progress?`${STATUS[m.status]} ${m.progress}`:STATUS[m.status]||'';
-    return `<button type="button" class="mc" data-id="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(img)}" alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):esc(toModel(m).tag)}</small></span></button>`;};
+    return `<button type="button" class="mc" data-id="${m.id}" ${m.status==='ready'?'':'disabled'}>${img?`<img src="${esc(TH(img,480))}" ${FB(img)} alt="">`:''}${st?`<span class="st">${esc(st)}</span>`:''}<span class="nm">${esc(m.name)}<small>${m.status==='failed'?esc(m.error||'Failed'):esc(toModel(m).tag)}</small></span></button>`;};
   const official=MINE.filter(m=>m.official),mine=MINE.filter(m=>!m.official); // 내 것이 위, 공식 로스터는 아래(사용자 10-16) — 둘 다 같은 카드
   $('#mgrid').innerHTML=`<div class="lbl">Your models</div><div class="pickg">${mine.map(card).join('')}<button type="button" class="mc add" id="mkBtn">Create your model<br><small>from your photos — trained once, then every scene and outfit · ◈ ${TRAIN_COST.toLocaleString('en-US')}</small></button></div>
     <div class="lbl" style="margin-top:22px">Doppia models <i>· ready to shoot</i></div><div class="pickg">${official.map(card).join('')}</div>`;
@@ -251,14 +251,14 @@ async function mkSubmit(){const b=$('#mkGo');b.disabled=true;const fd=new FormDa
 
 function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.slots={};st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
 // 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
-async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
+async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);order.forEach(i=>{const im=new Image();im.src=TH(st.versions[i].url,960);}); // (10-18) 소개 장면 5장을 미리 받아 둔다(0.65초마다 바뀌어 받는 중에 넘어가던 것)
   for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
   if(st.intro!==run)return;st.cur=0;renderStage(true);
   say(SAY.hello(st.model),[['shot','Shoot me'],['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
-function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${st.model.avatar}" alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
+function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${TH(st.model.avatar,240)}" ${FB(st.model.avatar)} alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
   b.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>setAct(x.dataset.a));}
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
-function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.tag)}</small></div><button class="btn2" id="swap">Change</button>`;
+function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${TH(m.avatar,240)}" ${FB(m.avatar)} alt=""><div><b>${esc(m.name)}</b><small>${esc(m.tag)}</small></div><button class="btn2" id="swap">Change</button>`;
   $('#swap').onclick=()=>{st.intro++;$('#bubble').hidden=true;renderHello();};
   $('#acts').innerHTML=ACTS.map(([k,ic,n])=>`<button type="button" data-a="${k}" class="${k===st.act?'on':''}" ${k==='video'?'disabled title="Coming soon"':''}><i>${ic}</i>${n}</button>`).join('');
   renderPanel();renderStage();}
@@ -266,7 +266,12 @@ function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.togg
 $('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;setAct(b.dataset.a);});
 function renderPanel(){({shot:panelShot,outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();if(st.act!=='shot')renderSettings();renderGo();}
 // Shoot: 글 → Soul 2 + 내 모델. 엔진 선택 없음(Soul 고정), 장수·비율만
-const tplThumb=i=>`/img/shoot/tpl/${String(i+1).padStart(2,'0')}.jpg`;
+// (10-18) 썸네일 — 다른 페이지(js/thumbs.js)와 같은 규칙. /images/<파일> → /images/t/<w>/ · /img/<경로> → /img/t/<w>/ (WebP, Cloudflare 캐시).
+//   원본(장당 수 MB)을 카드·띠·말풍선마다 받던 것. 썸네일이 실패하면 원본으로(FB).
+//   모델 뱅크는 PUBLIC_URL 절대주소(https://<env>.doppia.ai/images/…)로 저장돼 있어 doppia.ai 주소도 이 사이트 썸네일로 바꾼다(없으면 FB 가 원본).
+function TH(u,w){if(!u)return u;const m=/^(?:https?:\/\/[^/]+)?\/images\/([\w.-]+\.(?:png|jpe?g|webp))$/i.exec(u);if(m&&(!/^https?:/.test(u)||/^https?:\/\/([\w-]+\.)*doppia\.ai\//.test(u)||u.startsWith(location.origin)))return '/images/t/'+w+'/'+m[1];const s=/^\/img\/((?!t\/)[\w./-]+\.(?:png|jpe?g|webp))$/i.exec(u);return s?'/img/t/'+w+'/'+s[1]:u;}
+const FB=u=>`data-full="${esc(u)}" decoding="async" onerror="if(this.dataset.full&&this.src.indexOf('/t/')>=0){this.src=this.dataset.full}"`;
+const tplThumb=i=>`/img/t/360/shoot/tpl/${String(i+1).padStart(2,'0')}.jpg`;
 function tplTile(){const t=st.tpl!=null&&SHOT_TPL[st.tpl];return `<button type="button" class="tpl" id="tplPick">${t?`<img src="${tplThumb(st.tpl)}" alt="" onerror="this.remove()"><span class="ic">${t[0]}</span><b>${esc(t[1])}</b><small>Change</small>`:`<span class="ic">🎞</span><b>Pick a shot</b><small>28 presets — or just describe it</small>`}</button>`;}
 function panelShot(){$('#panel').innerHTML=`<div class="lbl">Pick a shot <i>· then change anything</i></div>${tplTile()}
   <div class="lbl">Or describe it <i id="slen">${st.shot.length}</i></div><textarea class="ff" id="shotText" maxlength="1000" placeholder="e.g. by a cafe window in a white shirt, holding a coffee, soft smile">${esc(st.shot)}</textarea>
@@ -297,7 +302,7 @@ function panelScene(){const cats=[['','All']].concat([...new Map((window.BACKGRO
   renderBgs();chipGroup('#bgcat',v=>{st.bgCat=v;renderBgs();});
   $('#bgText').addEventListener('input',e=>{st.sceneText=e.target.value.trim();if(st.sceneText)st.scene=null;renderBgs();renderGo();});
   $('#bgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;st.scene=bgs().find(x=>x.id===b.dataset.id);st.sceneText='';$('#bgText').value='';renderBgs();renderGo();});}
-function renderBgs(){$('#bgrid').innerHTML=bgs().map(b=>`<button type="button" class="mc ${st.scene&&st.scene.id===b.id?'on':''}" data-id="${b.id}"><img src="${b.img}" loading="lazy" alt=""><span class="nm">${esc(b.name)}<small>${esc(b.category)}</small></span></button>`).join('');}
+function renderBgs(){$('#bgrid').innerHTML=bgs().map(b=>`<button type="button" class="mc ${st.scene&&st.scene.id===b.id?'on':''}" data-id="${b.id}"><img src="${TH(b.img,480)}" ${FB(b.img)} loading="lazy" alt=""><span class="nm">${esc(b.name)}<small>${esc(b.category)}</small></span></button>`).join('');}
 
 // Pose: 프리셋 + 직접 묘사
 function panelPose(){$('#panel').innerHTML=`<div class="lbl">Pose</div><div class="chips" id="poses">${chipsHtml(POSES.map((p,i)=>[i,p[0]]),st.pose)}</div><div class="lbl">Or describe it</div><input class="ff" id="poseText" maxlength="200" placeholder="e.g. crouching, looking up, hands in pockets" value="${esc(st.poseText)}"><div class="note">Same person, same outfit, same place — only the pose and framing change.</div>`;
@@ -322,8 +327,8 @@ const SHOT_COST=185; // credit.service IMG_CREDIT.soul 자리값과 같이 간�
 function renderGo(){const t=tool(),L={shot:'Shoot',outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act],shot=st.act==='shot';$('#go').disabled=st.busy||!ready()||(!shot&&!t);$('#go').firstChild.textContent=L+' ';$('#cost').textContent=shot?(SHOT_COST*st.shotN).toLocaleString('en-US'):t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
-function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
-  $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${x.url}" alt=""><small>${esc(x.label)}</small></button>`).join('');
+function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${TH(v.url,960)}" ${FB(v.url)} fetchpriority="high" alt="" class="${anim?'intro':''}">`;
+  $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${TH(x.url,240)}" ${FB(x.url)} loading="lazy" alt=""><small>${esc(x.label)}</small></button>`).join('');
   $('#note').textContent=st.versions.length>1?`${st.versions.length} versions · pick one to continue from it`:'';}
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.intro++;st.cur=+b.dataset.i;renderStage();});
 $$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stage .tabs [data-f]').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;$('#stageView').hidden=f!=='stage';$('#feedView').hidden=f!=='mine';if(f==='mine')loadFeed();}));
@@ -364,7 +369,7 @@ $('#go').addEventListener('click',async()=>{const t=tool();if(!ready()||st.busy|
   finally{st.busy=false;renderStage();renderPanel();}});
 
 // ── 피드(이 페이지 결과만) ──
-function card(r){const u='/images/'+String(r.file_path||'').split('/').pop();return `<div class="rt" onclick="location.href='/creation?idx=${r.idx}'"><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r.model||'')}</span><span class="a"><span title="Continue from this" data-u="${esc(u)}">↩</span><span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
+function card(r){const u='/images/'+String(r.file_path||'').split('/').pop();return `<div class="rt" onclick="location.href='/creation?idx=${r.idx}'"><img src="${esc(TH(u,480))}" data-full="${esc(u)}" loading="lazy" decoding="async" alt="" onerror="if(this.src.indexOf('/t/')>=0){this.src=this.dataset.full}else this.closest('.rt').remove()"><div class="ov"><span>${esc(r.model||'')}</span><span class="a"><span title="Continue from this" data-u="${esc(u)}">↩</span><span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
 async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const d=(await(await fetch('/api/generate/results?type=photo&limit=120')).json()).data||[];const rows=d.filter(r=>r.file_path&&r.template_name===TEMPLATE);if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(card).join('');}catch(e){$('#feedEmpty').hidden=false}}
 $('#feed').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;e.stopPropagation();st.versions.push({url:b.dataset.u,label:'From Library'});st.cur=st.versions.length-1;$$('.stage .tabs [data-f]')[0].click();renderStage();});
 
