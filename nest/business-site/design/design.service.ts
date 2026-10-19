@@ -7,7 +7,8 @@ import { CorpSite, CorpPhoto } from '../multipage';
 import { privacy as privacyPage } from '../multipage/pages';
 import { esc, mapEmbed } from '../templates/shared';
 import { numbers, loosely, norm } from '../site-qa';
-import { DesignWriterService, DesignSystem } from './design-writer.service';
+import { visualCheck } from '../visual-qa';
+import { DesignWriterService, DesignSystem, closeTags } from './design-writer.service';
 import { cleanCss, cleanHtml, rebase, FONT_CSS } from './sanitize';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -94,7 +95,9 @@ export class DesignService {
     const d = await this.row(site.id, n);
     if (!d || d.status !== 'done') throw new BadRequestException('완성된 시안만 점검할 수 있습니다.');
     const m = await this.sites.corpModel(site, '', false);
-    await this.patch(d.id, { qa: this.qa(m, d.pages, norm(this.sites.sourceText(site)), []) });
+    const qa = this.qa(m, d.pages, norm(this.sites.sourceText(site)), []);
+    await this.patch(d.id, { qa: { ...qa, visual: { state: 'running' } } });
+    this.visual(site, n, qa.at).catch(() => undefined);
     return this.list(businessId);
   }
 
@@ -171,7 +174,26 @@ export class DesignService {
     await Promise.all([worker(), worker(), worker(), worker()]);
     const failed = specs.filter((s) => s.key !== 'privacy' && !pages[s.path]).map((s) => s.title);
     const qa = this.qa(m, pages, source, failed);
-    await this.patch(row.id, { pages, qa, status: failed.length === specs.length - 1 ? 'error' : 'done', step: null, error: failed.length ? `만들지 못한 페이지: ${failed.join(', ')}` : null });
+    await this.patch(row.id, { pages, qa: { ...qa, visual: { state: 'running' } }, status: failed.length === specs.length - 1 ? 'error' : 'done', step: null, error: failed.length ? `만들지 못한 페이지: ${failed.join(', ')}` : null });
+    await this.visual(site, row.n, qa.at);
+  }
+
+  /** 화면 점검(실제 브라우저) — 끝나면 같은 점검 회차(at)에만 붙인다 */
+  private async visual(site: BusinessSiteRow, n: number, at: string) {
+    const d = await this.row(site.id, n);
+    if (!d || d.status !== 'done') return;
+    const pages: { path: string; html: string }[] = [];
+    for (const p of Object.keys(d.pages)) {
+      const r = await this.render(site, d, `/admin-business/${site.business_id}/site/design/${n}`, p, {}, true);
+      if (r.status === 200) pages.push({ path: p, html: r.body });
+    }
+    try {
+      const v = await visualCheck(pages, { shotPaths: [''] });
+      const cur = await this.row(site.id, n);
+      if (cur?.qa?.at === at) await this.patch(cur.id, { qa: { ...cur.qa, visual: { state: v.skipped ? 'skipped' : 'done', ...v, at: new Date().toISOString() } } });
+    } catch (e: any) {
+      console.warn('[design] visual qa failed', e?.message);
+    }
   }
 
   /** 시안 점검 — 출처 없는 숫자, 사이트 안 깨진 링크, 제목 없는 페이지, 빠진 자리표시자 */
@@ -268,9 +290,9 @@ ${d.design.fonts ? `<link rel="stylesheet" href="${esc(d.design.fonts)}">` : ''}
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 </head>
 <body class="pg-${spec.key}">
-${rebase(d.design.header, base)}
+${rebase(closeTags(d.design.header, 'header'), base)}
 <main id="main">${body}</main>
-${rebase(d.design.footer, base).replace(/<!--\s*\{\{CREDITS\}\}\s*-->/g, credits)}
+${rebase(closeTags(d.design.footer, 'footer'), base).replace(/<!--\s*\{\{CREDITS\}\}\s*-->/g, credits)}
 ${preview ? `<div class="dp-pv">시안 ${d.n} 미리보기 — 검색엔진에 노출되지 않습니다</div>` : ''}
 </body></html>`;
   }
