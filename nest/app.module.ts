@@ -31,6 +31,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { GenerateModule } from './generate/generate.module';
 import { BusinessModule } from './business/business.module';
 import { BusinessMetaModule } from './business-meta/business-meta.module';
+import { BusinessSiteModule } from './business-site/business-site.module';
 import { AdminUsersModule } from './admin-users/admin-users.module';
 import { ShootModule } from './shoot/shoot.module';
 import { MessengerModule } from './messenger/messenger.module';
@@ -66,6 +67,7 @@ import { MessengerModule } from './messenger/messenger.module';
     AdStudioModule,
     BusinessModule,      // 관리자 전용 사업체 인스타 관리(/api/admin/business)
     BusinessMetaModule,  // Meta 직결 인스타 연동(/api/admin/business-meta) — Zernio 대안 실측용
+    BusinessSiteModule,  // (2026-10-19) 사업체 홈페이지 — 자료 수집 + 업종 템플릿 + AI 문구(/site/:slug)
     AdminUsersModule,    // 환경별 사용자·생성물 조회(/api/admin/users)
     ShootModule,         // (2026-10-16) Doppia Shoot — 내 모델 만들기(Soul ID 학습 + 장면 뱅크, /api/shoot)
     MessengerModule,     // (2026-10-18) 메신저 입구 — LINE 웹훅(/api/messenger), 카톡은 뒤에

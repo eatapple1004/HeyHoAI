@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>홈페이지 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1440px;margin:0 auto}
+a{color:var(--accent2)}
+.back{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px;display:inline-block;margin-bottom:16px}
+h1{font-size:1.6rem;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.92rem}
+h2{font-size:1.02rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h2 .hint{font-weight:400;font-size:.78rem;color:var(--faint)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.88rem;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+textarea{width:100%;resize:vertical;line-height:1.6}
+button{font-family:inherit;font-size:.85rem;font-weight:600;padding:9px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.primary{background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;color:#fff}
+button.sm{padding:5px 10px;font-size:.74rem}
+button:disabled{opacity:.5;cursor:default}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-on{background:rgba(74,222,128,.16);color:var(--green)}
+.b-off{background:rgba(154,154,178,.16);color:var(--dim)}
+.b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
+.layout{display:grid;grid-template-columns:minmax(420px,560px) 1fr;gap:18px;align-items:start}
+.preview{position:sticky;top:18px}
+.preview .bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.frame{background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);height:calc(100vh - 120px);display:flex;justify-content:center}
+.frame iframe{border:0;width:100%;height:100%;background:#fff}
+.frame.mobile iframe{width:390px}
+.cands{display:grid;gap:14px;margin-top:14px}
+.cands h3{font-size:.8rem;color:var(--dim);margin-bottom:6px;font-weight:700}
+.cand{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;font-size:.82rem}
+.cand:hover{border-color:var(--accent2)}
+.cand input{margin-top:3px;width:auto}
+.cand small{display:block;color:var(--faint);font-size:.74rem;margin-top:2px}
+.cand.on{border-color:var(--accent2);background:rgba(106,64,224,.12)}
+.src{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.facts{font-size:.82rem;color:var(--dim);line-height:1.8}
+.facts b{color:var(--text);font-weight:600}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.ph{position:relative;border-radius:10px;overflow:hidden;background:var(--panel2);aspect-ratio:4/5;border:2px solid transparent}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph.off img{opacity:.25}
+.ph.hero{border-color:var(--gold)}
+.ph .tag{position:absolute;top:5px;left:5px;background:rgba(20,16,34,.85);color:#fff;padding:2px 7px;border-radius:20px;font-size:.62rem;font-weight:700}
+.ph.hero .tag{background:var(--gold);color:#2a1d05}
+.ph .acts{position:absolute;bottom:0;left:0;right:0;display:flex;gap:3px;padding:5px;background:linear-gradient(transparent,rgba(10,10,18,.92))}
+.ph .acts button{flex:1;padding:3px 0;font-size:.66rem;border-radius:6px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.76rem;color:var(--dim);margin-bottom:5px;font-weight:600}
+.field label small{font-weight:400;color:var(--faint)}
+.field input{width:100%}
+.prog{color:var(--faint);font-size:.78rem}
+.empty{color:var(--faint);font-size:.84rem;padding:10px 0}
+.msg{padding:12px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.88rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.preview{position:static}.frame{height:80vh}}
+@media(max-width:600px){body{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" id="backLink" href="/admin-business">← 사업체 상세</a>
+  <div id="adminNav"></div>
+  <h1>🌐 <span id="bizName">…</span> 홈페이지 <span id="siteStatus"></span></h1>
+  <div class="sub" id="siteUrl">자료를 모으면 AI가 업종에 맞는 템플릿을 고르고 문구를 씁니다. 사실 정보(주소·전화·영업시간)는 수집한 자료 그대로 들어갑니다.</div>
+
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <div class="layout">
+    <div>
+      <!-- 1. 자료 찾기 -->
+      <div class="card">
+        <h2>1. 자료 찾기 <span class="hint">가게 이름과 동네를 함께 넣으면 정확합니다 (예: 도피아커피 성수동)</span></h2>
+        <div class="src" id="srcState"></div>
+        <div class="row">
+          <input id="q" style="flex:1;min-width:200px" placeholder="가게 이름 + 동네">
+          <button id="searchBtn" onclick="search()">검색</button>
+        </div>
+        <div class="cands" id="cands"></div>
+        <div class="row" id="collectRow" style="display:none;margin-top:12px">
+          <button class="primary" id="collectBtn" onclick="collect()">선택한 곳으로 자료 모으기</button>
+          <span class="prog">사진·리뷰·블로그 후기를 함께 가져옵니다</span>
+        </div>
+        <div class="facts" id="facts" style="margin-top:14px"></div>
+      </div>
+
+      <!-- 2. 템플릿 + AI -->
+      <div class="card">
+        <h2>2. 템플릿·문구 <span class="hint">자동을 고르면 AI가 업종을 보고 템플릿을 정합니다</span></h2>
+        <div class="row">
+          <select id="tpl" style="flex:1"></select>
+          <button class="primary" id="genBtn" onclick="generate()">AI로 문구 만들기</button>
+        </div>
+        <p class="prog" id="genProg" style="margin-top:8px"></p>
+      </div>
+
+      <!-- 3. 사진 -->
+      <div class="card">
+        <h2>3. 사진 <span class="hint">첫 번째(대표)가 맨 위 큰 사진이 됩니다. 원본 사진은 사업체 상세에서 올리세요</span></h2>
+        <div class="photos" id="photos"></div>
+      </div>
+
+      <!-- 4. 문구 -->
+      <div class="card">
+        <h2>4. 문구 고치기</h2>
+        <div id="fields"></div>
+        <button class="primary" onclick="saveContent()">문구 저장</button>
+      </div>
+
+      <!-- 5. 공개 -->
+      <div class="card">
+        <h2>5. 공개 <span class="hint">공개하면 누구나 주소로 볼 수 있습니다</span></h2>
+        <div class="field"><label>주소 <small>영어 소문자·숫자·하이픈</small></label>
+          <div class="row"><span class="prog" id="slugBase"></span><input id="slug" style="flex:1;min-width:140px"><button onclick="saveSlug()">주소 저장</button></div></div>
+        <div class="row"><button class="primary" id="pubBtn" onclick="togglePublish()">공개하기</button><a id="openLink" target="_blank" rel="noopener" style="display:none;font-size:.85rem">공개 페이지 열기</a></div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="bar">
+        <b style="font-size:.9rem">미리보기</b>
+        <button class="sm" id="vDesk" onclick="setView(false)">PC</button>
+        <button class="sm" id="vMob" onclick="setView(true)">모바일</button>
+        <button class="sm" onclick="reloadPreview()">새로고침</button>
+        <a id="previewTab" target="_blank" rel="noopener" style="font-size:.78rem;margin-left:auto">새 탭에서 보기</a>
+      </div>
+      <div class="frame" id="frame"><div class="empty" style="padding:40px;color:#888">자료를 모으고 문구를 만들면 여기에 보입니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BIZ_ID = location.pathname.split('/').filter(Boolean)[1];
+const API = '/api/admin/business/' + BIZ_ID + '/site';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let STATE = null;
+let CANDS = null;
+let MOBILE = false;
+
+$('backLink').href = '/admin-business/' + BIZ_ID;
+$('previewTab').href = '/admin-business/' + BIZ_ID + '/site/preview';
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || j.success === false) throw new Error(j.message || j.error || ('요청 실패 (' + res.status + ')'));
+  return j.data;
+}
+function flash(kind, text) {
+  const el = $(kind); el.textContent = text; el.classList.add('show');
+  $(kind === 'err' ? 'ok' : 'err').classList.remove('show');
+  if (kind === 'ok') setTimeout(() => el.classList.remove('show'), 2500);
+}
+async function busy(btn, label, fn) {
+  const old = btn.textContent; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } catch (e) { flash('err', e.message); } finally { btn.disabled = false; btn.textContent = old; }
+}
+
+async function load() {
+  try { STATE = await api(API); render(); } catch (e) { flash('err', e.message); }
+}
+
+function render() {
+  const { business, site, templates, sources, publicUrl } = STATE;
+  $('bizName').textContent = business.name;
+  if (!$('q').value) $('q').value = business.name;
+  $('srcState').innerHTML = [['kakao', '카카오'], ['google', 'Google'], ['naver', '네이버']]
+    .map(([k, l]) => `<span class="badge ${sources[k] ? 'b-on' : 'b-off'}">${l} ${sources[k] ? '연결됨' : '키 없음'}</span>`).join('');
+
+  $('siteStatus').innerHTML = !site ? '<span class="badge b-off">아직 없음</span>'
+    : site.status === 'published' ? '<span class="badge b-on">공개 중</span>' : '<span class="badge b-wait">초안</span>';
+  $('siteUrl').innerHTML = publicUrl
+    ? (site.status === 'published' ? `공개 주소: <a href="${esc(publicUrl)}" target="_blank" rel="noopener">${esc(publicUrl)}</a>` : `공개하면 이 주소가 됩니다: ${esc(publicUrl)}`)
+    : $('siteUrl').innerHTML;
+
+  $('tpl').innerHTML = '<option value="">자동 (AI가 업종을 보고 고름)</option>' +
+    templates.map((t) => `<option value="${t.key}"${site && site.template === t.key && site.content && Object.keys(site.content).length ? ' selected' : ''}>${esc(t.label)} — ${esc(t.fits)}</option>`).join('');
+
+  renderFacts(site);
+  renderPhotos();
+  renderFields(site ? site.content || {} : {});
+
+  const base = publicUrl ? publicUrl.replace(/[^/]+$/, '') : location.origin + '/site/';
+  $('slugBase').textContent = base;
+  $('slug').value = site && site.slug || '';
+  $('pubBtn').textContent = site && site.status === 'published' ? '공개 내리기' : '공개하기';
+  $('pubBtn').disabled = !site;
+  $('openLink').style.display = site && site.status === 'published' ? '' : 'none';
+  if (publicUrl) $('openLink').href = publicUrl;
+  $('genBtn').disabled = !site;
+  if (site) reloadPreview();
+}
+
+function renderFacts(site) {
+  const s = site && site.source;
+  if (!s || !s.collectedAt) { $('facts').innerHTML = ''; return; }
+  const k = s.kakao || {}; const g = s.google || {}; const n = (s.naver && s.naver.local) || {};
+  const blogs = (s.naver && s.naver.blogs) || [];
+  const errs = Object.entries(s.errors || {}).map(([k2, v]) => `<div style="color:#fca5a5">${esc(k2)} 오류: ${esc(v)}</div>`).join('');
+  $('facts').innerHTML = `
+    <div><b>모은 자료</b> <span class="prog">${new Date(s.collectedAt).toLocaleString('ko-KR')}</span></div>
+    <div>주소: ${esc(k.roadAddress || k.address || n.roadAddress || g.address || '—')}</div>
+    <div>전화: ${esc(k.phone || n.phone || g.phone || '—')} · 분류: ${esc(k.category || n.category || g.type || '—')}</div>
+    <div>Google: ${g.id ? `평점 ${esc(g.rating || '—')} (${esc(g.ratingCount || 0)}) · 리뷰 ${(g.reviews || []).length}개 · 사진 ${(g.photos || []).length}장 · 영업시간 ${(g.hours || []).length ? '있음' : '없음'}` : '선택 안 함'}</div>
+    <div>네이버 블로그 후기: ${blogs.length}개</div>${errs}`;
+}
+
+// ── 1. 검색 · 수집 ──
+async function search() {
+  const q = $('q').value.trim();
+  if (!q) return flash('err', '가게 이름을 입력하세요.');
+  await busy($('searchBtn'), '검색 중…', async () => {
+    CANDS = await api(API + '/search?q=' + encodeURIComponent(q));
+    const group = (key, title, list, line) => `<div><h3>${title}</h3>${list.length ? list.map((c, i) => `
+      <label class="cand"><input type="radio" name="${key}" value="${i}"${i === 0 ? ' checked' : ''}><span>${line(c)}</span></label>`).join('') +
+      `<label class="cand"><input type="radio" name="${key}" value="-1"><span>선택 안 함</span></label>`
+      : `<div class="empty">${CANDS.available[key] ? '결과 없음' : 'API 키가 없어 건너뜁니다'}${CANDS.errors[key] ? ' — ' + esc(CANDS.errors[key]) : ''}</div>`}</div>`;
+    $('cands').innerHTML =
+      group('kakao', '카카오', CANDS.kakao, (c) => `<b>${esc(c.name)}</b><small>${esc(c.roadAddress || c.address)} · ${esc(c.phone || '전화 없음')}</small><small>${esc(c.category)}</small>`) +
+      group('google', 'Google', CANDS.google, (c) => `<b>${esc(c.name)}</b><small>${esc(c.address)}</small><small>${c.rating ? '평점 ' + esc(c.rating) + ' (' + esc(c.ratingCount || 0) + ')' : '평점 없음'}</small>`) +
+      group('naver', '네이버', CANDS.naver, (c) => `<b>${esc(c.name)}</b><small>${esc(c.roadAddress || c.address)} · ${esc(c.phone || '')}</small><small>${esc(c.category)}</small>`);
+    $('collectRow').style.display = (CANDS.kakao.length || CANDS.google.length || CANDS.naver.length) ? '' : 'none';
+  });
+}
+function picked(key) {
+  const el = document.querySelector(`input[name="${key}"]:checked`);
+  const i = el ? Number(el.value) : -1;
+  return i >= 0 ? CANDS[key][i] : null;
+}
+async function collect() {
+  const kakao = picked('kakao'); const google = picked('google'); const naver = picked('naver');
+  if (!kakao && !google && !naver) return flash('err', '적어도 한 곳을 고르세요.');
+  await busy($('collectBtn'), '모으는 중…', async () => {
+    STATE = await api(API + '/collect', { method: 'POST', body: JSON.stringify({ query: $('q').value.trim(), kakao, googlePlaceId: google && google.id, naver }) });
+    $('cands').innerHTML = ''; $('collectRow').style.display = 'none';
+    render(); flash('ok', '자료를 모았습니다. 이제 AI로 문구를 만드세요.');
+  });
+}
+
+// ── 2. AI ──
+async function generate() {
+  $('genProg').textContent = 'AI가 자료를 읽고 문구를 쓰는 중입니다 (20초 안팎)…';
+  await busy($('genBtn'), '만드는 중…', async () => {
+    STATE = await api(API + '/generate', { method: 'POST', body: JSON.stringify({ template: $('tpl').value || undefined }) });
+    render(); flash('ok', '문구를 만들었습니다. 미리보기를 확인하고 고칠 곳을 고치세요.');
+  });
+  $('genProg').textContent = '';
+}
+
+// ── 3. 사진 ──
+function renderPhotos() {
+  const list = STATE.photos || [];
+  if (!list.length) { $('photos').innerHTML = '<div class="empty">사진이 없습니다. 사업체 상세에서 원본 사진을 올리거나 Google 장소를 고르세요.</div>'; return; }
+  const firstOn = list.findIndex((p) => !p.hidden);
+  $('photos').innerHTML = list.map((p, i) => `
+    <div class="ph${p.hidden ? ' off' : ''}${i === firstOn ? ' hero' : ''}">
+      <img src="${esc(p.url)}" alt="" loading="lazy">
+      <span class="tag">${i === firstOn ? '대표' : p.ref.startsWith('google') ? 'Google' : '원본'}</span>
+      <div class="acts">
+        <button onclick="movePhoto(${i},-1)" ${i === 0 ? 'disabled' : ''} aria-label="앞으로">◀</button>
+        <button onclick="toggleHide(${i})">${p.hidden ? '쓰기' : '빼기'}</button>
+        <button onclick="movePhoto(${i},1)" ${i === list.length - 1 ? 'disabled' : ''} aria-label="뒤로">▶</button>
+      </div>
+    </div>`).join('');
+}
+async function savePhotos(list) {
+  try {
+    STATE = await api(API, { method: 'PATCH', body: JSON.stringify({ photos: list.map((p) => ({ ref: p.ref, hidden: !!p.hidden })) }) });
+    renderPhotos(); reloadPreview();
+  } catch (e) { flash('err', e.message); }
+}
+function movePhoto(i, d) {
+  const list = STATE.photos.slice(); const j = i + d;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]]; savePhotos(list);
+}
+function toggleHide(i) {
+  const list = STATE.photos.map((p, k) => (k === i ? { ...p, hidden: !p.hidden } : p)); savePhotos(list);
+}
+
+// ── 4. 문구 ──
+const FIELDS = [
+  ['headline', '헤드라인', 'input'], ['sub', '부제', 'input'], ['ctaLabel', '첫 화면 버튼 문구', 'input'],
+  ['aboutTitle', '소개 제목', 'input'], ['about', '소개 글 <small>문단 사이는 빈 줄</small>', 'area', 6],
+  ['highlights', '특징 <small>한 줄에 하나: 제목 | 설명</small>', 'area', 4],
+  ['servicesTitle', '메뉴·서비스 제목', 'input'], ['services', '메뉴·서비스 <small>한 줄에 하나: 이름 | 설명 | 가격 (가격은 확인된 것만)</small>', 'area', 6],
+  ['reviewTitle', '후기 제목', 'input'], ['reviewSummary', '후기 요약', 'area', 3], ['keywords', '후기 키워드 <small>쉼표로 구분</small>', 'input'],
+  ['seoTitle', '검색 결과 제목', 'input'], ['seoDescription', '검색 결과 설명', 'area', 2],
+];
+function toText(key, v) {
+  if (key === 'highlights') return (v || []).map((h) => [h.title, h.body].join(' | ')).join('\n');
+  if (key === 'services') return (v || []).map((s) => [s.name, s.desc || '', s.price || ''].join(' | ').replace(/( \| )+$/, '')).join('\n');
+  if (key === 'keywords') return (v || []).join(', ');
+  return v || '';
+}
+function fromText(key, t) {
+  const lines = () => t.split('\n').map((l) => l.split('|').map((x) => x.trim())).filter((a) => a[0]);
+  if (key === 'highlights') return lines().map(([title, body]) => ({ title, body: body || '' }));
+  if (key === 'services') return lines().map(([name, desc, price]) => ({ name, desc: desc || '', price: price || '' }));
+  if (key === 'keywords') return t.split(',').map((x) => x.trim()).filter(Boolean);
+  return t.trim();
+}
+function renderFields(content) {
+  $('fields').innerHTML = FIELDS.map(([k, label, kind, rows]) => `<div class="field"><label for="f_${k}">${label}</label>${kind === 'area'
+    ? `<textarea id="f_${k}" rows="${rows}">${esc(toText(k, content[k]))}</textarea>`
+    : `<input id="f_${k}" value="${esc(toText(k, content[k]))}">`}</div>`).join('');
+}
+async function saveContent() {
+  const content = {};
+  FIELDS.forEach(([k]) => { content[k] = fromText(k, $('f_' + k).value); });
+  try { STATE = await api(API, { method: 'PATCH', body: JSON.stringify({ content }) }); render(); flash('ok', '문구를 저장했습니다.'); }
+  catch (e) { flash('err', e.message); }
+}
+
+// ── 5. 공개 ──
+async function saveSlug() {
+  try { STATE = await api(API, { method: 'PATCH', body: JSON.stringify({ slug: $('slug').value.trim() }) }); render(); flash('ok', '주소를 저장했습니다.'); }
+  catch (e) { flash('err', e.message); }
+}
+async function togglePublish() {
+  const pub = STATE.site.status !== 'published';
+  if (pub && !confirm('공개하면 누구나 이 주소로 볼 수 있습니다. 공개할까요?')) return;
+  await busy($('pubBtn'), '저장 중…', async () => {
+    STATE = await api(API, { method: 'PATCH', body: JSON.stringify({ status: pub ? 'published' : 'draft' }) });
+    render(); flash('ok', pub ? '공개했습니다.' : '공개를 내렸습니다.');
+  });
+}
+
+// ── 미리보기 ──
+function setView(m) { MOBILE = m; $('frame').classList.toggle('mobile', m); }
+function reloadPreview() {
+  const f = $('frame');
+  let ifr = f.querySelector('iframe');
+  if (!ifr) { f.innerHTML = '<iframe title="미리보기"></iframe>'; ifr = f.querySelector('iframe'); }
+  ifr.src = '/admin-business/' + BIZ_ID + '/site/preview?t=' + Date.now();
+}
+
+load();
+</script>
+<script src="/js/admin-nav.js?v=3" defer></script>
+</body>
+</html>
