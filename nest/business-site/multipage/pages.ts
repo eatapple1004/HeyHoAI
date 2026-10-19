@@ -30,9 +30,9 @@ const PCARD_CSS = `
 
 const ctaBand = (m: CorpSite) => `<section class="cta"><div class="wrap">
   <div><h2>제품 사양과 견적이 궁금하신가요?</h2><p class="lead">용도와 운송 조건을 알려 주시면 담당자가 확인해 연락드립니다.</p></div>
-  <div><a class="btn" href="${esc(href(m, 'contact'))}">견적 문의하기</a>${m.facts.phone || m.company.phone ? `<a class="btn line" style="color:#fff;box-shadow:inset 0 0 0 1.5px #fff" href="tel:${esc((m.facts.phone || m.company.phone || '').replace(/[^\d+]/g, ''))}">${esc(m.facts.phone || m.company.phone || '')}</a>` : ''}</div>
+  <div><a class="btn" href="${esc(href(m, 'contact'))}">견적 문의하기</a>${m.facts.phone || m.company.phone ? `<a class="btn tel" href="tel:${esc((m.facts.phone || m.company.phone || '').replace(/[^\d+]/g, ''))}">${esc(m.facts.phone || m.company.phone || '')}</a>` : ''}</div>
 </div></section>
-<style>.cta{background:var(--accent);color:#fff}.cta .wrap{display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap}.cta h2{margin:0 0 8px;color:#fff}.cta .lead{color:rgba(255,255,255,.85);margin:0}.cta .btn{background:#fff;color:var(--ink)}</style>`;
+<style>.cta{background:var(--accent);color:#fff}.cta .wrap{display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap}.cta h2{margin:0 0 8px;color:#fff}.cta .lead{color:rgba(255,255,255,.85);margin:0}.cta .btn{background:#fff;color:var(--ink)}.cta .btn.tel{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.8)}</style>`;
 
 // ── 홈 ──
 export function home(m: CorpSite): string {
