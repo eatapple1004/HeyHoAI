@@ -72,15 +72,16 @@ ${input.direction || '기획안의 컨셉을 가장 잘 드러내는 방향으�
 body 에는 페이지별로 pg-home, pg-about, pg-history, pg-certs, pg-location, pg-products, pg-product, pg-contact, pg-privacy 클래스가 붙는다(홈 머리말을 다르게 하고 싶으면 활용).
 문의 폼은 서버가 class="dp-form" 으로 넣는다 — .dp-form 의 입력칸·버튼·동의 문구 스타일도 이 CSS에 포함한다(label, input, select, textarea, button, .dp-agree, .dp-msg.ok, .dp-msg.err).
 </css>
-<header>머리말 HTML(<header>…</header>) — 회사명 로고 글자, 데스크톱 메뉴(하위 메뉴 포함), 모바일 <details> 메뉴, 전화 문의 버튼</header>
-<footer>꼬리말 HTML(<footer>…</footer>) — 회사 정보, <a href="/privacy"><strong>개인정보처리방침</strong></a>, 저작권 줄, 사진 출처 자리 <!--{{CREDITS}}--></footer>`;
+<site-header>머리말 HTML 전체(<header>…</header>, 여는·닫는 태그 포함) — 회사명 로고 글자, 데스크톱 메뉴(하위 메뉴 포함), 모바일 <details> 메뉴, 전화 문의 버튼</site-header>
+<site-footer>꼬리말 HTML 전체(<footer>…</footer>) — 회사 정보, <a href="/privacy"><strong>개인정보처리방침</strong></a>, 저작권 줄, 사진 출처 자리 <!--{{CREDITS}}--></site-footer>`;
     const content = [
       ...input.images.slice(0, 6).flatMap((im) => [{ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } }]),
       { type: 'text', text },
     ];
     const out = await this.call(content, 16000);
     const tag = (t: string) => (new RegExp(`<${t}>([\\s\\S]*?)</${t}>`, 'i').exec(out)?.[1] || '').trim();
-    const ds = { note: tag('note'), fonts: tag('fonts'), css: tag('css'), header: tag('header'), footer: tag('footer') };
+    // 감싸는 태그를 <header>로 하면 안쪽 <header>의 닫는 태그에서 잘려 머리말이 안 닫힌다(시안 2에서 <main>이 머리말 안에 들어감)
+    const ds = { note: tag('note'), fonts: tag('fonts'), css: tag('css'), header: closeTags(tag('site-header'), 'header'), footer: closeTags(tag('site-footer'), 'footer') };
     if (!ds.css || !ds.header || !ds.footer) {
       console.warn('[design-writer] system parse failed', { len: out.length, tail: out.slice(-200) });
       throw new InternalServerErrorException('디자인 시스템 응답을 읽지 못했습니다.');
@@ -128,4 +129,11 @@ export function lighten(hex: string): string {
   if (lum > 0.6) return hex;
   const t = lum < 0.25 ? 0.62 : 0.45;
   return '#' + rgb.map((c) => Math.round(c + (255 - c) * t).toString(16).padStart(2, '0')).join('');
+}
+
+/** 여는 태그가 닫는 태그보다 많으면 끝에 닫아 준다 — AI 응답이 잘렸거나 감싸기가 꼬였을 때 페이지 전체 구조가 무너지지 않게 */
+export function closeTags(html: string, tag: string): string {
+  const open = (html.match(new RegExp(`<${tag}\\b`, 'gi')) || []).length;
+  const close = (html.match(new RegExp(`</${tag}\\s*>`, 'gi')) || []).length;
+  return html + `</${tag}>`.repeat(Math.max(0, open - close));
 }

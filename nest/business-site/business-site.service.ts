@@ -5,6 +5,8 @@ import { SiteWriterService } from './site-writer.service';
 import { CorpWriterService } from './corp-writer.service';
 import { ProcessWriterService, ResearchFact, ResearchSheet, SitePlan, PLAN_PAGES } from './process-writer.service';
 import { runQa } from './site-qa';
+import { visualCheck } from './visual-qa';
+import { aboutPages } from './multipage/layout';
 import { randomBytes, randomUUID } from 'crypto';
 import * as fs from 'fs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -483,7 +485,14 @@ export class BusinessSiteService {
       homonyms: pr.research?.sheet?.homonyms,
       planPages: pr.plan ? Object.fromEntries(pr.plan.pages.map((x: any) => [x.key, x.include])) : undefined,
     });
-    await this.patchProcess(businessId, (p) => { p.qa = report; });
+    const at = report.at;
+    await this.patchProcess(businessId, (p) => { p.qa = { ...report, visual: { state: 'running', at } }; });
+    // 화면 점검(실제 브라우저, 1분 안팎)은 뒤에서 — 끝나면 같은 점검 회차(at)에만 붙인다
+    const paths = ['', ...aboutPages(m).map((x) => x.path), ...(m.products.length ? ['products', ...m.products.map((x) => `products/${x.id}`)] : []), 'contact', 'privacy'];
+    const pages = paths.map((x) => ({ path: x, html: routeCorp(m, x, {}).body }));
+    visualCheck(pages, { shotPaths: [''] })
+      .then((v) => this.patchProcess(businessId, (p) => { if (p.qa?.at === at) p.qa.visual = { state: v.skipped ? 'skipped' : 'done', ...v, at: new Date().toISOString() }; }))
+      .catch((e) => console.warn('[business-site] visual qa failed', e?.message));
     return this.get(businessId);
   }
 
