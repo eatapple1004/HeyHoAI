@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import * as path from 'path';
 import { BusinessSiteRepository, BusinessSiteRow } from './business-site.repository';
 import { SiteWriterService } from './site-writer.service';
-import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal } from './place-sources';
+import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -25,6 +25,10 @@ export interface SiteSource {
   kakao?: KakaoPlace | null;
   google?: GooglePlaceDetail | null;
   naver?: { local: NaverLocal | null; blogs: NaverBlog[] };
+  /** 회사가 준 자료(회사소개서·조사 내용 붙여넣기) — 기업형 사실의 주 출처 */
+  manual?: string;
+  /** 회사 기존 홈페이지 글 */
+  web?: { url: string; pages: WebPage[] } | null;
   errors?: Record<string, string>;
 }
 
@@ -76,9 +80,22 @@ export class BusinessSiteService {
    * 2단계: 고른 후보의 상세를 모아 source 로 저장하고 사진 목록을 다시 만든다.
    *   카카오 후보는 검색 결과 객체를 그대로 받는다(카카오 로컬엔 단건 조회 API가 없다).
    */
-  async collect(businessId: string, body: { query?: string; kakao?: KakaoPlace; googlePlaceId?: string; naver?: NaverLocal }) {
+  async collect(businessId: string, body: { query?: string; kakao?: KakaoPlace; googlePlaceId?: string; naver?: NaverLocal; manualText?: string; website?: string }) {
     const b = await this.biz(businessId);
     const errors: Record<string, string> = {};
+    const prev: SiteSource = (await this.repo.byBusiness(businessId))?.source || {};
+    // 회사 자료·홈페이지는 이번에 안 보냈으면 지난번 것을 유지한다(장소만 다시 고르는 경우)
+    const manual = body.manualText !== undefined ? String(body.manualText).slice(0, 40000) : prev.manual;
+    let web = prev.web || null;
+    if (body.website !== undefined) {
+      web = null;
+      if (String(body.website).trim()) {
+        try {
+          web = await sources.website(body.website);
+          if (!web) errors.web = '주소 형식이 잘못됐습니다(공개 도메인만 가능)';
+        } catch (e: any) { errors.web = String(e?.message || e).slice(0, 200); }
+      }
+    }
     const kakao = body.kakao && body.kakao.id ? pickKakao(body.kakao) : null;
     const name = kakao?.name || body.naver?.name || b.name;
     // 블로그는 "가게 이름 + 동네"로 찾아야 같은 이름의 다른 지점 글이 덜 섞인다
@@ -93,7 +110,7 @@ export class BusinessSiteService {
 
     const source: SiteSource = {
       query: body.query, collectedAt: new Date().toISOString(),
-      kakao, google, naver: { local: body.naver ? pickNaver(body.naver) : null, blogs }, errors,
+      kakao, google, naver: { local: body.naver ? pickNaver(body.naver) : null, blogs }, manual, web, errors,
     };
     const site = await this.repo.ensure(businessId, guessTemplate(kakao?.category || body.naver?.category, b.industry || ''));
     const photos = await this.mergePhotos(businessId, site.photos as PhotoEntry[], source);
@@ -115,7 +132,12 @@ export class BusinessSiteService {
     const loaded = await Promise.all(usable.map((p) => this.loadPhoto(site, p.ref)));
     const refs = usable.filter((_, i) => loaded[i]).map((p) => p.ref);
     const images = loaded.filter(Boolean) as { data: string; mediaType: string }[];
+    const material = [
+      s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
+      ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
+    ].filter(Boolean).join('\n\n');
     const out = await this.writer.write({
+      material,
       name: b.name,
       industry: b.industry,
       memo: b.memo,

@@ -6,8 +6,8 @@ import { TEMPLATES, TEMPLATE_KEYS, SiteContent } from './templates';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
 
-const SYSTEM_PROMPT = `당신은 동네 가게의 홈페이지 문구를 쓰는 카피라이터입니다.
-아래 자료(카카오·구글·네이버에서 모은 공개 정보, 관리자 메모)만 보고 홈페이지에 들어갈 글을 씁니다.
+const SYSTEM_PROMPT = `당신은 동네 가게와 중소기업의 홈페이지 문구를 쓰는 카피라이터입니다.
+아래 자료(카카오·구글·네이버에서 모은 공개 정보, 회사가 준 자료·기존 홈페이지 글, 관리자 메모)만 보고 홈페이지에 들어갈 글을 씁니다.
 
 규칙:
 1. 자료에 있는 사실만 쓴다. 자료에 없는 메뉴·가격·이벤트·수상·경력·역사를 지어내지 않는다.
@@ -20,7 +20,12 @@ const SYSTEM_PROMPT = `당신은 동네 가게의 홈페이지 문구를 쓰는 
 8. 헤드라인은 20자 안팎, 부제(sub)는 60자 안팎. "성수동 베이커리 카페"처럼 같은 업종 아무 가게에나 붙는 말은 금지 — 사진과 리뷰에서 본 **이 가게만의 구체적인 것**(대표 메뉴, 공간의 특징, 손님이 반복해서 말하는 점)으로 쓴다.
 9. 사진이 첨부되면 한 장씩 직접 보고 종류(food·interior·exterior·people·other)와 짧은 설명(15자 안팎, 보이는 것만)을 단다. 사진에 보이는 메뉴는 services에 넣고 그 메뉴가 주인공인 음식(food) 사진 번호를 photo로 연결한다(진열대·매장 사진은 연결하지 않는다)(이름을 모르면 "크루아상"처럼 보이는 그대로의 일반 명칭).
 10. hero는 첫 화면 큰 사진 번호 — 이 가게의 성격이 한눈에 보이고 선명한 사진. 흐리거나 사람 얼굴이 크게 나온 사진은 피한다.
-11. 설명 없이 JSON만 반환한다.`;
+11. corporate(중소기업) 템플릿이면 stats·history·certifications·company를 채운다. 수치·연도·인증·특허·대표 이름·사업자번호는 **회사 자료에 글자로 적힌 것만** 옮기고, 계산하거나 추정하지 않는다. 손님 말투가 아니라 발주처·협력사에게 신뢰를 주는 단정한 문체로 쓴다. 매출 감소·소송·회생 같은 민감한 경영 정보는 쓰지 않는다.
+   - stats는 이 회사를 가장 잘 증명하는 수치 3~4개(예: {"value":"−2t","label":"공차중량 감소","note":"동급 스틸 대비"}). 연혁 연도 개수 같은 뻔한 수치는 피한다.
+   - history는 자료의 연혁을 연도 오름차순으로, 같은 해는 한 줄로 묶어 최대 20줄.
+   - services는 사업분야·대표 제품. 사진이 있으면 그 제품이 주인공인 사진 번호를 photo로 연결하고, price 자리에는 가격 대신 핵심 사양 한 줄(자료에 있는 것만)을 넣어도 된다.
+   - accent는 로고·제품 사진에서 보이는 회사 색 하나(#RRGGBB). 확실하지 않으면 "".
+12. 설명 없이 JSON만 반환한다.`;
 
 export interface WriterInput {
   name: string;
@@ -30,6 +35,8 @@ export interface WriterInput {
   reviews: { author: string; rating?: number; text: string }[];
   blogs: { title: string; snippet: string; blogger?: string }[];
   suggestedTemplate: string;
+  /** 회사가 준 자료·기존 홈페이지 글 — 기업형에서 사실의 주 출처 */
+  material?: string;
   /** 사진(번호 = 배열 순서). 이미지를 못 읽은 건 빠진 채로 온다 */
   images?: { data: string; mediaType: string }[];
   /** 관리자가 템플릿을 이미 골랐으면 AI가 바꾸지 않는다 */
@@ -67,6 +74,9 @@ ${input.memo ? `관리자 메모: ${input.memo}` : ''}
 [가게 정보]
 ${JSON.stringify(input.facts, null, 1)}
 
+[회사 자료·기존 홈페이지]
+${input.material ? input.material.slice(0, 30000) : '없음'}
+
 [구글 리뷰]
 ${input.reviews.length ? input.reviews.map((r, i) => `${i}. (${r.rating ?? '-'}점) ${r.text.replace(/\s+/g, ' ').slice(0, 500)}`).join('\n') : '없음'}
 
@@ -90,6 +100,11 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
   "reviewTitle": "", "reviewSummary": "", "keywords": ["리뷰에서 반복되는 짧은 말 3~6개"],
   "reviewPicks": [0], "blogPicks": [0],
   "ctaLabel": "첫 화면 버튼 문구(예: 예약 전화, 길찾기)",
+  "stats": [{"value": "", "label": "", "note": ""}],
+  "history": [{"year": "", "text": ""}],
+  "certifications": [""],
+  "company": {"ceo": "", "founded": "", "fax": "", "email": "", "bizNo": "", "address": "", "phone": ""},
+  "accent": "",
   "photos": [{"i": 0, "kind": "food|interior|exterior|people|other", "caption": ""}],
   "hero": 0,
   "seoTitle": "검색 결과 제목 40자 이내", "seoDescription": "검색 결과 설명 120자 이내"
@@ -97,7 +112,7 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
 
     const res = await this.anthropic().messages.create({
       model: env.CLAUDE_MODEL,
-      max_tokens: 4000,
+      max_tokens: 6000,
       system: SYSTEM_PROMPT,
       messages: [{
         role: 'user',
@@ -148,6 +163,14 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
         reviewPicks: noReviews ? [] : idx(json.reviewPicks, input.reviews.length, 3).filter((i) => (input.reviews[i].rating ?? 5) >= 4),
         blogPicks: noReviews ? [] : idx(json.blogPicks, input.blogs.length, 4),
         ctaLabel: str(json.ctaLabel, 16),
+        stats: (Array.isArray(json.stats) ? json.stats : []).slice(0, 4)
+          .map((x: any) => ({ value: str(x?.value, 16), label: str(x?.label, 30), note: str(x?.note, 40) })).filter((x: any) => x.value && x.label),
+        history: (Array.isArray(json.history) ? json.history : []).slice(0, 24)
+          .map((x: any) => ({ year: str(x?.year, 12), text: str(x?.text, 160) })).filter((x: any) => x.year && x.text),
+        certifications: (Array.isArray(json.certifications) ? json.certifications : []).map((x: unknown) => str(x, 40)).filter(Boolean).slice(0, 16),
+        company: Object.fromEntries(['ceo', 'founded', 'fax', 'email', 'bizNo', 'address', 'phone']
+          .map((k) => [k, str(json.company?.[k], 120)]).filter(([, v]) => v)),
+        accent: /^#[0-9a-f]{6}$/i.test(json.accent || '') ? json.accent : '',
         seoTitle: str(json.seoTitle, 60),
         seoDescription: str(json.seoDescription, 160),
       },

@@ -20,6 +20,17 @@ export interface SiteContent {
   ctaLabel?: string;
   seoTitle?: string;
   seoDescription?: string;
+  // ── 기업형(corporate) — 전부 "회사 자료"에 적힌 것만. 없으면 그 섹션을 숨긴다 ──
+  /** 핵심 수치(공차중량 −2t, 특허 11건 …). value 는 화면에 크게, label 은 무엇의 수치인지 */
+  stats?: { value: string; label: string; note?: string }[];
+  /** 연혁 — 연도별 한 줄 */
+  history?: { year: string; text: string }[];
+  /** 인증·특허·지정 */
+  certifications?: string[];
+  /** 회사 정보(푸터·문의 표) — 자료에 있는 것만 */
+  company?: { ceo?: string; founded?: string; fax?: string; email?: string; bizNo?: string; address?: string; phone?: string };
+  /** 브랜드 강조색(#RRGGBB) — 로고·제품 사진에서 고른다. 없으면 템플릿 기본색 */
+  accent?: string;
 }
 
 export interface SiteFacts {

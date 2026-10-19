@@ -4,6 +4,7 @@ import { renderRestaurant } from './restaurant';
 import { renderBeauty } from './beauty';
 import { renderClinic } from './clinic';
 import { renderGeneral } from './general';
+import { renderCorporate } from './corporate';
 
 export * from './shared';
 
@@ -19,6 +20,7 @@ export const TEMPLATES: Record<string, {
   restaurant: { label: '식당·주점', fits: '한식·중식·일식·양식 식당, 고깃집, 분식, 주점, 포차', reviews: true, render: renderRestaurant },
   beauty: { label: '뷰티·살롱', fits: '미용실, 네일, 속눈썹, 피부관리, 왁싱, 스파, 마사지', reviews: true, render: renderBeauty },
   clinic: { label: '병원·약국', fits: '병원, 의원, 치과, 한의원, 동물병원, 약국', reviews: false, render: renderClinic },
+  corporate: { label: '중소기업·제조·건설', fits: '제조사, 건설사, 산업·기술 기업, B2B 서비스, 공장 — 손님보다 발주처·협력사가 보는 회사', reviews: false, render: renderCorporate },
   general: { label: '매장·서비스 일반', fits: '그 밖의 모든 업종 — 매장, 공방, 학원, 스튜디오, 수리·서비스업', reviews: true, render: renderGeneral },
 };
 
@@ -30,6 +32,7 @@ export function guessTemplate(category = '', industry = ''): string {
   if (/카페|베이커리|제과|디저트|커피|브런치|찻집|빵/.test(s)) return 'cafe';
   if (/병원|의원|치과|한의원|약국|의료|클리닉|동물병원/.test(s)) return 'clinic';
   if (/미용|헤어|네일|피부|뷰티|왁싱|속눈썹|스파|마사지|에스테틱/.test(s)) return 'beauty';
+  if (/제조|건설|공업|산업|기계|트레일러|특장|부품|공장|엔지니어링|플랜트|설비|중공업|화학|소재|물류|건축|토목|시공|주식회사|\(주\)/.test(s)) return 'corporate';
   if (/음식점|식당|한식|중식|일식|양식|분식|주점|술집|고기|치킨|피자|포차|이자카야|요리/.test(s)) return 'restaurant';
   return 'general';
 }
