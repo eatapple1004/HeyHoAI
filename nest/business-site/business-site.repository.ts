@@ -10,6 +10,8 @@ export interface BusinessSiteRow {
   source: any;
   content: any;
   photos: any[];
+  /** 제작 과정 — research·plan·qa·share */
+  process: any;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -23,8 +25,9 @@ const UPDATABLE: Record<string, string> = {
   source: 'source',
   content: 'content',
   photos: 'photos',
+  process: 'process',
 };
-const JSONB = new Set(['source', 'content', 'photos']);
+const JSONB = new Set(['source', 'content', 'photos', 'process']);
 
 @Injectable()
 export class BusinessSiteRepository {
@@ -78,6 +81,37 @@ export class BusinessSiteRepository {
     sets.push('updated_at = now()');
     const r = await this.db.query<BusinessSiteRow>(
       `UPDATE business_sites SET ${sets.join(', ')} WHERE business_id = $1 RETURNING *`, params);
+    return r.rows[0] || null;
+  }
+
+  /** 고객 검토 링크 — 로그인 없이 미리보기를 보여 준다 */
+  async byShareToken(token: string): Promise<BusinessSiteRow | null> {
+    if (!/^[a-f0-9]{32}$/.test(token)) return null;
+    const r = await this.db.query<BusinessSiteRow>(`SELECT * FROM business_sites WHERE process->'share'->>'token' = $1`, [token]);
+    return r.rows[0] || null;
+  }
+
+  // ── 버전 ──
+  async addVersion(site: BusinessSiteRow, label: string) {
+    const r = await this.db.query(
+      `INSERT INTO business_site_versions (site_id, n, label, template, content, photos)
+       SELECT $1, COALESCE(MAX(n), 0) + 1, $2, $3, $4::jsonb, $5::jsonb FROM business_site_versions WHERE site_id = $1
+       RETURNING n`,
+      [site.id, label.slice(0, 80), site.template, JSON.stringify(site.content || {}), JSON.stringify(site.photos || [])]);
+    await this.db.query(
+      `DELETE FROM business_site_versions WHERE site_id = $1 AND n <= (SELECT MAX(n) - 30 FROM business_site_versions WHERE site_id = $1)`, [site.id]);
+    return r.rows[0]?.n as number;
+  }
+
+  async versions(siteId: string) {
+    const r = await this.db.query(
+      `SELECT n, label, template, created_at, jsonb_array_length(COALESCE(content->'products', '[]'::jsonb)) AS products
+         FROM business_site_versions WHERE site_id = $1 ORDER BY n DESC`, [siteId]);
+    return r.rows;
+  }
+
+  async version(siteId: string, n: number) {
+    const r = await this.db.query(`SELECT * FROM business_site_versions WHERE site_id = $1 AND n = $2`, [siteId, n]);
     return r.rows[0] || null;
   }
 

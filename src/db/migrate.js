@@ -672,6 +672,23 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_site_inquiries_business ON business_site_inquiries(business_id, created_at DESC);
   `);
 
+  // 사업체 홈페이지 제작 과정(2026-10-19) — 조사 시트·기획안·점검 결과·고객 검토 링크(process),
+  //   만들 때마다 남기는 버전(되돌리기용). 버전은 사이트당 최근 30개만 둔다(서비스에서 정리).
+  await pool.query(`
+    ALTER TABLE business_sites ADD COLUMN IF NOT EXISTS process JSONB NOT NULL DEFAULT '{}';
+    CREATE TABLE IF NOT EXISTS business_site_versions (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        site_id     UUID NOT NULL REFERENCES business_sites(id) ON DELETE CASCADE,
+        n           INT NOT NULL,
+        label       VARCHAR(80),
+        template    VARCHAR(30) NOT NULL,
+        content     JSONB NOT NULL,
+        photos      JSONB NOT NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (site_id, n)
+    );
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).

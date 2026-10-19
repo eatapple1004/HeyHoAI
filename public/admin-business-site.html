@@ -66,6 +66,19 @@ button:disabled{opacity:.5;cursor:default}
 .msg.show{display:block}
 .msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
 .msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 20px}
+.step{font-size:.76rem;font-weight:700;padding:6px 11px;border-radius:20px;border:1px solid var(--border);color:var(--faint)}
+.step.done{color:var(--green);border-color:#2e5b3a}.step.now{color:var(--gold);border-color:#6b5525}.step.bad{color:var(--red);border-color:#5b2e2e}
+.ftab{width:100%;border-collapse:collapse;font-size:.8rem}.ftab td{border-top:1px solid var(--border);padding:7px 6px;vertical-align:top}
+.ftab td.u{width:26px}.ftab td.u input{width:auto}.ftab .s{color:var(--faint);font-size:.72rem}
+.lv{font-size:.66rem;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap}
+.lv-confirmed{background:rgba(74,222,128,.16);color:var(--green)}.lv-reference{background:rgba(255,206,122,.16);color:var(--gold)}.lv-unverified{background:rgba(248,113,113,.16);color:var(--red)}
+.warnbox{background:rgba(255,206,122,.08);border:1px solid #6b5525;border-radius:10px;padding:10px 12px;font-size:.8rem;color:var(--gold);margin:10px 0}
+.qa{font-size:.82rem;line-height:1.6}.qa div{padding:5px 0;border-top:1px solid var(--border)}
+.qa .fail{color:#fca5a5}.qa .warn{color:var(--gold)}.qa .ok{color:var(--green)}
+.qa a{cursor:pointer;font-size:.74rem;margin-left:6px}
+.ul{font-size:.8rem;color:var(--dim);padding-left:18px;line-height:1.7}
+.chk{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;margin:0 12px 6px 0}.chk input{width:auto}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.preview{position:static}.frame{height:80vh}}
 @media(max-width:600px){body{padding:16px}}
 </style>
@@ -77,6 +90,7 @@ button:disabled{opacity:.5;cursor:default}
   <h1>🌐 <span id="bizName">…</span> 홈페이지 <span id="siteStatus"></span></h1>
   <div class="sub" id="siteUrl">자료를 모으면 AI가 업종에 맞는 템플릿을 고르고 문구를 씁니다. 사실 정보(주소·전화·영업시간)는 수집한 자료 그대로 들어갑니다.</div>
 
+  <div class="steps" id="steps"></div>
   <div class="msg err" id="err"></div>
   <div class="msg ok" id="ok"></div>
 
@@ -105,9 +119,23 @@ button:disabled{opacity:.5;cursor:default}
         <div class="facts" id="facts" style="margin-top:14px"></div>
       </div>
 
+      <!-- 조사 시트 -->
+      <div class="card" id="resCard">
+        <h2>2. 조사 시트 <span class="hint">모은 자료 + 웹 검색으로 회사 사실을 모으고 출처를 답니다. 체크한 사실만 사이트에 씁니다</span></h2>
+        <div class="row"><button class="primary" id="resBtn" onclick="runResearch()">AI 조사 시작</button><span class="prog" id="resProg"></span></div>
+        <div id="research" style="margin-top:12px"></div>
+      </div>
+
+      <!-- 기획안 -->
+      <div class="card" id="planCard">
+        <h2>3. 기획안 <span id="planBadge"></span> <span class="hint">승인해야 제작할 수 있습니다. 고치면 승인이 풀립니다</span></h2>
+        <div class="row"><button id="planBtn" onclick="runPlan()">기획안 만들기</button><span class="prog" id="planProg"></span></div>
+        <div id="plan" style="margin-top:12px"></div>
+      </div>
+
       <!-- 2. 템플릿 + AI -->
       <div class="card">
-        <h2>2. 템플릿·문구 <span class="hint">자동을 고르면 AI가 업종을 보고 템플릿을 정합니다</span></h2>
+        <h2>4. 제작 <span class="hint">기업형은 승인된 기획안대로 여러 페이지를 만듭니다. 만들 때마다 버전이 남습니다</span></h2>
         <div class="row">
           <select id="tpl" style="flex:1"></select>
           <button class="primary" id="genBtn" onclick="generate()">AI로 문구 만들기</button>
@@ -121,15 +149,35 @@ button:disabled{opacity:.5;cursor:default}
         <div id="pages" class="row" style="gap:6px"></div>
       </div>
 
+      <!-- 자동 점검 -->
+      <div class="card" id="qaCard" style="display:none">
+        <h2>5. 자동 점검 <span id="qaBadge"></span> <span class="hint">출처 없는 숫자·금지 표현·빠진 자료</span></h2>
+        <div class="row"><button class="sm" onclick="runQa()">다시 점검</button><span class="prog" id="qaAt"></span></div>
+        <div class="qa" id="qa" style="margin-top:10px"></div>
+      </div>
+
+      <!-- 고객 검토 -->
+      <div class="card" id="shareCard" style="display:none">
+        <h2>6. 고객 검토 <span class="hint">로그인 없이 볼 수 있는 검토 링크와 자료 요청서</span></h2>
+        <div id="share"></div>
+      </div>
+
+      <!-- 버전 -->
+      <div class="card" id="verCard" style="display:none">
+        <h2>버전 <span class="hint">AI로 만들 때마다 자동 저장. 되돌리면 지금 상태도 버전으로 남습니다</span></h2>
+        <div class="row" style="margin-bottom:8px"><input id="verLabel" placeholder="메모 (예: 고객 1차 수정 반영)" style="flex:1"><button class="sm" onclick="saveVersion()">지금 상태 저장</button></div>
+        <div id="versions"></div>
+      </div>
+
       <!-- 3. 사진 -->
       <div class="card">
-        <h2>3. 사진 <span class="hint">첫 번째(대표)가 맨 위 큰 사진이 됩니다. 원본 사진은 사업체 상세에서 올리세요</span></h2>
+        <h2>사진 <span class="hint">첫 번째(대표)가 맨 위 큰 사진이 됩니다. 원본 사진은 사업체 상세에서 올리세요</span></h2>
         <div class="photos" id="photos"></div>
       </div>
 
       <!-- 4. 문구 -->
       <div class="card">
-        <h2>4. 문구 고치기</h2>
+        <h2>문구 고치기</h2>
         <div id="fields"></div>
         <button class="primary" onclick="saveContent()">문구 저장</button>
       </div>
@@ -142,7 +190,7 @@ button:disabled{opacity:.5;cursor:default}
 
       <!-- 5. 공개 -->
       <div class="card">
-        <h2>5. 공개 <span class="hint">공개하면 누구나 주소로 볼 수 있습니다</span></h2>
+        <h2>7. 공개 <span class="hint">공개하면 누구나 주소로 볼 수 있습니다</span></h2>
         <div class="field"><label>주소 <small>영어 소문자·숫자·하이픈</small></label>
           <div class="row"><span class="prog" id="slugBase"></span><input id="slug" style="flex:1;min-width:140px"><button onclick="saveSlug()">주소 저장</button></div></div>
         <div class="row"><button class="primary" id="pubBtn" onclick="togglePublish()">공개하기</button><a id="openLink" target="_blank" rel="noopener" style="display:none;font-size:.85rem">공개 페이지 열기</a></div>
@@ -227,6 +275,7 @@ function render() {
   if (publicUrl) $('openLink').href = publicUrl;
   $('genBtn').disabled = !site;
   renderPages(site);
+  renderProcess();
   if (site) reloadPreview();
   if (site && site.content && site.content.multipage) loadInquiries();
   if (genState() === 'running' && !window._polling) { window._polling = true; pollGen().finally(() => { window._polling = false; }); }
@@ -437,6 +486,157 @@ async function loadInquiries() {
       ${q.product ? `<div class="prog">관심 제품: ${esc(q.product)}</div>` : ''}
       <div style="white-space:pre-wrap;color:var(--dim);margin-top:4px">${esc(q.message)}</div></div>`).join('') : '<div class="empty">아직 문의가 없습니다.</div>';
   } catch (e) { /* 문의 목록 실패는 화면 전체를 막지 않는다 */ }
+}
+
+// ── 제작 과정 ──
+const PR = () => (STATE.site && STATE.site.process) || {};
+const jobRunning = () => { const j = PR().job; return j && j.state === 'running'; };
+function renderProcess() {
+  const site = STATE.site; const p = PR();
+  const sheet = p.research && p.research.sheet; const plan = p.plan; const qa = p.qa;
+  const c = (site && site.content) || {};
+  const steps = [
+    ['자료 수집', site && site.source && site.source.collectedAt ? 'done' : 'now'],
+    ['조사 시트', sheet ? 'done' : ''],
+    ['기획안 승인', plan && plan.approvedAt ? 'done' : plan ? 'now' : ''],
+    ['제작', c.multipage && c.gen && c.gen.state === 'done' ? 'done' : c.gen && c.gen.state === 'running' ? 'now' : ''],
+    ['자동 점검' + (qa ? (qa.counts.fail ? ` (문제 ${qa.counts.fail})` : ' ✓') : ''), qa ? (qa.counts.fail ? 'bad' : 'done') : ''],
+    ['고객 검토', p.share && p.share.token ? 'done' : ''],
+    ['공개', site && site.status === 'published' ? 'done' : ''],
+  ];
+  $('steps').innerHTML = steps.map(([l, st], i) => `<span class="step ${st}">${i + 1}. ${esc(l)}</span>`).join('');
+
+  // 작업 상태
+  const j = p.job || {};
+  const prog = j.state === 'running' ? (j.step || '진행 중') + ' — 1~3분 걸립니다' : j.state === 'error' ? '실패: ' + (j.error || '') : '';
+  $('resProg').textContent = j.kind === 'research' ? prog : '';
+  $('planProg').textContent = j.kind === 'plan' ? prog : '';
+  $('resBtn').disabled = !site || jobRunning();
+  $('resBtn').textContent = sheet ? '다시 조사' : 'AI 조사 시작';
+  $('planBtn').disabled = !sheet || jobRunning();
+  $('planBtn').textContent = plan ? '기획안 다시 만들기' : '기획안 만들기';
+  if (jobRunning() && !window._jobPolling) { window._jobPolling = true; pollJob().finally(() => { window._jobPolling = false; }); }
+
+  // 조사 시트
+  if (!sheet) $('research').innerHTML = '<div class="empty">자료를 모은 뒤 조사를 시작하세요. 웹 검색으로 기업정보·협력사 목록·카탈로그를 찾아 사실마다 출처를 답니다.</div>';
+  else {
+    const id = sheet.identity || {};
+    const topics = [...new Set(sheet.facts.map((f) => f.topic))];
+    const lvName = { confirmed: '확인', reference: '참고', unverified: '출처 미확인' };
+    $('research').innerHTML = `
+      <div class="facts">${esc(sheet.summary)}</div>
+      <div class="facts" style="margin-top:8px">${[['legalName', '상호'], ['ceo', '대표'], ['founded', '설립'], ['industry', '업종'], ['address', '주소'], ['phone', '전화'], ['website', '홈페이지']].filter(([k]) => id[k]).map(([k, l]) => `<b>${l}</b> ${esc(id[k])}`).join(' · ')}</div>
+      ${(sheet.homonyms || []).length ? `<div class="warnbox">⚠ 이름이 같은 다른 업체 — 정보가 섞이지 않았는지 확인하세요<ul class="ul">${sheet.homonyms.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
+      <table class="ftab" style="margin-top:8px">${topics.map((t) => `<tr><td colspan="3" style="color:var(--accent2);font-weight:700;padding-top:12px">${esc(t)}</td></tr>` +
+        sheet.facts.filter((f) => f.topic === t).map((f) => `<tr><td class="u"><input type="checkbox" data-fact="${esc(f.id)}"${f.use ? ' checked' : ''} title="사이트에 쓰기"></td>
+          <td>${esc(f.text)}<div class="s">${f.source.url ? `<a href="${esc(f.source.url)}" target="_blank" rel="noopener">${esc(f.source.title)}</a>` : esc(f.source.title)}</div></td>
+          <td><span class="lv lv-${f.level}">${lvName[f.level] || f.level}</span></td></tr>`).join('')).join('')}</table>
+      <div class="row" style="margin-top:10px"><button class="sm" onclick="saveFacts()">체크 저장</button><span class="prog">${sheet.facts.filter((f) => f.use).length}/${sheet.facts.length}개 사용</span></div>
+      ${sheet.gaps.length ? `<div style="margin-top:14px"><b style="font-size:.84rem">회사에 받아야 할 자료</b><ul class="ul">${sheet.gaps.map((g) => `<li><b>${esc(g.item)}</b> — ${esc(g.why)}</li>`).join('')}</ul></div>` : ''}
+      ${sheet.benchmarks.length ? `<div style="margin-top:10px"><b style="font-size:.84rem">구성 참고 사이트</b> <span class="prog">레이아웃만 참고, 문구·사진은 쓰지 않음</span><ul class="ul">${sheet.benchmarks.map((b) => `<li><a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.name)}</a> — ${esc(b.why)}</li>`).join('')}</ul></div>` : ''}
+      ${(sheet.searches || []).length ? `<div class="prog" style="margin-top:8px">검색어: ${sheet.searches.map(esc).join(' · ')}</div>` : ''}
+      <div class="prog" style="margin-top:4px">조사 ${new Date(p.research.at).toLocaleString('ko-KR')}</div>`;
+  }
+
+  // 기획안
+  $('planBadge').innerHTML = !plan ? '' : plan.approvedAt ? '<span class="badge b-on">승인됨</span>' : '<span class="badge b-wait">승인 대기</span>';
+  if (!plan) $('plan').innerHTML = '<div class="empty">조사 시트에서 쓸 사실을 고른 뒤 기획안을 만드세요.</div>';
+  else {
+    const pp = STATE.planPages || {};
+    $('plan').innerHTML = `
+      <div class="field"><label>컨셉 <small>${esc(plan.conceptWhy)}</small></label><input id="pl_concept" value="${esc(plan.concept)}"></div>
+      <div class="field"><label>헤드라인 초안</label><input id="pl_headline" value="${esc(plan.headlineDraft)}"></div>
+      <div class="field"><label>읽는 사람</label><div class="facts">${plan.audience.map(esc).join(' · ')}</div></div>
+      <div class="field"><label>문체</label><input id="pl_tone" value="${esc(plan.tone)}"></div>
+      <div class="field"><label>강조색 <small>${esc(plan.accentWhy)}</small></label><div class="row"><input type="color" id="pl_accentPick" value="${esc(plan.accent)}" oninput="$('pl_accent').value=this.value" style="width:52px;padding:2px"><input id="pl_accent" value="${esc(plan.accent)}" style="width:110px"></div></div>
+      <div class="field"><label>페이지 <small>자료가 없는 페이지는 빼 둡니다</small></label>${plan.pages.map((x) => `<label class="chk" title="${esc(x.reason)}"><input type="checkbox" data-page="${esc(x.key)}"${x.include ? ' checked' : ''}>${esc(pp[x.key] || x.key)}</label>`).join('')}
+        <div class="prog">${plan.pages.filter((x) => x.reason).map((x) => `${esc(pp[x.key] || x.key)}: ${esc(x.reason)}`).join('<br>')}</div></div>
+      <div class="field"><label>제품 분류 <small>한 줄에 하나: id | 이름</small></label><textarea id="pl_cats" rows="3">${esc(plan.categories.map((c) => c.id + ' | ' + c.name).join('\n'))}</textarea></div>
+      <div class="field"><label>올릴 제품 <small>한 줄에 하나</small></label><textarea id="pl_products" rows="5">${esc(plan.products.join('\n'))}</textarea></div>
+      ${plan.photoNeeds.length ? `<div class="field"><label>회사에 받을 사진</label><ul class="ul">${plan.photoNeeds.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+      ${plan.risks.length ? `<div class="field"><label>공개 전 고객 확인</label><ul class="ul">${plan.risks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+      <div class="row"><button onclick="savePlan()">기획안 저장</button>${plan.approvedAt
+        ? `<button onclick="approvePlan(false)">승인 취소</button><span class="prog">승인 ${new Date(plan.approvedAt).toLocaleString('ko-KR')}</span>`
+        : '<button class="primary" onclick="approvePlan(true)">이 기획안으로 승인</button>'}</div>`;
+  }
+  const needPlan = sheet && !(plan && plan.approvedAt);
+  $('genBtn').disabled = !site || needPlan || genState() === 'running';
+  if (needPlan && genState() !== 'running') $('genProg').textContent = '기획안을 승인하면 만들 수 있습니다.';
+  else if (genState() !== 'running' && $('genProg').textContent.startsWith('기획안')) $('genProg').textContent = '';
+
+  // 자동 점검
+  $('qaCard').style.display = c.multipage ? '' : 'none';
+  if (qa) {
+    $('qaBadge').innerHTML = qa.counts.fail ? `<span class="badge" style="background:rgba(248,113,113,.16);color:var(--red)">문제 ${qa.counts.fail}</span>` : '<span class="badge b-on">통과</span>';
+    $('qaAt').textContent = `${qa.pages}개 페이지 · 확인 필요 ${qa.counts.warn} · ${new Date(qa.at).toLocaleString('ko-KR')}`;
+    const order = { fail: 0, warn: 1, ok: 2 };
+    $('qa').innerHTML = qa.items.slice().sort((a, b) => order[a.level] - order[b.level]).map((i) => `<div class="${i.level}">${i.level === 'fail' ? '✕' : i.level === 'warn' ? '!' : '✓'} <b>${esc(i.area)}</b> ${esc(i.msg)}${i.path != null ? `<a onclick="openPage('${esc(i.path === '/' ? '' : i.path)}')">보기</a>` : ''}</div>`).join('');
+  } else { $('qaBadge').innerHTML = ''; $('qa').innerHTML = ''; }
+
+  // 고객 검토
+  $('shareCard').style.display = c.multipage ? '' : 'none';
+  const tok = p.share && p.share.token;
+  const link = tok ? location.origin + '/site-review/' + tok + '/' : '';
+  $('share').innerHTML = `
+    <div class="row">${tok ? `<input readonly value="${esc(link)}" style="flex:1" onclick="this.select()"><button class="sm" onclick="navigator.clipboard.writeText('${esc(link)}');flash('ok','복사했습니다.')">복사</button><a href="${esc(link)}" target="_blank" rel="noopener" style="font-size:.8rem">열기</a><button class="sm" onclick="setShare(false)">링크 끄기</button>`
+      : '<button onclick="setShare(true)">검토 링크 만들기</button><span class="prog">검색엔진에 노출되지 않고, 끄면 바로 막힙니다</span>'}</div>
+    <div class="row" style="margin-top:10px"><a href="/admin-business/${BIZ_ID}/site/request-doc" target="_blank" rel="noopener">📄 자료 요청서 열기</a><span class="prog">확인할 사실·참고 정보·보내 줄 자료 — 인쇄하면 PDF</span></div>`;
+
+  // 버전
+  const vs = STATE.versions || [];
+  $('verCard').style.display = site && (vs.length || c.multipage) ? '' : 'none';
+  $('versions').innerHTML = vs.length ? vs.map((v) => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--border);padding:7px 0;font-size:.8rem">
+    <span><b>v${v.n}</b> ${esc(v.label || '')} <span class="prog">${new Date(v.created_at).toLocaleString('ko-KR')}${v.products ? ' · 제품 ' + v.products : ''}</span></span>
+    <button class="sm" onclick="restoreVersion(${v.n})">되돌리기</button></div>`).join('') : '<div class="empty">아직 버전이 없습니다.</div>';
+}
+async function runResearch() {
+  if (PR().research && !confirm('다시 조사하면 사실 체크와 기획안 승인이 초기화됩니다. 진행할까요?')) return;
+  try { STATE = await api(API + '/research', { method: 'POST' }); render(); } catch (e) { flash('err', e.message); }
+}
+async function runPlan() {
+  if (PR().plan && !confirm('기획안을 새로 만들면 지금 기획안(수정 포함)이 바뀝니다. 진행할까요?')) return;
+  try { STATE = await api(API + '/plan', { method: 'POST' }); render(); } catch (e) { flash('err', e.message); }
+}
+async function pollJob() {
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 3000));
+    try { STATE = await api(API); } catch (e) { continue; }
+    if (!jobRunning()) break;
+    renderProcess();
+  }
+  render();
+  const j = PR().job || {};
+  if (j.state === 'error') flash('err', '실패: ' + (j.error || ''));
+  else flash('ok', j.kind === 'research' ? '조사를 마쳤습니다. 사실을 확인하고 기획안을 만드세요.' : '기획안을 만들었습니다. 고칠 곳을 고치고 승인하세요.');
+}
+async function patchProcess(body, msg) {
+  try { STATE = await api(API + '/process', { method: 'PATCH', body: JSON.stringify(body) }); render(); if (msg) flash('ok', msg); } catch (e) { flash('err', e.message); }
+}
+function saveFacts() {
+  const factUse = {}; document.querySelectorAll('[data-fact]').forEach((el) => { factUse[el.dataset.fact] = el.checked; });
+  patchProcess({ factUse }, '저장했습니다. 기획안 승인이 풀렸으면 다시 승인하세요.');
+}
+function planFromForm() {
+  return {
+    concept: $('pl_concept').value, headlineDraft: $('pl_headline').value, tone: $('pl_tone').value, accent: $('pl_accent').value.trim(),
+    pages: [...document.querySelectorAll('[data-page]')].map((el) => ({ key: el.dataset.page, include: el.checked })),
+    categories: $('pl_cats').value.split('\n').map((l) => l.split('|').map((x) => x.trim())).filter((a) => a[0] && a[1]).map(([id, name]) => ({ id, name })),
+    products: $('pl_products').value.split('\n').map((x) => x.trim()).filter(Boolean),
+  };
+}
+function savePlan() { patchProcess({ plan: planFromForm() }, '기획안을 저장했습니다. 승인해야 제작할 수 있습니다.'); }
+async function approvePlan(on) {
+  if (on) { try { await api(API + '/process', { method: 'PATCH', body: JSON.stringify({ plan: planFromForm() }) }); } catch (e) { return flash('err', e.message); } }
+  patchProcess({ approve: on }, on ? '승인했습니다. 4. 제작에서 만드세요.' : '승인을 취소했습니다.');
+}
+async function runQa() { try { STATE = await api(API + '/qa', { method: 'POST' }); render(); flash('ok', '다시 점검했습니다.'); } catch (e) { flash('err', e.message); } }
+async function setShare(on) { try { STATE = await api(API + '/share', { method: 'POST', body: JSON.stringify({ on }) }); render(); } catch (e) { flash('err', e.message); } }
+async function saveVersion() {
+  try { STATE = await api(API + '/versions', { method: 'POST', body: JSON.stringify({ label: $('verLabel').value }) }); $('verLabel').value = ''; render(); flash('ok', '버전을 저장했습니다.'); } catch (e) { flash('err', e.message); }
+}
+async function restoreVersion(n) {
+  if (!confirm('v' + n + '로 되돌릴까요? 지금 상태는 새 버전으로 먼저 저장됩니다.')) return;
+  try { STATE = await api(API + '/versions/' + n + '/restore', { method: 'POST' }); render(); flash('ok', 'v' + n + '로 되돌렸습니다.'); } catch (e) { flash('err', e.message); }
 }
 
 // ── 미리보기 ──
