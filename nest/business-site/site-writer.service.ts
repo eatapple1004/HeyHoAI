@@ -14,8 +14,8 @@ const SYSTEM_PROMPT = `당신은 동네 가게의 홈페이지 문구를 쓰는 
 2. 메뉴/서비스(services)는 자료에 이름이 실제로 나온 것만 넣는다. 가격은 관리자 메모에 적힌 것만 쓰고, 리뷰·블로그에서 본 가격은 쓰지 않는다(바뀌었을 수 있다). 근거가 없으면 빈 배열.
 3. "최고", "1위", "유일한", "완벽한" 같은 최상급·비교 표현과 효능 단정은 쓰지 않는다.
 4. 광고 문구처럼 부풀리지 말고, 사장님이 손님에게 직접 소개하듯 담백하게 쓴다. 문장은 짧게.
-5. 리뷰 요약(reviewSummary)은 여러 리뷰에서 반복되는 점만 묶어 2~3문장으로. 리뷰가 없으면 빈 문자열.
-6. reviewPicks는 홈페이지에 인용할 구글 리뷰 번호(0부터) 최대 3개 — 구체적이고 긍정적이며, 개인정보·욕설·다른 가게 언급이 없는 것.
+5. 이 글은 사장님 홈페이지에 실린다. 리뷰 요약(reviewSummary)과 keywords에는 여러 리뷰에서 반복되는 **좋은 점만** 담는다(불만·주의사항·혼잡·가격 불평 등 단점은 빼고, 사실을 부풀리지도 않는다). 2~3문장. 리뷰가 없으면 빈 문자열.
+6. reviewPicks는 홈페이지에 인용할 구글 리뷰 번호(0부터) 최대 3개 — 4점 이상이고, 단점·불만·주의 문장이 섞이지 않은 긍정적인 리뷰만. 개인정보·욕설·다른 가게 언급이 있으면 고르지 않는다. 마땅한 게 없으면 [].
 7. blogPicks는 이 가게에 대한 글이 확실한 블로그 번호(0부터) 최대 4개. 광고·체험단 표시가 있거나 다른 가게 글로 보이면 고르지 않는다.
 8. 헤드라인은 20자 안팎, 부제(sub)는 60자 안팎. 가게 이름을 헤드라인에 반복하지 않아도 된다.
 9. 설명 없이 JSON만 반환한다.`;
@@ -113,7 +113,8 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
         reviewTitle: str(json.reviewTitle, 40),
         reviewSummary: noReviews ? '' : str(json.reviewSummary, 400),
         keywords: noReviews ? [] : (Array.isArray(json.keywords) ? json.keywords : []).map((k: unknown) => str(k, 20)).filter(Boolean).slice(0, 6),
-        reviewPicks: noReviews ? [] : idx(json.reviewPicks, input.reviews.length, 3),
+        // 별점 4점 미만은 AI가 골라도 뺀다 — 사장님 홈페이지에 불만 리뷰가 인용되면 안 된다
+        reviewPicks: noReviews ? [] : idx(json.reviewPicks, input.reviews.length, 3).filter((i) => (input.reviews[i].rating ?? 5) >= 4),
         blogPicks: noReviews ? [] : idx(json.blogPicks, input.blogs.length, 4),
         ctaLabel: str(json.ctaLabel, 16),
         seoTitle: str(json.seoTitle, 60),
