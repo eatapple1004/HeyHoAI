@@ -73,6 +73,8 @@ export interface NaverLocal {
   link: string;
 }
 
+export interface WebPage { url: string; title: string; text: string }
+
 export interface NaverBlog {
   title: string;
   snippet: string;
@@ -99,6 +101,33 @@ const stripTags = (s: string) => String(s || '')
   .replace(/<[^>]+>/g, '')
   .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'")
   .trim();
+
+
+/** 사이트 글 추출 — 스크립트·스타일·메뉴 반복을 걷어내고 본문 글자만 */
+function htmlToText(html: string): { title: string; text: string } {
+  const title = (/<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1] || '').trim();
+  const text = html
+    .replace(/<(script|style|noscript|svg|nav|footer)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter((l) => l.length > 1).join('\n');
+  return { title, text };
+}
+
+/** 회사 사이트 안에서 회사소개·연혁·제품 쪽 링크를 먼저 고른다 */
+const PAGE_HINT = /(company|about|intro|summary|greeting|ceo|history|vision|business|product|service|certif|patent|contact|location|sub\/|회사|소개|연혁|인사|사업|제품|인증|오시는)/i;
+
+/** SSRF 방지 — 공개 도메인만(IP 직접·내부 이름 차단). 관리자 전용 기능이지만 서버가 대신 요청하므로 막는다 */
+function publicHttpUrl(raw: string): URL | null {
+  try {
+    const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    if (!/^https?:$/.test(u.protocol)) return null;
+    const h = u.hostname.toLowerCase();
+    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') || /^[\d.]+$/.test(h) || h.includes(':') || !h.includes('.')) return null;
+    return u;
+  } catch { return null; }
+}
 
 export const sources = {
   available() {
@@ -191,6 +220,49 @@ export const sources = {
     } finally {
       clearTimeout(t);
     }
+  },
+
+
+  // ── 회사 기존 홈페이지 ──
+  /**
+   * 첫 화면 + 같은 도메인의 회사소개·연혁·제품 페이지(최대 8개)의 글을 모은다.
+   *   의뢰 회사 자신의 사이트라 글을 AI 자료로 쓰는 건 괜찮지만, 사진은 가져오지 않는다(원본은 회사에서 받는다).
+   */
+  async website(raw: string): Promise<{ url: string; pages: WebPage[] } | null> {
+    const base = publicHttpUrl(String(raw || '').trim());
+    if (!base) return null;
+    const get = async (url: string) => {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+      try {
+        const res = await fetch(url, { signal: ctl.signal, redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (DoppiaSiteBuilder)' } });
+        if (!res.ok || !/text\/html/i.test(res.headers.get('content-type') || '')) return null;
+        const buf = Buffer.from(await res.arrayBuffer());
+        // 오래된 국내 사이트는 EUC-KR 이 많다
+        const head = buf.subarray(0, 2048).toString('latin1');
+        const enc = /charset=["']?(euc-kr|ks_c_5601-1987|cp949)/i.test(head + (res.headers.get('content-type') || '')) ? 'euc-kr' : 'utf-8';
+        return new TextDecoder(enc).decode(buf);
+      } catch { return null; } finally { clearTimeout(t); }
+    };
+    const home = await get(base.href);
+    if (!home) throw new Error('홈페이지를 열지 못했습니다');
+    const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)].map((m) => {
+      try { return new URL(m[1], base).href; } catch { return ''; }
+    }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?)$/i.test(h));
+    const picked = [...new Set(links)].filter((h) => h !== base.href && PAGE_HINT.test(h)).slice(0, 8);
+    const pages: WebPage[] = [{ url: base.href, ...htmlToText(home) }];
+    for (const url of picked) {
+      const html = await get(url);
+      if (html) pages.push({ url, ...htmlToText(html) });
+    }
+    // 페이지마다 같은 메뉴·푸터 줄이 반복된다 — 세 페이지 이상에 나온 줄은 뺀다
+    const count = new Map<string, number>();
+    pages.forEach((p) => new Set(p.text.split('\n')).forEach((l) => count.set(l, (count.get(l) || 0) + 1)));
+    const common = pages.length >= 3 ? new Set([...count].filter(([, n]) => n >= 3).map(([l]) => l)) : new Set<string>();
+    return {
+      url: base.href,
+      pages: pages.map((p) => ({ ...p, text: p.text.split('\n').filter((l) => !common.has(l)).join('\n').slice(0, 4000) })),
+    };
   },
 
   // ── 네이버 ──
