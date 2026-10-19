@@ -21,6 +21,8 @@ header.top a{font-size:15px;text-decoration:none;border-bottom:1px solid var(--l
 .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:32px 0 88px}
 .hero h1{font:700 clamp(40px,6.4vw,84px)/1.12 'Gowun Batang',serif;margin:0 0 22px;letter-spacing:-.01em;word-break:keep-all}
 .hero p{font-size:19px;color:var(--soft);max-width:30em;margin:0 0 30px;word-break:keep-all}
+.hero.solo{grid-template-columns:1fr;padding-bottom:56px}
+.hero.solo p{max-width:36em}
 .hero .ph{position:relative}
 .hero .ph::before{content:'';position:absolute;inset:28px -22px -22px 28px;background:var(--butter);border-radius:4px}
 .hero .ph img{position:relative;width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px}
@@ -75,7 +77,7 @@ footer{padding:40px 0 60px;color:var(--soft);font-size:14px}
   return `${head(m, fonts, css)}
 <div class="wrap">
 <header class="top"><b>${esc(m.name)}</b>${tel ? `<a href="${esc(tel)}">${esc(f.phone)}</a>` : ''}</header>
-<section class="hero" style="padding-top:24px">
+<section class="hero${hero ? '' : ' solo'}" style="padding-top:24px">
   <div>
     <h1>${esc(c.headline || m.name)}</h1>
     ${c.sub ? `<p>${esc(c.sub)}</p>` : ''}
