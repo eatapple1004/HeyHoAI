@@ -66,9 +66,9 @@ export class BusinessSitePagesController {
   }
 
   @UseGuards(AdminPageGuard)
-  @Get('admin-business/:id/site/preview/*')
+  @Get('admin-business/:id/site/preview/*path')
   async previewPath(@Param('id') id: string, @Req() req: any, @Res() res: any) {
-    const r = await this.sites.renderPreviewPath(id, req.params[0] || '', req.query || {});
+    const r = await this.sites.renderPreviewPath(id, restPath(req), req.query || {});
     if (!r) throw new NotFoundException();
     res.set('Cache-Control', 'no-store');
     return res.status(r.status).type(r.type).send(r.body);
@@ -93,11 +93,11 @@ export class BusinessSitePagesController {
   }
 
   /** 여러 페이지 사이트의 하위 경로(/site/<slug>/about …) */
-  @Get('site/:slug/*')
+  @Get('site/:slug/*path')
   async sitePath(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
-    const r = await this.sites.renderSitePath(slug, req.params[0] || '', req.query || {});
+    const r = await this.sites.renderSitePath(slug, restPath(req), req.query || {});
     if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
-    res.set('Cache-Control', /^contact/.test(req.params[0] || '') ? 'no-store' : 'public, max-age=60, s-maxage=300');
+    res.set('Cache-Control', /^contact/.test(restPath(req)) ? 'no-store' : 'public, max-age=60, s-maxage=300');
     return res.status(r.status).type(r.type).send(r.body);
   }
 
@@ -143,4 +143,10 @@ function readBody(req: any, limit: number): Promise<string> {
     req.on('end', () => resolve(size > limit ? '' : Buffer.concat(chunks).toString('utf8')));
     req.on('error', () => resolve(''));
   });
+}
+
+/** Express 5(path-to-regexp v8) 의 `*path` 는 세그먼트 배열로 온다 — 문자열 경로로 합친다 */
+function restPath(req: any): string {
+  const v = req.params?.path;
+  return Array.isArray(v) ? v.join('/') : String(v || '');
 }
