@@ -653,6 +653,25 @@ async function migrate() {
     );
   `);
 
+  // 사업체 홈페이지 문의(2026-10-19) — 공개 사이트 /contact 폼. 개인정보라 보관 기간(응대 후 1년) 지나면 지운다(처리방침 고지).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_site_inquiries (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        site_id     UUID NOT NULL REFERENCES business_sites(id) ON DELETE CASCADE,
+        business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        name        VARCHAR(40) NOT NULL,
+        company     VARCHAR(60),
+        phone       VARCHAR(30) NOT NULL,
+        email       VARCHAR(80),
+        product     VARCHAR(60),
+        message     TEXT NOT NULL,
+        ip          VARCHAR(64),
+        status      VARCHAR(20) NOT NULL DEFAULT 'new',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_site_inquiries_business ON business_site_inquiries(business_id, created_at DESC);
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).

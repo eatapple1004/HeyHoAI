@@ -81,6 +81,27 @@ export class BusinessSiteRepository {
     return r.rows[0] || null;
   }
 
+  // ── 문의 ──
+  async recentInquiries(siteId: string, ip: string): Promise<number> {
+    const r = await this.db.query(
+      `SELECT COUNT(*)::int AS n FROM business_site_inquiries WHERE site_id = $1 AND ip = $2 AND created_at > now() - interval '1 hour'`, [siteId, ip]);
+    return r.rows[0]?.n || 0;
+  }
+
+  async addInquiry(siteId: string, businessId: string, d: Record<string, string>, ip: string) {
+    await this.db.query(
+      `INSERT INTO business_site_inquiries (site_id, business_id, name, company, phone, email, product, message, ip)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [siteId, businessId, d.name, d.company || null, d.phone, d.email || null, d.product || null, d.message, ip]);
+  }
+
+  async inquiries(businessId: string) {
+    const r = await this.db.query(
+      `SELECT id, name, company, phone, email, product, message, status, created_at
+         FROM business_site_inquiries WHERE business_id = $1 ORDER BY created_at DESC LIMIT 200`, [businessId]);
+    return r.rows;
+  }
+
   /** 사업체 원본 사진(관리자가 올린 것) — ★대표 먼저 */
   async businessImages(businessId: string): Promise<{ id: string; file_path: string; is_base: boolean }[]> {
     const r = await this.db.query(

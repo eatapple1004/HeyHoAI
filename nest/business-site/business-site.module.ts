@@ -6,6 +6,7 @@ import { BusinessSiteAdminController, BusinessSitePagesController } from './busi
 import { BusinessSiteService } from './business-site.service';
 import { BusinessSiteRepository } from './business-site.repository';
 import { SiteWriterService } from './site-writer.service';
+import { CorpWriterService } from './corp-writer.service';
 
 /**
  * (2026-10-19) 사업체 홈페이지 — 카카오·구글·네이버 공식 API로 자료를 모아 업종별 템플릿 + AI 문구로 만든다.
@@ -14,6 +15,6 @@ import { SiteWriterService } from './site-writer.service';
  */
 @Module({
   controllers: [BusinessSiteAdminController, BusinessSitePagesController],
-  providers: [BusinessSiteService, BusinessSiteRepository, SiteWriterService, AdminGuard, AdminPageGuard, TokenService],
+  providers: [BusinessSiteService, BusinessSiteRepository, SiteWriterService, CorpWriterService, AdminGuard, AdminPageGuard, TokenService],
 })
 export class BusinessSiteModule {}
