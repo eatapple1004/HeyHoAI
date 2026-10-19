@@ -26,13 +26,16 @@ export function renderCorporate(m: SiteModel): string {
 
   const hero = take(m.photos, 1)[0];
   const services = c.services || [];
-  const areas: typeof services = [];
+  // 사진 있는 제품: 앞 4개는 크게(지그재그), 그다음은 카드 격자 — 사진 있는 제품이 목록으로 밀려나지 않게
+  const withPhoto: typeof services = [];
   for (const s of services) {
-    if (areas.length >= 6 || !s.photoUrl || used.has(s.photoUrl)) continue;
+    if (withPhoto.length >= 12 || !s.photoUrl || used.has(s.photoUrl)) continue;
     used.add(s.photoUrl);
-    areas.push(s);
+    withPhoto.push(s);
   }
-  const others = services.filter((s) => !areas.includes(s));
+  const areas = withPhoto.slice(0, 4);
+  const cards = withPhoto.slice(4);
+  const others = services.filter((s) => !withPhoto.includes(s));
   const aboutPhoto = take(photosOf(m, 'interior', 'exterior', 'people'), 1)[0];
   const gallery = take(m.photos.filter((p) => p.kind !== 'people'), 6);
   const stats = (c.stats || []).slice(0, 4);
@@ -99,6 +102,12 @@ h2{font:700 clamp(30px,3.4vw,44px)/1.25 'IBM Plex Sans KR',sans-serif;margin:0 0
 .area h3{font:700 28px/1.3 'IBM Plex Sans KR',sans-serif;margin:0 0 12px;letter-spacing:-.01em;word-break:keep-all}
 .area p{margin:0;color:var(--steel);max-width:30em;word-break:keep-all}
 .area .spec{display:inline-block;margin-top:16px;font-weight:600;color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:40px 24px;margin:48px 0 0;padding:48px 0 0;border-top:1px solid var(--line)}
+.cards figure{margin:0}
+.cards img{width:100%;aspect-ratio:3/2;object-fit:cover;margin-bottom:14px}
+.cards b{display:block;font:700 20px/1.35 'IBM Plex Sans KR',sans-serif;margin-bottom:4px}
+.cards span{display:block;color:var(--steel);font-size:15px}
+.cards em{display:block;font-style:normal;font-weight:600;color:var(--accent);font-size:15px;margin-top:8px}
 .more{margin:40px 0 0;padding:28px 0 0;border-top:1px solid var(--line)}
 .more h3{font:600 17px/1 'IBM Plex Sans KR',sans-serif;margin:0 0 16px;color:var(--steel)}
 .more ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px 32px}
@@ -116,8 +125,8 @@ h2{font:700 clamp(30px,3.4vw,44px)/1.25 'IBM Plex Sans KR',sans-serif;margin:0 0
 
 .certs{background:var(--ink);color:#fff}
 .certs h2{color:#fff}
-.certs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.14)}
-.certs li{background:var(--ink);padding:24px 22px;font-weight:600;word-break:keep-all}
+.certs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.16)}
+.certs li{padding:24px 22px 24px 0;font-weight:600;word-break:keep-all;border-bottom:1px solid rgba(255,255,255,.16)}
 
 .contact{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:stretch}
 .map{width:100%;height:100%;min-height:400px;border:0;filter:grayscale(.35)}
@@ -145,6 +154,8 @@ footer a{color:inherit}
  .about,.area,.hist,.contact{grid-template-columns:1fr;gap:28px}
  .area:nth-of-type(even) figure{order:0}
  .hl,.more ul{grid-template-columns:1fr}
+ .cards{grid-template-columns:1fr 1fr;gap:28px 14px}
+ .cards b{font-size:17px}
  .gal{grid-template-columns:1fr 1fr}
  .tl{columns:1}
  .certs ul{grid-template-columns:1fr 1fr}
@@ -200,6 +211,7 @@ ${areas.length || others.length ? `<section id="business" class="biz"><div class
   <p class="kicker">${esc(c.servicesTitle || '사업분야')}</p>
   <h2>${esc(c.servicesTitle ? `${m.name}의 ${c.servicesTitle}` : '이런 일을 합니다')}</h2>
   ${areas.map((s) => `<div class="area"><figure><img src="${esc(s.photoUrl)}" alt="${esc(s.name)}" loading="lazy" decoding="async"></figure><div><h3>${esc(s.name)}</h3>${s.desc ? `<p>${esc(s.desc)}</p>` : ''}${s.price ? `<span class="spec">${esc(s.price)}</span>` : ''}</div></div>`).join('')}
+  ${cards.length ? `<div class="cards">${cards.map((s) => `<figure><img src="${esc(s.photoUrl)}" alt="${esc(s.name)}" loading="lazy" decoding="async"><figcaption><b>${esc(s.name)}</b>${s.desc ? `<span>${esc(s.desc)}</span>` : ''}${s.price ? `<em>${esc(s.price)}</em>` : ''}</figcaption></figure>`).join('')}</div>` : ''}
   ${others.length ? `<div class="more"><h3>${areas.length ? '그 밖의 제품·서비스' : ''}</h3><ul>${others.map((s) => `<li>${esc(s.name)}${s.desc ? `<small>${esc(s.desc)}</small>` : ''}</li>`).join('')}</ul></div>` : ''}
 </div></section>` : ''}
 
