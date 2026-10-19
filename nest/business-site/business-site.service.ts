@@ -40,7 +40,7 @@ export interface SiteSource {
   /** 회사가 준 자료(회사소개서·조사 내용 붙여넣기) — 기업형 사실의 주 출처 */
   manual?: string;
   /** 회사 기존 홈페이지 글 + 본문 이미지. ocr = 글 이미지를 옮겨 적은 것, imported = 가져온 사진(이미지 주소 → 사업체 사진 id) */
-  web?: { url: string; pages: WebPage[]; images?: WebImage[]; ocr?: { url: string; page: string; text: string }[]; imported?: Record<string, string>; readAt?: string } | null;
+  web?: { url: string; pages: WebPage[]; images?: WebImage[]; ocr?: { url: string; page: string; text: string }[]; imported?: Record<string, string>; read?: string[] } | null;
   errors?: Record<string, string>;
 }
 
@@ -129,6 +129,8 @@ export class BusinessSiteService {
     if (!web && googleWebsiteLater && google?.website) {
       try { web = await sources.website(google.website); } catch (e: any) { errors.web = `Google에 등록된 홈페이지(${google.website})를 열지 못했습니다: ${String(e?.message || e).slice(0, 120)}`; }
     }
+    // 같은 홈페이지를 다시 읽었으면 이미 읽은 이미지(옮겨 적은 글·가져온 사진)는 이어 쓴다 — 사진이 두 번 들어오지 않게
+    if (web && prev.web && prev.web.url === web.url) web = { ...web, ocr: prev.web.ocr, imported: prev.web.imported, read: prev.web.read };
     const source: SiteSource = {
       query: body.query, collectedAt: new Date().toISOString(),
       kakao, google, naver: { local: body.naver ? pickNaver(body.naver) : null, blogs }, manual, web, errors,
@@ -388,7 +390,8 @@ export class BusinessSiteService {
   async research(businessId: string) {
     const b = await this.biz(businessId);
     return this.startJob(businessId, 'research', '웹 검색과 자료로 회사 사실을 모으는 중', async () => {
-      if ((await this.repo.byBusiness(businessId))?.source?.web?.images?.length) {
+      const w0 = (await this.repo.byBusiness(businessId))?.source?.web;
+      if (w0?.images?.some((im: WebImage) => !(w0.read || []).includes(im.url))) {
         await this.patchProcess(businessId, (p) => { p.job.step = '기존 홈페이지 이미지를 읽는 중(글 옮겨 적기·사진 가져오기)'; });
         await this.readSiteImages(businessId);
         await this.patchProcess(businessId, (p) => { p.job.step = '웹 검색과 자료로 회사 사실을 모으는 중'; });
@@ -581,14 +584,16 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
 
   /**
    * 기존 홈페이지 이미지 — 받아서 크기를 보고(작은 장식 제외), AI가 글 이미지는 옮겨 적고 사진은 사업체 사진으로 가져온다.
-   *   이미 읽은 사이트(readAt)는 건너뛴다. 가져온 사진은 사업체 상세에도 보인다(source='import', 캡션에 [홈페이지]).
+   *   이미 읽은 이미지(read)는 건너뛴다. 가져온 사진은 사업체 상세에도 보인다(source='import', 캡션에 [홈페이지]).
    */
   private async readSiteImages(businessId: string) {
     const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
     const web = site.source?.web;
-    if (!web?.images?.length || web.readAt) return;
+    const done = new Set(web?.read || []);
+    const todo = (web?.images || []).filter((im) => !done.has(im.url)).slice(0, 80);
+    if (!todo.length) return;
     const got: { im: WebImage; buf: Buffer; w: number; h: number }[] = [];
-    for (const im of web.images.slice(0, 64)) {
+    for (const im of todo) {
       const buf = await fetchImage(im.url);
       if (!buf) continue;
       try {
@@ -596,8 +601,8 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
         if ((meta.width || 0) >= 300 && (meta.height || 0) >= 200) got.push({ im, buf, w: meta.width || 0, h: meta.height || 0 });
       } catch { /* 이미지가 아님 */ }
     }
-    const ocr: { url: string; page: string; text: string }[] = [];
-    const imported: Record<string, string> = { ...(web.imported || {}) };
+    const ocr: { url: string; page: string; text: string }[] = [...(web!.ocr || [])];
+    const imported: Record<string, string> = { ...(web!.imported || {}) };
     const dir = path.join(process.cwd(), 'tmp', 'images');
     fs.mkdirSync(dir, { recursive: true });
     for (let k = 0; k < got.length; k += 6) {
@@ -621,7 +626,7 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
       }
     }
     const fresh = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
-    const source = { ...fresh.source, web: { ...fresh.source.web, ocr, imported, readAt: new Date().toISOString() } };
+    const source = { ...fresh.source, web: { ...fresh.source.web, ocr, imported, read: [...done, ...todo.map((im) => im.url)] } };
     const photos = await this.mergePhotos(businessId, fresh.photos as PhotoEntry[], source);
     await this.repo.update(businessId, { source, photos });
   }

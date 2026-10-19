@@ -49,7 +49,7 @@ export function runQa(m: CorpSite, sourceText: string, opts: { homonyms?: string
   for (const c of copy) {
     for (const n of numbers(c.text)) {
       const key = `${c.where}|${n}`;
-      if (seen.has(key) || src.includes(n)) continue;
+      if (seen.has(key) || src.includes(n) || loosely(src, n)) continue;
       seen.add(key);
       numIssues++;
       if (numIssues <= 25) items.push({ level: 'fail', area: '출처 없는 숫자', msg: `${c.where}: "${n}"이(가) 조사 자료에 없음`, path: c.path });
@@ -92,6 +92,17 @@ function numbers(text: string): string[] {
     out.push(n);
   }
   return out;
+}
+
+/**
+ * 표기만 다른 같은 숫자 — "2014.12" ↔ "2014  12"(연혁 이미지), "0.5톤" ↔ "0_5톤"(옛 사이트 제품명), "2015.02.16" ↔ "2015년 02월 16일".
+ *   숫자 묶음이 같은 순서로, 사이에 숫자가 아닌 글자 1~6개만 두고 나오면 같은 값으로 본다.
+ */
+function loosely(src: string, n: string): boolean {
+  const groups = n.split('.').filter(Boolean);
+  if (groups.length < 2) return false;
+  const re = new RegExp(`(?<!\\d)${groups.map((g) => `0?${g.replace(/^0(?=\d)/, '')}`).join('[^0-9]{1,6}')}(?!\\d)`);
+  return re.test(src);
 }
 
 const norm = (t: string) => (t || '').replace(/(\d),(?=\d{3})/g, '$1');

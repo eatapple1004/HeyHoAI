@@ -273,12 +273,12 @@ export const sources = {
     const score = (h: string) => (/(summary|about|intro|company|회사|소개)/i.test(h) ? 5 : 0) + (/(history|연혁)/i.test(h) ? 5 : 0)
       + (/(greeting|ceo|인사)/i.test(h) ? 4 : 0) + (/(certif|patent|인증|특허)/i.test(h) ? 4 : 0)
       + (/(business|product|prod|사업|제품)/i.test(h) ? 2 : 0) + (/(contact|location|오시는)/i.test(h) ? 1 : 0) - (new URL(h).search ? 1 : 0);
-    // 제품 목록은 분류(?ctg=…)마다 다른 제품이 있어 경로당 6개까지, 나머지는 2개
+    // 제품 목록은 분류(?ctg=…)마다 다른 제품이 있어 경로당 12개까지, 나머지는 2개
     const perPath = new Map<string, number>();
     const picked = [...new Set(links)].filter((h) => h !== homeUrl.href && (PAGE_HINT.test(h) || /facility|gallery|설비|갤러리/i.test(h)))
       .sort((a, b) => score(b) - score(a))
-      .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < (/(product|prod|제품)/i.test(k) ? 6 : 2); })
-      .slice(0, 16);
+      .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < (/(product|prod|제품)/i.test(k) ? 12 : 2); })
+      .slice(0, 24);
     const pages: WebPage[] = [{ url: homeUrl.href, ...htmlToText(home) }];
     const images = new Map<string, WebImage>();
     // 페이지당 10장까지 — 인증서 스캔 같은 한 페이지의 이미지 묶음이 제품 사진 자리를 다 먹지 않게
@@ -317,7 +317,7 @@ export const sources = {
     return {
       url: base.href,
       pages: pages.map((p) => ({ ...p, text: p.text.split('\n').filter((l) => !common.has(l)).join('\n').slice(0, 4000) })),
-      images: [...images.values()].slice(0, 80),
+      images: [...images.values()].slice(0, 120),
     };
   },
 
