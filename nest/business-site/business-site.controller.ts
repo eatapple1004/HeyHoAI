@@ -33,6 +33,12 @@ export class BusinessSiteAdminController {
     return { success: true, data: await this.designs.recheck(id, n) };
   }
 
+  @Post(':id/site/designs/:n/fix')
+  @HttpCode(200)
+  async designFix(@Param('id') id: string, @Param('n', ParseIntPipe) n: number) {
+    return { success: true, data: await this.designs.fix(id, n) };
+  }
+
   /** 공개할 시안 — n 이 null 이면 템플릿 사이트로 */
   @Post(':id/site/designs/publish')
   @HttpCode(200)

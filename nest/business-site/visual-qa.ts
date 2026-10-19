@@ -16,7 +16,8 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  */
 
 export interface VisualItem { level: 'fail' | 'warn' | 'ok'; area: string; msg: string; path?: string }
-export interface VisualReport { items: VisualItem[]; shots: { label: string; url: string }[]; skipped?: string; ms: number }
+export interface ContrastHit { sel: string; text: string; fg: string; bg: string; ratio: number; need: number; pages: string[] }
+export interface VisualReport { items: VisualItem[]; shots: { label: string; url: string }[]; skipped?: string; ms: number; contrast?: ContrastHit[]; fails?: number }
 
 let busy: Promise<unknown> = Promise.resolve();
 
@@ -45,6 +46,8 @@ async function doCheck(pages: { path: string; html: string }[], opts: { shotPath
   }
   const items: VisualItem[] = [];
   const shots: { label: string; url: string }[] = [];
+  // 같은 문제(머리말·꼬리말 등)가 모든 페이지에서 반복되므로 (화면폭, 선택자, 색) 단위로 묶는다
+  const hits = new Map<string, ContrastHit & { vp: string }>();
   const origin = `http://127.0.0.1:${env.PORT}`;
   const dir = path.join(process.cwd(), 'tmp', 'images');
   fs.mkdirSync(dir, { recursive: true });
@@ -67,8 +70,10 @@ async function doCheck(pages: { path: string; html: string }[], opts: { shotPath
           if (r.overflow > 1) {
             items.push({ level: 'fail', area: `${vp.name} 가로 넘침`, msg: `${where}: 화면보다 ${r.overflow}px 넓음 — ${r.wide.slice(0, 3).join(' / ')}`, path: pg.path });
           }
-          for (const c of r.contrast.slice(0, 3)) {
-            items.push({ level: c.ratio < 3 ? 'fail' : 'warn', area: `${vp.name} 글자 대비`, msg: `${where}: "${c.text}" ${c.ratio.toFixed(1)}:1 (글자 ${c.fg} / 배경 ${c.bg})`, path: pg.path });
+          for (const c of r.contrast) {
+            const key = `${vp.name}|${c.sel}|${c.fg}|${c.bg}`;
+            const h = hits.get(key);
+            if (h) { if (!h.pages.includes(where)) h.pages.push(where); } else hits.set(key, { ...c, pages: [where], vp: vp.name });
           }
           if (r.brokenImgs) items.push({ level: 'fail', area: '깨진 이미지', msg: `${where}: ${r.brokenImgs}장`, path: pg.path });
           if ((opts.shotPaths || ['']).includes(pg.path)) {
@@ -85,10 +90,20 @@ async function doCheck(pages: { path: string; html: string }[], opts: { shotPath
   } finally {
     await browser.close().catch(() => undefined);
   }
+  const all = [...hits.values()].sort((a, b) => a.ratio - b.ratio);
+  for (const vpName of ['PC', '모바일']) {
+    const list = all.filter((h) => h.vp === vpName);
+    for (const h of list.slice(0, 8)) {
+      items.push({ level: h.ratio < 3 ? 'fail' : 'warn', area: `${vpName} 글자 대비`, msg: `"${h.text}" ${h.ratio.toFixed(1)}:1 (글자 ${h.fg} / 배경 ${h.bg}) — ${h.pages.length > 1 ? `${h.pages.length}개 페이지` : h.pages[0]}`, path: h.pages[0] === '/' ? '' : h.pages[0] });
+    }
+    if (list.length > 8) items.push({ level: 'warn', area: `${vpName} 글자 대비`, msg: `그 밖에 ${list.length - 8}곳` });
+  }
+  // 보정용 — 화면폭 구분 없이 선택자·색 단위
+  const contrast = [...new Map(all.map((h) => [`${h.sel}|${h.fg}|${h.bg}`, { sel: h.sel, text: h.text, fg: h.fg, bg: h.bg, ratio: h.ratio, need: h.need, pages: h.pages }])).values()];
   for (const area of ['PC 가로 넘침', '모바일 가로 넘침', 'PC 글자 대비', '모바일 글자 대비']) {
     if (!items.some((i) => i.area === area)) items.push({ level: 'ok', area, msg: `${pages.length}개 페이지 문제 없음` });
   }
-  return { items, shots, ms: Date.now() - t0 };
+  return { items, shots, ms: Date.now() - t0, contrast, fails: items.filter((i) => i.level === 'fail').length };
 }
 
 /**
@@ -139,6 +154,14 @@ const MEASURE = `(() => {
     }
     return { r: 255, g: 255, b: 255, a: 1 };
   };
+  const selOf = (el) => {
+    const parts = [];
+    for (let e = el; e && e !== document.body && parts.length < 4; e = e.parentElement) {
+      const cls = typeof e.className === 'string' ? e.className.trim().split(/\\s+/).filter((c) => c && !/^pg-/.test(c)).slice(0, 2) : [];
+      if (cls.length || parts.length === 0 || /^(HEADER|FOOTER|MAIN|SECTION|NAV)$/.test(e.tagName)) parts.unshift(e.tagName.toLowerCase() + cls.map((c) => '.' + CSS.escape(c)).join(''));
+    }
+    return parts.join(' ');
+  };
   const seen = new Set(); const contrast = [];
   for (const el of document.querySelectorAll('body *')) {
     if (!el.childNodes.length) continue;
@@ -162,10 +185,10 @@ const MEASURE = `(() => {
       ratio = ratioOf(fg, bg);
     }
     if (ratio < need) {
-      const key = hex(fg) + hex(bg);
+      const key = selOf(el) + hex(fg) + hex(bg);
       if (seen.has(key)) continue;
       seen.add(key);
-      contrast.push({ text: own.slice(0, 24), ratio, fg: hex(fg), bg: hex(bg) });
+      contrast.push({ sel: selOf(el), text: own.slice(0, 24), ratio, need, fg: hex(fg), bg: hex(bg) });
     }
   }
   contrast.sort((a, b) => a.ratio - b.ratio);

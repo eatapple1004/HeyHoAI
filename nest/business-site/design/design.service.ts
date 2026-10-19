@@ -175,25 +175,74 @@ export class DesignService {
     const failed = specs.filter((s) => s.key !== 'privacy' && !pages[s.path]).map((s) => s.title);
     const qa = this.qa(m, pages, source, failed);
     await this.patch(row.id, { pages, qa: { ...qa, visual: { state: 'running' } }, status: failed.length === specs.length - 1 ? 'error' : 'done', step: null, error: failed.length ? `만들지 못한 페이지: ${failed.join(', ')}` : null });
-    await this.visual(site, row.n, qa.at);
+    const v = await this.visual(site, row.n, qa.at);
+    if (v && (v.contrast || []).length) await this.fixContrast(site, row.n);
+  }
+
+  /** 시안 페이지 전체를 완성 HTML로 */
+  private async fullPages(site: BusinessSiteRow, d: DesignRow) {
+    const pages: { path: string; html: string }[] = [];
+    for (const p of Object.keys(d.pages)) {
+      const r = await this.render(site, d, `/admin-business/${site.business_id}/site/design/${d.n}`, p, {}, true);
+      if (r.status === 200) pages.push({ path: p, html: r.body });
+    }
+    return pages;
   }
 
   /** 화면 점검(실제 브라우저) — 끝나면 같은 점검 회차(at)에만 붙인다 */
   private async visual(site: BusinessSiteRow, n: number, at: string) {
     const d = await this.row(site.id, n);
-    if (!d || d.status !== 'done') return;
-    const pages: { path: string; html: string }[] = [];
-    for (const p of Object.keys(d.pages)) {
-      const r = await this.render(site, d, `/admin-business/${site.business_id}/site/design/${n}`, p, {}, true);
-      if (r.status === 200) pages.push({ path: p, html: r.body });
-    }
+    if (!d || d.status !== 'done') return null;
     try {
-      const v = await visualCheck(pages, { shotPaths: [''] });
+      const v = await visualCheck(await this.fullPages(site, d), { shotPaths: [''] });
       const cur = await this.row(site.id, n);
       if (cur?.qa?.at === at) await this.patch(cur.id, { qa: { ...cur.qa, visual: { state: v.skipped ? 'skipped' : 'done', ...v, at: new Date().toISOString() } } });
+      return v;
     } catch (e: any) {
       console.warn('[design] visual qa failed', e?.message);
+      return null;
     }
+  }
+
+  /**
+   * 대비 자동 보정 — 잰 결과를 AI에 주고 덮어쓰는 CSS를 받아 붙인 뒤 다시 잰다. 미달이 줄었을 때만 남긴다(아니면 되돌림).
+   *   시안을 만들 때 한 번 자동으로, 관리자가 "대비 보정"을 누를 때 한 번 더.
+   */
+  async fixContrast(site: BusinessSiteRow, n: number) {
+    const d = await this.row(site.id, n);
+    const v0 = d?.qa?.visual;
+    if (!d || !v0?.contrast?.length) return null;
+    await this.patch(d.id, { qa: { ...d.qa, visual: { ...v0, state: 'running', step: '대비 보정 중' } } });
+    try {
+      const m = await this.sites.corpModel(site, '', false);
+      const patchCss = cleanCss(await this.writer.fixContrast({ css: d.design.css, accent: m.accent, hits: v0.contrast }), photoUrls(m));
+      if (!patchCss) throw new Error('보정 CSS가 비었습니다');
+      const trial = { ...d, design: { ...d.design, css: `${d.design.css}\n/* 대비 보정 ${new Date().toISOString().slice(0, 10)} */\n${patchCss}` } };
+      const v1 = await visualCheck(await this.fullPages(site, trial), { shotPaths: [''] });
+      const before = (v0.contrast || []).length; const after = (v1.contrast || []).length;
+      const keep = !v1.skipped && after < before;
+      const cur = (await this.row(site.id, n)) as DesignRow;
+      await this.patch(cur.id, {
+        ...(keep ? { design: trial.design } : {}),
+        qa: { ...cur.qa, visual: { state: 'done', ...(keep ? v1 : v0), at: new Date().toISOString(), fix: { before, after, kept: keep } } },
+      });
+      return { before, after, kept: keep };
+    } catch (e: any) {
+      console.warn('[design] contrast fix failed', e?.message);
+      const cur = (await this.row(site.id, n)) as DesignRow;
+      await this.patch(cur.id, { qa: { ...cur.qa, visual: { ...v0, state: 'done', fix: { error: String(e?.message || e).slice(0, 160) } } } });
+      return null;
+    }
+  }
+
+  /** 관리자 버튼 — 대비 보정을 뒤에서 */
+  async fix(businessId: string, n: number) {
+    const site = await this.site(businessId);
+    const d = await this.row(site.id, n);
+    if (!d || d.status !== 'done') throw new BadRequestException('완성된 시안만 보정할 수 있습니다.');
+    if (!d.qa?.visual?.contrast?.length) throw new BadRequestException('보정할 대비 문제가 없습니다(먼저 다시 점검).');
+    this.fixContrast(site, n).catch(() => undefined);
+    return this.list(businessId);
   }
 
   /** 시안 점검 — 출처 없는 숫자, 사이트 안 깨진 링크, 제목 없는 페이지, 빠진 자리표시자 */
