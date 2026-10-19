@@ -89,6 +89,27 @@ body 에는 페이지별로 pg-home, pg-about, pg-history, pg-certs, pg-location
     return ds;
   }
 
+  /**
+   * 대비 보정 — 실제 브라우저가 잰 미달 지점(선택자·글자색·배경색)을 주면 덮어쓰는 CSS 규칙만 돌려받는다.
+   *   배치·크기는 건드리지 않고 색만. 서버가 다시 재서 나아졌을 때만 남긴다.
+   */
+  async fixContrast(input: { css: string; accent: string; hits: { sel: string; text: string; fg: string; bg: string; ratio: number; need: number; pages: string[] }[] }): Promise<string> {
+    const text = `[디자인 시스템 CSS]
+${input.css.slice(0, 24000)}
+
+[실제 브라우저에서 잰 글자 대비 미달 — 선택자 / 글자 예시 / 지금 글자색 / 실제 배경색 / 대비 / 필요 대비 / 페이지]
+${input.hits.slice(0, 30).map((h) => `- ${h.sel} | "${h.text}" | ${h.fg} | ${h.bg} | ${h.ratio.toFixed(2)}:1 | ${h.need}:1 이상 | ${h.pages.slice(0, 3).join(', ')}${h.pages.length > 3 ? ' 외' : ''}`).join('\n')}
+
+강조색 ${input.accent}, 어두운 배경용 밝은 강조색 ${lighten(input.accent)}.
+위 지점들이 필요 대비를 넘도록 **덮어쓰는 CSS 규칙만** 쓰세요.
+- 색(color, 필요하면 background-color)만 바꾼다. 크기·배치·여백은 그대로.
+- 위 선택자를 그대로 쓰되 앞에 body 를 붙여 우선순위를 높인다(예: body header .nav a {color:…}).
+- 글자 배경이 흰색인데 글자도 흰색인 카드(사진이 없는 카드 등)는 글자색을 어둡게, 또는 그 카드에 어두운 배경을 준다.
+- 이 회사 디자인 톤(토큰)을 유지한다. 형식: <css>…</css>`;
+    const out = await this.call([{ type: 'text', text }], 6000);
+    return (/<css>([\s\S]*?)<\/css>/i.exec(out)?.[1] || '').trim();
+  }
+
   /** 한 페이지 본문 — 디자인 시스템 CSS 를 보고 그 클래스로 */
   async page(input: { name: string; css: string; note: string; fix?: string[]; page: { key: string; title: string; data: unknown; placeholders?: string[]; links: { label: string; href: string }[] } }): Promise<string> {
     const p = input.page;

@@ -656,11 +656,12 @@ async function restoreVersion(n) {
 // 화면 점검(실제 브라우저) 결과 — 가로 넘침·글자 대비·깨진 이미지 + 첫 화면 캡처
 function visualHtml(v, withOk) {
   if (!v) return '';
-  if (v.state === 'running') return '<div class="warn">… 화면 점검 중(실제 브라우저로 PC·모바일 폭에서 그려 봄, 1분 안팎)</div>';
+  if (v.state === 'running') return `<div class="warn">… ${esc(v.step || '화면 점검 중(실제 브라우저로 PC·모바일 폭에서 그려 봄, 1분 안팎)')}</div>`;
+  const fx = v.fix ? (v.fix.error ? `<div class="warn">! 대비 보정 실패: ${esc(v.fix.error)}</div>` : `<div class="${v.fix.kept ? 'ok' : 'warn'}">${v.fix.kept ? '✓' : '!'} 대비 자동 보정: 미달 ${v.fix.before}곳 → ${v.fix.after}곳${v.fix.kept ? ' (반영)' : ' (나아지지 않아 되돌림)'}</div>`) : '';
   if (v.state === 'skipped') return `<div class="warn">! <b>화면 점검</b> 생략 — ${esc(v.skipped || '')}</div>`;
   const order = { fail: 0, warn: 1, ok: 2 };
   const list = (v.items || []).filter((i) => withOk || i.level !== 'ok').sort((a, b) => order[a.level] - order[b.level]);
-  return list.map((i) => `<div class="${i.level}">${i.level === 'fail' ? '✕' : i.level === 'warn' ? '!' : '✓'} <b>${esc(i.area)}</b> ${esc(i.msg)}</div>`).join('') +
+  return fx + list.map((i) => `<div class="${i.level}">${i.level === 'fail' ? '✕' : i.level === 'warn' ? '!' : '✓'} <b>${esc(i.area)}</b> ${esc(i.msg)}</div>`).join('') +
     ((v.shots || []).length ? `<div class="row" style="gap:8px;margin-top:8px;align-items:flex-start">${v.shots.map((sh) => `<a href="${esc(sh.url)}" target="_blank" rel="noopener" title="${esc(sh.label)}"><img src="${esc(sh.url)}" alt="${esc(sh.label)}" style="height:140px;border:1px solid var(--border);border-radius:6px"></a>`).join('')}</div>` : '');
 }
 
@@ -688,6 +689,7 @@ function renderDesigns() {
         <a href="/admin-business/${BIZ_ID}/site/design/${d.n}/" target="_blank" rel="noopener">새 탭</a>
         ${tok ? `<a href="/site-review/${tok}/d${d.n}/" target="_blank" rel="noopener">검토 링크</a>` : ''}
         <button class="sm" onclick="recheckDesign(${d.n})">다시 점검</button>
+        ${d.qa && d.qa.visual && (d.qa.visual.contrast || []).length && d.qa.visual.state === 'done' ? `<button class="sm" onclick="fixDesign(${d.n})">대비 자동 보정</button>` : ''}
         ${DESIGNS.published === d.n ? '' : `<button class="sm" onclick="publishDesign(${d.n})">이 시안을 공개 화면으로</button>`}</div>` : ''}
     </div>`).join('') : '<div class="empty">아직 시안이 없습니다.</div>') +
     (DESIGN_N ? '<div style="margin-top:8px"><button class="sm" onclick="viewDesign(null)">미리보기를 템플릿 사이트로</button></div>' : '');
@@ -698,6 +700,9 @@ function renderDesigns() {
 }
 async function createDesign() {
   try { DESIGNS = await api(API + '/designs', { method: 'POST', body: JSON.stringify({ direction: $('dsDir').value }) }); renderDesigns(); flash('ok', '시안을 만들기 시작했습니다. 몇 분 걸립니다.'); } catch (e) { flash('err', e.message); }
+}
+async function fixDesign(n) {
+  try { DESIGNS = await api(API + '/designs/' + n + '/fix', { method: 'POST' }); renderDesigns(); flash('ok', '대비 보정을 시작했습니다. AI가 색을 고친 뒤 다시 재서, 나아졌을 때만 반영합니다.'); } catch (e) { flash('err', e.message); }
 }
 async function recheckDesign(n) {
   try { DESIGNS = await api(API + '/designs/' + n + '/qa', { method: 'POST' }); renderDesigns(); flash('ok', '시안 ' + n + ' 점검을 시작했습니다(화면 점검 1분 안팎).'); } catch (e) { flash('err', e.message); }
