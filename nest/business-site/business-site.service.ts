@@ -5,16 +5,23 @@ import { SiteWriterService } from './site-writer.service';
 import { CorpWriterService } from './corp-writer.service';
 import { ProcessWriterService, ResearchFact, ResearchSheet, SitePlan, PLAN_PAGES } from './process-writer.service';
 import { runQa } from './site-qa';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import * as fs from 'fs';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const sharp = require('sharp');
 import { CorpSite, CorpPhoto, routeCorp, RouteResult } from './multipage';
-import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage } from './place-sources';
+import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage, WebImage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
 
 /** AI에 첨부하는 사진 한도 — 장수·용량이 커지면 응답이 느려지고 비싸진다 */
 const MAX_VISION_PHOTOS = 10;
+/** 여러 페이지 기업 사이트는 제품마다 사진을 짝지어야 해서 더 많이 본다(480px 썸네일이라 가볍다) */
+const MAX_CORP_PHOTOS = 24;
 const MAX_VISION_BYTES = 3 * 1024 * 1024;
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])$/;
@@ -32,8 +39,8 @@ export interface SiteSource {
   naver?: { local: NaverLocal | null; blogs: NaverBlog[] };
   /** 회사가 준 자료(회사소개서·조사 내용 붙여넣기) — 기업형 사실의 주 출처 */
   manual?: string;
-  /** 회사 기존 홈페이지 글 */
-  web?: { url: string; pages: WebPage[] } | null;
+  /** 회사 기존 홈페이지 글 + 본문 이미지. ocr = 글 이미지를 옮겨 적은 것, imported = 가져온 사진(이미지 주소 → 사업체 사진 id) */
+  web?: { url: string; pages: WebPage[]; images?: WebImage[]; ocr?: { url: string; page: string; text: string }[]; imported?: Record<string, string>; readAt?: string } | null;
   errors?: Record<string, string>;
 }
 
@@ -106,6 +113,7 @@ export class BusinessSiteService {
       }
     }
     const kakao = body.kakao && body.kakao.id ? pickKakao(body.kakao) : null;
+    const googleWebsiteLater = body.website === undefined || !String(body.website).trim();
     const name = kakao?.name || body.naver?.name || b.name;
     // 블로그는 "가게 이름 + 동네"로 찾아야 같은 이름의 다른 지점 글이 덜 섞인다
     const dong = (kakao?.address || body.naver?.address || '').split(' ').find((w) => /[동읍면가]$/.test(w)) || '';
@@ -117,6 +125,10 @@ export class BusinessSiteService {
     let blogs: NaverBlog[] = [];
     try { blogs = await sources.naverBlogs(`${name} ${dong}`.trim()); } catch (e: any) { errors.naver = String(e?.message || e).slice(0, 200); }
 
+    // 홈페이지 주소를 안 넣었는데 Google 장소에 홈페이지가 있으면 그걸 읽는다(회사 자신의 사이트)
+    if (!web && googleWebsiteLater && google?.website) {
+      try { web = await sources.website(google.website); } catch (e: any) { errors.web = `Google에 등록된 홈페이지(${google.website})를 열지 못했습니다: ${String(e?.message || e).slice(0, 120)}`; }
+    }
     const source: SiteSource = {
       query: body.query, collectedAt: new Date().toISOString(),
       kakao, google, naver: { local: body.naver ? pickNaver(body.naver) : null, blogs }, manual, web, errors,
@@ -280,15 +292,19 @@ export class BusinessSiteService {
     const b = await this.biz(businessId);
     const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
     const s: SiteSource = site.source || {};
-    const usable = (site.photos as PhotoEntry[]).filter((p) => !p.hidden).slice(0, MAX_VISION_PHOTOS);
-    const loaded = await Promise.all(usable.map((p) => this.loadPhoto(site, p.ref)));
-    const refs = usable.filter((_, i) => loaded[i]).map((p) => p.ref);
+    // 앞쪽 사진은 AI가 직접 보고, 나머지는 이름(가져온 사진의 제품명 캡션)만으로 제품과 짝짓는다
+    const all = (site.photos as PhotoEntry[]).filter((p) => !p.hidden).slice(0, 80);
+    const loaded = await Promise.all(all.slice(0, MAX_CORP_PHOTOS).map((p) => this.loadPhoto(site, p.ref)));
+    const seen = all.slice(0, MAX_CORP_PHOTOS).filter((_, i) => loaded[i]);
+    const refs = [...seen.map((p) => p.ref), ...all.slice(MAX_CORP_PHOTOS).map((p) => p.ref)];
     const images = loaded.filter(Boolean) as { data: string; mediaType: string }[];
+    const caps = new Map((await this.repo.businessImages(businessId)).map((m) => [`media:${m.id}`, String(m.caption || '').replace(/^\[홈페이지\]\s*/, '')]));
+    const photoNames = refs.map((r) => caps.get(r) || '');
     const material = this.material(site);
     const plan: SitePlan | undefined = site.process?.plan?.approvedAt ? site.process.plan : undefined;
 
     await this.setGen(businessId, { state: 'running', step: '사이트 구성과 회사 소개를 쓰는 중', done: 0, total: 0 });
-    const sk = await this.corpWriter.skeleton({ name: siteName(b.name), industry: b.industry, memo: b.memo, facts: this.facts(s), material, images, plan });
+    const sk = await this.corpWriter.skeleton({ name: siteName(b.name), industry: b.industry, memo: b.memo, facts: this.facts(s), material, images, photoNames, plan });
     // 기획안에서 뺀 페이지는 비운다(라우터·메뉴가 자료 없는 페이지를 숨긴다)
     if (plan) {
       const off = (k: string) => plan.pages.some((p) => p.key === k && !p.include);
@@ -372,6 +388,11 @@ export class BusinessSiteService {
   async research(businessId: string) {
     const b = await this.biz(businessId);
     return this.startJob(businessId, 'research', '웹 검색과 자료로 회사 사실을 모으는 중', async () => {
+      if ((await this.repo.byBusiness(businessId))?.source?.web?.images?.length) {
+        await this.patchProcess(businessId, (p) => { p.job.step = '기존 홈페이지 이미지를 읽는 중(글 옮겨 적기·사진 가져오기)'; });
+        await this.readSiteImages(businessId);
+        await this.patchProcess(businessId, (p) => { p.job.step = '웹 검색과 자료로 회사 사실을 모으는 중'; });
+      }
       const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
       const s: SiteSource = site.source || {};
       const f = this.facts(s);
@@ -552,8 +573,57 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
     return [
       withResearch && sheet ? `## 조사 시트 — 확인된 사실(이것과 아래 회사 자료만 근거로)\n${sheet.facts.filter((f) => f.use).map((f) => `- [${f.topic}] ${f.text} (출처: ${f.source.title})`).join('\n')}` : '',
       s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
+      // 이미지 속 글(인사말·연혁·회사개요)이 페이지 글보다 알차다 — 길이 제한에 잘리지 않게 앞에 둔다
+      ...(s.web?.ocr || []).map((o) => `## 기존 홈페이지 이미지 속 글 (${o.page})\n${o.text}`),
       ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
     ].filter(Boolean).join('\n\n');
+  }
+
+  /**
+   * 기존 홈페이지 이미지 — 받아서 크기를 보고(작은 장식 제외), AI가 글 이미지는 옮겨 적고 사진은 사업체 사진으로 가져온다.
+   *   이미 읽은 사이트(readAt)는 건너뛴다. 가져온 사진은 사업체 상세에도 보인다(source='import', 캡션에 [홈페이지]).
+   */
+  private async readSiteImages(businessId: string) {
+    const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+    const web = site.source?.web;
+    if (!web?.images?.length || web.readAt) return;
+    const got: { im: WebImage; buf: Buffer; w: number; h: number }[] = [];
+    for (const im of web.images.slice(0, 64)) {
+      const buf = await fetchImage(im.url);
+      if (!buf) continue;
+      try {
+        const meta = await sharp(buf).metadata();
+        if ((meta.width || 0) >= 300 && (meta.height || 0) >= 200) got.push({ im, buf, w: meta.width || 0, h: meta.height || 0 });
+      } catch { /* 이미지가 아님 */ }
+    }
+    const ocr: { url: string; page: string; text: string }[] = [];
+    const imported: Record<string, string> = { ...(web.imported || {}) };
+    const dir = path.join(process.cwd(), 'tmp', 'images');
+    fs.mkdirSync(dir, { recursive: true });
+    for (let k = 0; k < got.length; k += 6) {
+      const batch = got.slice(k, k + 6);
+      const vis = await Promise.all(batch.map(async (g) => ({
+        data: (await sharp(g.buf).flatten({ background: '#ffffff' }).resize({ width: 1400, height: 2400, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer()).toString('base64'),
+        mediaType: 'image/jpeg',
+      })));
+      let read: { i: number; kind: string; caption: string; text: string }[] = [];
+      try { read = await this.procWriter.readImages(vis, batch.map((g) => g.im.near || g.im.alt || '')); } catch (e: any) { console.warn('[business-site] readImages failed', e?.message); continue; }
+      for (const r of read) {
+        const g = batch[r.i];
+        if (r.text) ocr.push({ url: g.im.url, page: g.im.page, text: r.text });
+        // 사진만 가져온다 — 너무 작으면(가로 500 미만) 화면에서 깨져 보여 뺀다
+        if (['product', 'factory', 'people', 'other'].includes(r.kind) && g.w >= 500 && !imported[g.im.url]) {
+          const file = `${randomUUID()}.jpg`;
+          await sharp(g.buf).flatten({ background: '#ffffff' }).resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 88 }).toFile(path.join(dir, file));
+          try { await mediaStore.putFile(path.join(dir, file)); } catch { /* 저장소 미설정 환경 */ }
+          imported[g.im.url] = await this.repo.insertImportedImage(businessId, `tmp/images/${file}`, `[홈페이지] ${g.im.near || r.caption}`.slice(0, 200));
+        }
+      }
+    }
+    const fresh = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+    const source = { ...fresh.source, web: { ...fresh.source.web, ocr, imported, readAt: new Date().toISOString() } };
+    const photos = await this.mergePhotos(businessId, fresh.photos as PhotoEntry[], source);
+    await this.repo.update(businessId, { source, photos });
   }
 
   /** 자동 점검의 숫자 대조용 — 사이트에 쓸 수 있는 모든 원문 */
@@ -737,4 +807,17 @@ function pickNaver(n: any): NaverLocal {
 /** 관리자용 이름표("[예시] ", "[테스트] ")는 사이트에 쓰지 않는다 */
 function siteName(name: string): string {
   return String(name || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || name;
+}
+
+/** 회사 홈페이지 이미지 받기 — 공개 http(s)만, 5MB·10초 제한 */
+async function fetchImage(url: string): Promise<Buffer | null> {
+  if (!/^https?:\/\//i.test(url)) return null;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const res = await fetch(url, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (DoppiaSiteBuilder)' } });
+    if (!res.ok || !/^image\//i.test(res.headers.get('content-type') || '')) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length > 5 * 1024 * 1024 ? null : buf;
+  } catch { return null; } finally { clearTimeout(t); }
 }

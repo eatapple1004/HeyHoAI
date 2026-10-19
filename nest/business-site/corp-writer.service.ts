@@ -27,6 +27,8 @@ export interface CorpWriterInput {
   facts: Record<string, unknown>;
   material: string;
   images: { data: string; mediaType: string }[];
+  /** 사진 이름(전체 사진 수만큼, 앞쪽 images.length 장만 첨부) — 기존 홈페이지에서 가져온 사진은 제품명이 붙어 있다 */
+  photoNames?: string[];
   /** 관리자가 승인한 기획안 — 있으면 컨셉·분류·제품 목록을 따른다 */
   plan?: { concept: string; tone: string; headlineDraft: string; audience: string[]; categories: { id: string; name: string }[]; products: string[] };
 }
@@ -81,7 +83,9 @@ export class CorpWriterService {
   }
 
   async skeleton(input: CorpWriterInput): Promise<CorpSkeleton> {
-    const nImg = input.images.length;
+    const nSeen = input.images.length;
+    const names = input.photoNames || [];
+    const nImg = Math.max(nSeen, names.length);
     const user = `회사: ${input.name}
 ${input.industry ? `업종: ${input.industry}` : ''}
 ${input.memo ? `관리자 메모: ${input.memo}` : ''}
@@ -92,7 +96,8 @@ ${JSON.stringify(input.facts, null, 1)}
 [회사 자료·기존 홈페이지]
 ${input.material.slice(0, 40000) || '없음'}
 
-[사진] ${nImg ? `${nImg}장 첨부 — 첨부 순서대로 0번부터` : '없음'}
+[사진] ${nImg ? `모두 ${nImg}장 — 0~${nSeen - 1}번은 첨부(직접 보고 판단)${nImg > nSeen ? `, ${nSeen}~${nImg - 1}번은 첨부 없이 이름만` : ''}` : '없음'}
+${names.some(Boolean) ? names.map((n, i) => (n ? `사진 ${i}: ${n}` : '')).filter(Boolean).join('\n') : ''}
 ${input.plan ? `
 [승인된 기획안 — 반드시 따른다]
 컨셉: ${input.plan.concept}
@@ -113,7 +118,7 @@ ${input.plan ? `
 - certifications: 인증·특허·지정 이름.
 - company: ceo, founded, fax, email, bizNo, address, phone — 자료에 있는 것만.
 - categories: 제품 분류 2~4개(예: 민수·군수). id는 영어 소문자·하이픈. 분류가 의미 없으면 [].
-- products: 자료에 나온 제품 전부. id는 영어 소문자·하이픈(예: "aluminum-flatbed"). summary 1~2문장, keySpec은 대표 사양 한 줄(자료에 있으면). photos는 그 제품이 주인공인 사진 번호들.
+- products: 자료에 나온 제품 전부(기획안이 있으면 기획안 목록). 사진 이름이 제품명과 같거나 그 제품의 변형이면 그 사진들을 photos에 넣는다. id는 영어 소문자·하이픈(예: "aluminum-flatbed"). summary 1~2문장, keySpec은 대표 사양 한 줄(자료에 있으면). photos는 그 제품이 주인공인 사진 번호들.
 - photos: 사진마다 kind(product·factory·people·other)와 짧은 설명.
 - hero: 첫 화면 사진 번호 — 회사의 대표 제품·현장이 선명하게 보이는 사진. 다른 회사·옛 상호 로고가 크게 보이는 사진은 피한다.
 - aboutPhoto: 회사 개요 옆 사진 번호(공장·현장이 있으면 우선), 없으면 null.

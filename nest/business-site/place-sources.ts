@@ -74,6 +74,8 @@ export interface NaverLocal {
 }
 
 export interface WebPage { url: string; title: string; text: string }
+/** 기존 홈페이지의 본문 이미지 — 조사 단계에서 AI가 글 이미지(옮겨 적기)와 사진(가져오기)으로 나눈다 */
+export interface WebImage { url: string; page: string; alt?: string; /** 이미지 바로 뒤 글(제품명 등) */ near?: string }
 
 export interface NaverBlog {
   title: string;
@@ -226,9 +228,10 @@ export const sources = {
   // ── 회사 기존 홈페이지 ──
   /**
    * 첫 화면 + 같은 도메인의 회사소개·연혁·제품 페이지(최대 8개)의 글을 모은다.
-   *   의뢰 회사 자신의 사이트라 글을 AI 자료로 쓰는 건 괜찮지만, 사진은 가져오지 않는다(원본은 회사에서 받는다).
+   *   의뢰 회사 자신의 사이트라 글을 AI 자료로 쓴다. 본문 이미지 주소도 모아 두고, 조사 단계에서
+   *   글 이미지는 옮겨 적고 사진은 사업체 사진으로 가져온다(고객 검토에서 사용 여부를 확인받는다).
    */
-  async website(raw: string): Promise<{ url: string; pages: WebPage[] } | null> {
+  async website(raw: string): Promise<{ url: string; pages: WebPage[]; images: WebImage[] } | null> {
     const base = publicHttpUrl(String(raw || '').trim());
     if (!base) return null;
     const get = async (url: string) => {
@@ -244,24 +247,68 @@ export const sources = {
         return new TextDecoder(enc).decode(buf);
       } catch { return null; } finally { clearTimeout(t); }
     };
-    const home = await get(base.href);
+    let home = await get(base.href);
     if (!home) throw new Error('홈페이지를 열지 못했습니다');
+    // 옛 사이트는 첫 화면이 프레임 껍데기다 — 글이 거의 없고 같은 도메인 프레임이 있으면 그 안을 첫 화면으로
+    let homeUrl = base;
+    const frame = [...home.matchAll(/<i?frame[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]).find((x) => !/^(about|javascript):/i.test(x));
+    if (frame && htmlToText(home).text.length < 300) {
+      try {
+        const fu = new URL(frame, base);
+        const inner = fu.hostname === base.hostname ? await get(fu.href) : null;
+        if (inner) { home = inner; homeUrl = fu; }
+      } catch { /* 프레임 주소가 이상하면 껍데기 그대로 */ }
+    }
+    // 세션 파라미터(PHPSESSID 등)는 지운다 — 같은 페이지가 여러 주소로 보이지 않게
+    const clean = (h: string) => {
+      const u = new URL(h);
+      [...u.searchParams.keys()].filter((k) => /sess|^sid$/i.test(k)).forEach((k) => u.searchParams.delete(k));
+      u.hash = '';
+      return u.href;
+    };
     const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)].map((m) => {
-      try { return new URL(m[1], base).href; } catch { return ''; }
-    }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?)$/i.test(h));
+      try { return clean(new URL(m[1].replace(/&amp;/g, '&'), homeUrl).href); } catch { return ''; }
+    }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?)$/i.test(h) && !/login|member|bkoff|admin/i.test(h));
     // 회사소개·연혁·인증 페이지를 먼저, 같은 페이지의 쿼리 변형(제품 상세 ?it_id=…)은 경로당 2개까지만
     const score = (h: string) => (/(summary|about|intro|company|회사|소개)/i.test(h) ? 5 : 0) + (/(history|연혁)/i.test(h) ? 5 : 0)
       + (/(greeting|ceo|인사)/i.test(h) ? 4 : 0) + (/(certif|patent|인증|특허)/i.test(h) ? 4 : 0)
       + (/(business|product|prod|사업|제품)/i.test(h) ? 2 : 0) + (/(contact|location|오시는)/i.test(h) ? 1 : 0) - (new URL(h).search ? 1 : 0);
+    // 제품 목록은 분류(?ctg=…)마다 다른 제품이 있어 경로당 6개까지, 나머지는 2개
     const perPath = new Map<string, number>();
-    const picked = [...new Set(links)].filter((h) => h !== base.href && PAGE_HINT.test(h))
+    const picked = [...new Set(links)].filter((h) => h !== homeUrl.href && (PAGE_HINT.test(h) || /facility|gallery|설비|갤러리/i.test(h)))
       .sort((a, b) => score(b) - score(a))
-      .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < 2; })
-      .slice(0, 10);
-    const pages: WebPage[] = [{ url: base.href, ...htmlToText(home) }];
+      .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < (/(product|prod|제품)/i.test(k) ? 6 : 2); })
+      .slice(0, 16);
+    const pages: WebPage[] = [{ url: homeUrl.href, ...htmlToText(home) }];
+    const images = new Map<string, WebImage>();
+    // 페이지당 10장까지 — 인증서 스캔 같은 한 페이지의 이미지 묶음이 제품 사진 자리를 다 먹지 않게
+    const takeImages = (html: string, pageUrl: string) => {
+      let n = 0;
+      for (const m of html.matchAll(/<img[^>]+>/gi)) {
+        if (n >= 10) break;
+        const src = /src=["']([^"']+)["']/i.exec(m[0])?.[1];
+        if (!src || !/\.(jpe?g|png|gif|webp)(\?|$)/i.test(src)) continue;
+        // 메뉴·버튼·제목 글자·아이콘 이미지는 뺀다
+        if (/(menu|btn|button|title|icon|banner|bullet|arrow|blank|spacer|common|location|logo|top_|bg_|_bg|ctg_|quick|sns|footer|header)/i.test(src)) continue;
+        try {
+          const u = new URL(src, pageUrl);
+          if (u.hostname !== base.hostname) continue;
+          // 게시판 썸네일(…/thumb/104x104_100/…) → 원본
+          u.pathname = u.pathname.replace(/\/thumb\/[^/]+\//i, '/');
+          if (images.has(u.href)) continue;
+          // 목록형 페이지는 이미지 바로 뒤에 제품명이 온다 — 사진과 제품을 짝짓는 단서
+          const after = html.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 800);
+          const near = htmlToText(after.replace(/<img[\s\S]*$/i, '').replace(/^[^<]*>/, '')).text.split('\n')
+            .find((l) => l.length > 1 && l.length <= 80 && !/[<>]|untitled document/i.test(l));
+          images.set(u.href, { url: u.href, page: pageUrl, alt: (/alt=["']([^"']*)["']/i.exec(m[0])?.[1] || '').slice(0, 80) || undefined, near });
+          n++;
+        } catch { /* 깨진 주소 */ }
+      }
+    };
+    takeImages(home, homeUrl.href);
     for (const url of picked) {
       const html = await get(url);
-      if (html) pages.push({ url, ...htmlToText(html) });
+      if (html) { pages.push({ url, ...htmlToText(html) }); takeImages(html, url); }
     }
     // 페이지마다 같은 메뉴·푸터 줄이 반복된다 — 세 페이지 이상에 나온 줄은 뺀다
     const count = new Map<string, number>();
@@ -270,6 +317,7 @@ export const sources = {
     return {
       url: base.href,
       pages: pages.map((p) => ({ ...p, text: p.text.split('\n').filter((l) => !common.has(l)).join('\n').slice(0, 4000) })),
+      images: [...images.values()].slice(0, 80),
     };
   },
 

@@ -202,6 +202,28 @@ JSON: {"concept":"","conceptWhy":"","audience":[""],"tone":"","accent":"#","acce
     };
   }
 
+  /**
+   * 기존 홈페이지 이미지 읽기 — 옛 국내 사이트는 인사말·연혁·회사개요를 그림 글자로 올려 둔 곳이 많다.
+   *   kind: text(글이 주인공 → 그대로 옮겨 적기) / product·factory·people·other(사진 → 가져오기 후보) / skip(로고·장식·흐림)
+   */
+  async readImages(images: { data: string; mediaType: string }[], hints: string[] = []): Promise<{ i: number; kind: string; caption: string; text: string }[]> {
+    if (!images.length) return [];
+    const content: any[] = [
+      ...images.flatMap((im, i) => [{ type: 'text', text: `이미지 ${i}${hints[i] ? ` (페이지에서 이 이미지 옆 글: "${hints[i]}")` : ''}` }, { type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } }]),
+      { type: 'text', text: `회사 홈페이지에서 가져온 이미지 ${images.length}장입니다. 이미지마다:
+- kind: text(인사말·연혁·회사개요·사양표처럼 글이 주인공인 이미지) / product(제품·완성차) / factory(공장·설비·작업) / people(사람) / other(그 밖의 쓸 만한 사진) / skip(로고·장식·아이콘·너무 흐림·다른 회사 광고)
+- caption: 무엇인지 20자 이내
+- text: kind가 text면 이미지 속 글을 빠짐없이 그대로 옮겨 적는다(줄바꿈 유지, 고치거나 요약하지 않는다). 아니면 "" — 단, 사진에 제품명·규격 글자가 크게 보이면 그 글자만.
+JSON: {"images":[{"i":0,"kind":"","caption":"","text":""}]}` },
+    ];
+    const res: any = await this.anthropic().messages.create({ model: env.CLAUDE_MODEL, max_tokens: 8000, system: RULES, messages: [{ role: 'user', content }] } as any);
+    const j = parseJson((res.content || []).map((x: any) => (x.type === 'text' ? x.text : '')).join(''));
+    const KINDS = ['text', 'product', 'factory', 'people', 'other', 'skip'];
+    return arr(j.images).map((x: any) => ({
+      i: Number(x?.i), kind: KINDS.includes(x?.kind) ? x.kind : 'skip', caption: clip(x?.caption, 40), text: clip(x?.text, 4000),
+    })).filter((x) => Number.isInteger(x.i) && x.i >= 0 && x.i < images.length);
+  }
+
   /** 한 번 부르고(서버 도구가 길어 pause_turn 이면 이어서) 마지막 답 글과 검색 결과 주소를 돌려준다 */
   private async run(user: string, maxTokens: number, webSearch: boolean): Promise<{ text: string; urls: Set<string>; searches: string[] }> {
     const messages: any[] = [{ role: 'user', content: user }];
