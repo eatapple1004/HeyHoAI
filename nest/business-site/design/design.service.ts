@@ -235,8 +235,9 @@ export class DesignService {
       const urls = Object.keys(d.pages).map((x) => `<url><loc>${m.origin}${base}/${x}</loc></url>`).join('\n');
       return { status: 200, type: 'application/xml; charset=utf-8', body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>` };
     }
-    const spec = pageSpecs(m).find((s) => s.path === p);
-    if (!spec || !(p in d.pages)) return html(this.shell(m, d, base, { key: 'home', title: '페이지를 찾을 수 없습니다', path: p }, `<section class="wrap" style="padding:120px 0"><h1>페이지를 찾을 수 없습니다</h1><p><a href="${esc(base)}/">첫 화면으로</a></p></section>`, preview), 404);
+    // 시안은 만든 시점의 스냅숏 — 경로는 시안이 가진 페이지로 판단한다(그 뒤 문구를 다시 만들어 제품 id가 바뀌어도 안 깨지게)
+    const spec = p in d.pages ? (pageSpecs(m).find((s) => s.path === p) || snapshotSpec(p, d.pages[p])) : null;
+    if (!spec) return html(this.shell(m, d, base, { key: 'home', title: '페이지를 찾을 수 없습니다', path: p }, `<section class="wrap" style="padding:120px 0"><h1>페이지를 찾을 수 없습니다</h1><p><a href="${esc(base)}/">첫 화면으로</a></p></section>`, preview), 404);
     let body = spec.key === 'privacy' ? privacyBody(m) : rebase(d.pages[p], base);
     body = body
       .replace(/<!--\s*\{\{CONTACT_FORM\}\}\s*-->/g, contactForm(m, base, query))
@@ -333,6 +334,13 @@ function pageSpecs(m: CorpSite): PageSpec[] {
   specs.push({ path: 'contact', key: 'contact', title: '문의하기', data: { 전화: phone, 팩스: m.company.fax, 이메일: m.company.email, 주소: m.facts.address || m.company.address }, placeholders: ['<!--{{CONTACT_FORM}}--> (문의 폼 자리)'] });
   specs.push({ path: 'privacy', key: 'privacy', title: '개인정보처리방침', data: {} });
   return specs;
+}
+
+function snapshotSpec(p: string, html: string): PageSpec {
+  const key = p === '' ? 'home' : p.startsWith('products/') ? 'product' : p === 'products' ? 'products' : p === 'about/history' ? 'history'
+    : p === 'about/certifications' ? 'certs' : p === 'about/location' ? 'location' : p === 'contact' ? 'contact' : p === 'privacy' ? 'privacy' : 'about';
+  const h1 = (/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html)?.[1] || '').replace(/<[^>]+>/g, '').trim();
+  return { path: p, key, title: h1 || p, data: {} };
 }
 
 function contactForm(m: CorpSite, base: string, q: Record<string, string>): string {
