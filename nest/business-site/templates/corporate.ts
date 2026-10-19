@@ -24,7 +24,8 @@ export function renderCorporate(m: SiteModel): string {
     return out;
   };
 
-  const hero = take(m.photos, 1)[0];
+  // 첫 화면 사진은 어두운 배경으로 깔리는 용도라 제품 칸에서 다시 써도 된다(대표 제품 사진이 제품 목록에서 빠지지 않게)
+  const hero = m.photos[0];
   const services = c.services || [];
   // 사진 있는 제품: 앞 4개는 크게(지그재그), 그다음은 카드 격자 — 사진 있는 제품이 목록으로 밀려나지 않게
   const withPhoto: typeof services = [];
