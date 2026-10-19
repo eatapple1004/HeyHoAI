@@ -173,7 +173,7 @@ ${input.benchmarks.map((b) => `- ${b.name}: ${b.why}`).join('\n') || '없음'}
 - pages: ${Object.entries(PLAN_PAGES).map(([k, v]) => `${k}(${v})`).join(', ')} 각각 include(true/false)와 reason. 자료가 없는 페이지는 false — 빈 페이지를 만들지 않는다.
 - categories: 제품 분류 0~4개(id는 영어 소문자·하이픈). 제품이 적으면 [].
 - products: 사이트에 올릴 제품 이름(확인된 것만).
-- photoNeeds: 이 기획을 화면으로 만들려면 회사에서 받아야 할 사진 목록(구체적으로, 예: "냉동탑차 완성차 측면 사진").
+- photoNeeds: 위 [가진 사진]으로 채울 수 없어 회사에서 더 받아야 할 사진만(구체적으로, 예: "냉동탑차 적재함 내부 사진"). 이미 있는 사진은 다시 요청하지 않는다.
 - risks: 공개 전에 고객에게 꼭 확인할 것.
 JSON: {"concept":"","conceptWhy":"","audience":[""],"tone":"","accent":"#","accentWhy":"","headlineDraft":"","pages":[{"key":"","include":true,"reason":""}],"categories":[{"id":"","name":""}],"products":[""],"photoNeeds":[""],"risks":[""]}`;
     const j = parseJson((await this.run(user, 6000, false)).text);

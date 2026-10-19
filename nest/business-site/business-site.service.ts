@@ -750,7 +750,9 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
       const [kind, id] = p.ref.split(':');
       if (kind === 'media' && own.has(id)) {
         const file = String(own.get(id)!.file_path).split('/').pop();
-        out.push({ ...p, ...notes[p.ref], url: `/images/t/960/${file}` });
+        // 캡션: AI 메모가 없으면 사진 자체 캡션(홈페이지에서 가져온 사진은 제품명)
+        const cap = String(own.get(id)!.caption || '').replace(/^\[홈페이지\]\s*/, '');
+        out.push({ ...p, ...(cap ? { caption: cap } : {}), ...notes[p.ref], url: `/images/t/960/${file}` });
       } else if (kind === 'google' && gph[Number(id)]) {
         const a = gph[Number(id)].authors?.[0];
         out.push({ ...p, ...notes[p.ref], url: `/site-photo/${site.id}/${id}`, credit: a?.name, creditUri: a?.uri });
