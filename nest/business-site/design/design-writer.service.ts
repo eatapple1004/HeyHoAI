@@ -57,6 +57,8 @@ ${input.brief}
 ${input.direction || '기획안의 컨셉을 가장 잘 드러내는 방향으로 자유롭게'}
 
 강조색(회사 색 또는 기획안 색): ${input.accent} — 강조에만 아껴 쓴다.
+밝은 강조색(어두운 배경 위 글자·숫자·선 전용): ${lighten(input.accent)} — :root 에 --accent-light 로 정의한다.
+⚠️ 대비 규칙: 어두운 배경(배경 명도가 낮은 섹션·머리말·꼬리말) 위의 글자·작은 제목·숫자에는 --accent 를 쓰지 말고 --accent-light 나 흰색 계열을 쓴다. 밝은 배경 위에서는 --accent. 본문 글자는 어느 배경에서든 4.5:1 이상.
 메뉴(이 링크 그대로): ${JSON.stringify(input.nav)}
 꼬리말에 넣을 회사 정보(있는 것만): ${JSON.stringify(input.company)}
 첨부 사진: 이 회사 실제 사진 일부(분위기·색 참고용).
@@ -114,4 +116,16 @@ ${p.placeholders?.length ? `\n[반드시 넣을 자리표시자 — 서버가 �
     if (!html.trim()) throw new InternalServerErrorException(`${p.title} 페이지 응답을 읽지 못했습니다.`);
     return html.trim();
   }
+}
+
+/** 어두운 배경 위에서 읽히는 강조색 — 흰색과 섞어 명도를 올린다(이미 밝으면 그대로) */
+export function lighten(hex: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return '#9EC1E6';
+  const n = parseInt(m[1], 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+  if (lum > 0.6) return hex;
+  const t = lum < 0.25 ? 0.62 : 0.45;
+  return '#' + rgb.map((c) => Math.round(c + (255 - c) * t).toString(16).padStart(2, '0')).join('');
 }
