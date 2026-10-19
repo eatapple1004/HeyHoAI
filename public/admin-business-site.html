@@ -115,6 +115,12 @@ button:disabled{opacity:.5;cursor:default}
         <p class="prog" id="genProg" style="margin-top:8px"></p>
       </div>
 
+      <!-- 페이지 목록(여러 페이지 사이트) -->
+      <div class="card" id="pagesCard" style="display:none">
+        <h2>페이지 <span class="hint">눌러서 미리보기에서 열기</span></h2>
+        <div id="pages" class="row" style="gap:6px"></div>
+      </div>
+
       <!-- 3. 사진 -->
       <div class="card">
         <h2>3. 사진 <span class="hint">첫 번째(대표)가 맨 위 큰 사진이 됩니다. 원본 사진은 사업체 상세에서 올리세요</span></h2>
@@ -126,6 +132,12 @@ button:disabled{opacity:.5;cursor:default}
         <h2>4. 문구 고치기</h2>
         <div id="fields"></div>
         <button class="primary" onclick="saveContent()">문구 저장</button>
+      </div>
+
+      <!-- 문의 -->
+      <div class="card" id="inqCard" style="display:none">
+        <h2>접수된 문의 <span class="hint">공개 사이트 문의 폼으로 들어온 것</span></h2>
+        <div id="inqs"></div>
       </div>
 
       <!-- 5. 공개 -->
@@ -214,7 +226,10 @@ function render() {
   $('openLink').style.display = site && site.status === 'published' ? '' : 'none';
   if (publicUrl) $('openLink').href = publicUrl;
   $('genBtn').disabled = !site;
+  renderPages(site);
   if (site) reloadPreview();
+  if (site && site.content && site.content.multipage) loadInquiries();
+  if (genState() === 'running' && !window._polling) { window._polling = true; pollGen().finally(() => { window._polling = false; }); }
 }
 
 function renderFacts(site) {
@@ -267,12 +282,30 @@ async function collect() {
 
 // ── 2. AI ──
 async function generate() {
-  $('genProg').textContent = 'AI가 자료를 읽고 문구를 쓰는 중입니다 (20초 안팎)…';
+  $('genProg').textContent = 'AI가 자료를 읽고 문구를 쓰는 중입니다…';
   await busy($('genBtn'), '만드는 중…', async () => {
     STATE = await api(API + '/generate', { method: 'POST', body: JSON.stringify({ template: $('tpl').value || undefined }) });
+    if (genState() === 'running') return pollGen();
     render(); flash('ok', '문구를 만들었습니다. 미리보기를 확인하고 고칠 곳을 고치세요.');
   });
-  $('genProg').textContent = '';
+  if (genState() !== 'running') $('genProg').textContent = '';
+}
+const genState = () => STATE && STATE.site && STATE.site.content && STATE.site.content.gen && STATE.site.content.gen.state;
+// 여러 페이지 사이트는 뒤에서 수 분 동안 만든다 — 3초마다 진행 상황을 읽는다
+async function pollGen() {
+  $('genBtn').disabled = true;
+  for (;;) {
+    const g = STATE.site.content.gen || {};
+    $('genProg').textContent = g.state === 'running' ? (g.step || '만드는 중') + (g.total ? ' ' + g.done + '/' + g.total : '') + ' — 몇 분 걸립니다. 이 화면을 닫아도 계속 만듭니다.' : '';
+    if (g.state !== 'running') break;
+    await new Promise((r) => setTimeout(r, 3000));
+    try { STATE = await api(API); } catch (e) { /* 일시 오류는 다음 주기에 */ }
+  }
+  $('genBtn').disabled = false;
+  render();
+  const g = STATE.site.content.gen || {};
+  if (g.state === 'error') flash('err', '만들기 실패: ' + (g.error || '알 수 없는 오류'));
+  else flash('ok', '사이트를 만들었습니다. 페이지 목록에서 하나씩 확인하세요.');
 }
 
 // ── 3. 사진 ──
@@ -320,6 +353,8 @@ const FIELDS = [
   ['certifications', '인증·특허 (기업형) <small>한 줄에 하나</small>', 'area', 4],
   ['company', '회사 정보 (기업형) <small>항목: 값 — 대표, 설립, 팩스, 이메일, 사업자번호</small>', 'area', 4],
   ['accent', '강조색 (기업형) <small>#RRGGBB</small>', 'input'],
+  ['ceo', '대표 인사말 (여러 페이지) <small>첫 줄: 제목, 둘째 줄부터 본문</small>', 'area', 6],
+  ['products', '제품 (여러 페이지, 고급) <small>JSON — id·name·category·summary·keySpec·body·features·specs·photos</small>', 'area', 12],
 ];
 const COMPANY_KEYS = { ceo: '대표', founded: '설립', fax: '팩스', email: '이메일', bizNo: '사업자번호', address: '주소', phone: '전화' };
 function toText(key, v) {
@@ -329,6 +364,8 @@ function toText(key, v) {
   if (key === 'stats') return (v || []).map((x) => [x.value, x.label, x.note || ''].join(' | ').replace(/( \| )+$/, '')).join('\n');
   if (key === 'history') return (v || []).map((x) => [x.year, x.text].join(' | ')).join('\n');
   if (key === 'certifications') return (v || []).join('\n');
+  if (key === 'ceo') return v && v.body ? (v.title || '') + '\n' + v.body : '';
+  if (key === 'products') return v && v.length ? JSON.stringify(v, null, 1) : '';
   if (key === 'company') return Object.entries(v || {}).map(([k, x]) => (COMPANY_KEYS[k] || k) + ': ' + x).join('\n');
   return v || '';
 }
@@ -340,6 +377,8 @@ function fromText(key, t) {
   if (key === 'stats') return lines().map(([value, label, note]) => ({ value, label: label || '', note: note || '' }));
   if (key === 'history') return lines().map(([year, text]) => ({ year, text: text || '' }));
   if (key === 'certifications') return t.split('\n').map((x) => x.trim()).filter(Boolean);
+  if (key === 'ceo') { const i = t.indexOf('\n'); return t.trim() ? { title: (i > 0 ? t.slice(0, i) : '').trim(), body: (i > 0 ? t.slice(i + 1) : t).trim() } : null; }
+  if (key === 'products') { if (!t.trim()) return []; try { return JSON.parse(t); } catch (e) { throw new Error('제품 JSON 형식이 잘못됐습니다: ' + e.message); } }
   if (key === 'company') {
     const rev = Object.fromEntries(Object.entries(COMPANY_KEYS).map(([k, l]) => [l, k]));
     return Object.fromEntries(t.split('\n').map((l) => { const i = l.indexOf(':'); return i > 0 ? [rev[l.slice(0, i).trim()] || l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter((x) => x && x[1]));
@@ -353,7 +392,7 @@ function renderFields(content) {
 }
 async function saveContent() {
   const content = {};
-  FIELDS.forEach(([k]) => { content[k] = fromText(k, $('f_' + k).value); });
+  try { FIELDS.forEach(([k]) => { content[k] = fromText(k, $('f_' + k).value); }); } catch (e) { return flash('err', e.message); }
   try { STATE = await api(API, { method: 'PATCH', body: JSON.stringify({ content }) }); render(); flash('ok', '문구를 저장했습니다.'); }
   catch (e) { flash('err', e.message); }
 }
@@ -372,13 +411,41 @@ async function togglePublish() {
   });
 }
 
+// ── 페이지 목록 · 문의 ──
+let PREVIEW_PATH = '';
+function renderPages(site) {
+  const c = site && site.content;
+  if (!c || !c.multipage) { $('pagesCard').style.display = 'none'; return; }
+  const pages = [['', '홈'], ['about', '회사 개요']];
+  if ((c.history || []).length) pages.push(['about/history', '연혁']);
+  if ((c.certifications || []).length) pages.push(['about/certifications', '인증·특허']);
+  pages.push(['about/location', '오시는 길']);
+  if ((c.products || []).length) pages.push(['products', '제품 목록']);
+  (c.products || []).forEach((p) => pages.push(['products/' + p.id, '└ ' + p.name]));
+  pages.push(['contact', '문의'], ['privacy', '개인정보처리방침']);
+  $('pagesCard').style.display = '';
+  $('pages').innerHTML = pages.map(([p, l]) => `<button class="sm${p === PREVIEW_PATH ? ' primary' : ''}" onclick="openPage('${p}')">${esc(l)}</button>`).join('');
+}
+function openPage(p) { PREVIEW_PATH = p; renderPages(STATE.site); reloadPreview(); }
+async function loadInquiries() {
+  try {
+    const list = await api(API + '/inquiries');
+    $('inqCard').style.display = '';
+    $('inqs').innerHTML = list.length ? list.map((q) => `<div style="border-bottom:1px solid var(--border);padding:10px 0;font-size:.84rem">
+      <b>${esc(q.name)}</b> ${q.company ? '· ' + esc(q.company) : ''} · <a href="tel:${esc(q.phone)}">${esc(q.phone)}</a> ${q.email ? '· ' + esc(q.email) : ''}
+      <span class="prog" style="float:right">${new Date(q.created_at).toLocaleString('ko-KR')}</span>
+      ${q.product ? `<div class="prog">관심 제품: ${esc(q.product)}</div>` : ''}
+      <div style="white-space:pre-wrap;color:var(--dim);margin-top:4px">${esc(q.message)}</div></div>`).join('') : '<div class="empty">아직 문의가 없습니다.</div>';
+  } catch (e) { /* 문의 목록 실패는 화면 전체를 막지 않는다 */ }
+}
+
 // ── 미리보기 ──
 function setView(m) { MOBILE = m; $('frame').classList.toggle('mobile', m); }
 function reloadPreview() {
   const f = $('frame');
   let ifr = f.querySelector('iframe');
   if (!ifr) { f.innerHTML = '<iframe title="미리보기"></iframe>'; ifr = f.querySelector('iframe'); }
-  ifr.src = '/admin-business/' + BIZ_ID + '/site/preview?t=' + Date.now();
+  ifr.src = '/admin-business/' + BIZ_ID + '/site/preview' + (PREVIEW_PATH ? '/' + PREVIEW_PATH : '') + '?t=' + Date.now();
 }
 
 load();

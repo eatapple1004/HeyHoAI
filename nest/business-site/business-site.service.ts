@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import * as path from 'path';
 import { BusinessSiteRepository, BusinessSiteRow } from './business-site.repository';
 import { SiteWriterService } from './site-writer.service';
+import { CorpWriterService } from './corp-writer.service';
+import { CorpSite, CorpPhoto, routeCorp, RouteResult } from './multipage';
 import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
 
@@ -37,6 +39,7 @@ export class BusinessSiteService {
   constructor(
     private readonly repo: BusinessSiteRepository,
     private readonly writer: SiteWriterService,
+    private readonly corpWriter: CorpWriterService,
   ) {}
 
   private async biz(id: string) {
@@ -124,6 +127,19 @@ export class BusinessSiteService {
     const b = await this.biz(businessId);
     const site = await this.repo.byBusiness(businessId);
     if (!site) throw new BadRequestException('먼저 자료를 수집하세요.');
+    // 기업형은 여러 페이지 — 골격 + 제품별 상세를 나눠 쓰느라 수 분 걸린다. 요청은 바로 돌려주고 뒤에서 만든다
+    //   (Cloudflare 100초 제한에 걸려 화면이 524로 끊기지 않게). 진행 상황은 content.gen 으로 폴링한다.
+    if ((body.template || site.template) === 'corporate') {
+      if (site.content?.gen?.state === 'running' && Date.now() - Date.parse(site.content.gen.at || 0) < 15 * 60 * 1000) {
+        throw new ConflictException('이미 만드는 중입니다.');
+      }
+      await this.setGen(businessId, { state: 'running', step: '사진과 자료를 읽는 중', done: 0, total: 0 }, 'corporate');
+      this.runCorporate(businessId).catch(async (e) => {
+        console.error('[business-site] corporate generate failed', e);
+        await this.setGen(businessId, { state: 'error', error: String(e?.message || e).slice(0, 300) });
+      });
+      return this.get(businessId);
+    }
     const s: SiteSource = site.source || {};
     const facts = this.facts(s);
     const lock = Boolean(body.template && TEMPLATES[body.template]);
@@ -242,6 +258,129 @@ export class BusinessSiteService {
       preview,
     };
     return renderSite(site.template, model);
+  }
+
+  // ── 여러 페이지 기업 사이트 ──
+
+  private async setGen(businessId: string, gen: Record<string, unknown>, template?: string) {
+    const site = await this.repo.byBusiness(businessId);
+    await this.repo.update(businessId, { content: { ...(site?.content || {}), gen: { ...gen, at: new Date().toISOString() } }, ...(template ? { template } : {}) });
+  }
+
+  private async runCorporate(businessId: string) {
+    const b = await this.biz(businessId);
+    const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+    const s: SiteSource = site.source || {};
+    const usable = (site.photos as PhotoEntry[]).filter((p) => !p.hidden).slice(0, MAX_VISION_PHOTOS);
+    const loaded = await Promise.all(usable.map((p) => this.loadPhoto(site, p.ref)));
+    const refs = usable.filter((_, i) => loaded[i]).map((p) => p.ref);
+    const images = loaded.filter(Boolean) as { data: string; mediaType: string }[];
+    const material = [
+      s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
+      ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
+    ].filter(Boolean).join('\n\n');
+
+    await this.setGen(businessId, { state: 'running', step: '사이트 구성과 회사 소개를 쓰는 중', done: 0, total: 0 });
+    const sk = await this.corpWriter.skeleton({ name: b.name, industry: b.industry, memo: b.memo, facts: this.facts(s), material, images });
+
+    // 제품 상세 — 3개씩 동시에
+    const products: any[] = sk.products.map((p) => ({ ...p, photos: p.photos.map((i) => refs[i]).filter(Boolean) }));
+    let done = 0;
+    await this.setGen(businessId, { state: 'running', step: '제품 상세 페이지를 쓰는 중', done, total: products.length });
+    const queue = [...products];
+    const worker = async () => {
+      for (let p = queue.shift(); p; p = queue.shift()) {
+        try {
+          Object.assign(p, await this.corpWriter.productDetail({ name: b.name, material, product: p }));
+        } catch (e: any) {
+          console.warn('[business-site] product detail failed', p.id, e?.message);
+        }
+        done += 1;
+        await this.setGen(businessId, { state: 'running', step: '제품 상세 페이지를 쓰는 중', done, total: products.length });
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+
+    const photoNotes: Record<string, { kind: string; caption: string }> = {};
+    for (const p of sk.photos) photoNotes[refs[p.i]] = { kind: p.kind, caption: p.caption };
+    const heroRef = sk.hero == null ? null : refs[sk.hero];
+    let photos = site.photos as PhotoEntry[];
+    if (heroRef) photos = [...photos.filter((p) => p.ref === heroRef), ...photos.filter((p) => p.ref !== heroRef)];
+    const { photos: _ph, hero: _h, aboutPhoto, products: _pr, ...rest } = sk;
+    await this.repo.update(businessId, {
+      template: 'corporate',
+      photos,
+      content: {
+        ...rest, products, photoNotes,
+        aboutPhoto: aboutPhoto == null ? null : refs[aboutPhoto],
+        multipage: true,
+        gen: { state: 'done', done, total: products.length, at: new Date().toISOString() },
+      },
+    });
+  }
+
+  /** 렌더 모델 — content(문구) + facts(수집 자료) + 사진. base 는 링크 앞부분 */
+  private async corpModel(site: BusinessSiteRow, base: string, preview: boolean): Promise<CorpSite> {
+    const b = await this.biz(site.business_id);
+    const c = site.content || {};
+    const f = this.facts(site.source || {});
+    const list = (await this.photoList(site)).filter((p) => !p.hidden);
+    const byRef = new Map(list.map((p) => [p.ref, p]));
+    const ph = (ref?: string | null): CorpPhoto | undefined => {
+      const p = ref ? byRef.get(ref) : undefined;
+      return p ? { url: p.url, caption: p.caption, kind: p.kind, credit: p.credit, creditUri: p.creditUri } : undefined;
+    };
+    const productPhotoRefs = new Set((c.products || []).flatMap((p: any) => p.photos || []));
+    const credits = [...new Map(list.filter((p) => p.credit).map((p) => [p.credit, { name: p.credit as string, uri: p.creditUri }])).values()];
+    return {
+      name: b.name, base, origin: String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, ''), preview,
+      accent: /^#[0-9a-f]{6}$/i.test(c.accent || '') ? c.accent : '#2D5B8C',
+      headline: c.headline || '', sub: c.sub || '', ctaLabel: c.ctaLabel || '견적 문의',
+      stats: c.stats || [], highlights: c.highlights || [],
+      aboutTitle: c.aboutTitle || '', about: c.about || '', ceo: c.ceo,
+      history: c.history || [], certifications: c.certifications || [],
+      categories: c.categories || [],
+      products: (c.products || []).map((p: any) => ({ ...p, photos: (p.photos || []).map((r: string) => ph(r)).filter(Boolean) })),
+      company: c.company || {},
+      facts: { address: f.roadAddress || f.address || '', phone: f.phone || '', lat: f.lat, lng: f.lng, kakaoUrl: f.kakaoUrl, googleUrl: f.googleUrl },
+      heroPhoto: ph(list[0]?.ref),
+      aboutPhoto: ph(c.aboutPhoto) || ph(list.find((p) => p.kind === 'factory' && !productPhotoRefs.has(p.ref))?.ref),
+      gallery: list.filter((p) => !productPhotoRefs.has(p.ref)).map((p) => ph(p.ref)).filter(Boolean) as CorpPhoto[],
+      seoDescription: c.seoDescription || c.sub || '',
+      credits,
+    };
+  }
+
+  /** 여러 페이지 사이트면 경로를 렌더, 아니면 null(한 장짜리 템플릿이 처리) */
+  async renderSitePath(slug: string, path: string, query: Record<string, string>): Promise<RouteResult | null> {
+    const site = await this.repo.publishedBySlug(String(slug || '').toLowerCase());
+    if (!site || !site.content?.multipage) return null;
+    return routeCorp(await this.corpModel(site, `/site/${site.slug}`, false), path, query);
+  }
+
+  async renderPreviewPath(businessId: string, path: string, query: Record<string, string>): Promise<RouteResult | null> {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site || !site.content?.multipage) return null;
+    return routeCorp(await this.corpModel(site, `/admin-business/${businessId}/site/preview`, true), path, query);
+  }
+
+  /** 공개 사이트 문의 접수 — 스팸 방지(숨김 칸·IP당 시간당 5건) */
+  async submitInquiry(slug: string, form: Record<string, string>, ip: string): Promise<'ok' | string> {
+    const site = await this.repo.publishedBySlug(String(slug || '').toLowerCase());
+    if (!site) return '사이트를 찾을 수 없습니다.';
+    if (form.website) return 'ok'; // 봇 — 조용히 무시
+    const t = (k: string, n: number) => String(form[k] || '').trim().slice(0, n);
+    const data = { name: t('name', 40), company: t('company', 60), phone: t('phone', 30), email: t('email', 80), product: t('product', 60), message: t('message', 3000) };
+    if (!data.name || !data.phone || !data.message) return '이름·연락처·문의 내용을 입력해 주세요.';
+    if (form.agree !== '1') return '개인정보 수집·이용에 동의해 주세요.';
+    if ((await this.repo.recentInquiries(site.id, ip)) >= 5) return '잠시 후 다시 시도해 주세요.';
+    await this.repo.addInquiry(site.id, site.business_id, data, ip);
+    return 'ok';
+  }
+
+  async inquiries(businessId: string) {
+    await this.biz(businessId);
+    return this.repo.inquiries(businessId);
   }
 
   /** Google 사진 프록시 — 사이트 id + 번호. 키를 브라우저에 노출하지 않는다 */

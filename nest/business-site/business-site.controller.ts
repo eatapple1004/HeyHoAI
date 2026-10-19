@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Res, UseFilters, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
 import * as path from 'path';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminPageGuard } from '../pages/page-auth.guard';
@@ -36,6 +36,11 @@ export class BusinessSiteAdminController {
     return { success: true, data: await this.sites.generate(id, body || {}) };
   }
 
+  @Get(':id/site/inquiries')
+  async inquiries(@Param('id') id: string) {
+    return { success: true, data: await this.sites.inquiries(id) };
+  }
+
   @Patch(':id/site')
   async update(@Param('id') id: string, @Body() body: any) {
     return { success: true, data: await this.sites.update(id, body || {}) };
@@ -61,16 +66,56 @@ export class BusinessSitePagesController {
   }
 
   @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/site/preview/*')
+  async previewPath(@Param('id') id: string, @Req() req: any, @Res() res: any) {
+    const r = await this.sites.renderPreviewPath(id, req.params[0] || '', req.query || {});
+    if (!r) throw new NotFoundException();
+    res.set('Cache-Control', 'no-store');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
+
+  /** 미리보기의 문의 폼 — 접수하지 않고 안내만 */
+  @UseGuards(AdminPageGuard)
+  @Post('admin-business/:id/site/preview/contact')
+  previewContact(@Param('id') id: string, @Res() res: any) {
+    return res.redirect(303, `/admin-business/${id}/site/preview/contact?error=${encodeURIComponent('미리보기에서는 문의가 접수되지 않습니다.')}`);
+  }
+
+  @UseGuards(AdminPageGuard)
   @Get('admin-business/:id/site/preview')
-  async preview(@Param('id') id: string, @Res() res: any) {
+  async preview(@Param('id') id: string, @Req() req: any, @Res() res: any) {
+    const multi = await this.sites.renderPreviewPath(id, '', req.query || {});
+    if (multi) { res.set('Cache-Control', 'no-store'); return res.status(multi.status).type(multi.type).send(multi.body); }
     const html = await this.sites.renderPreview(id);
     if (!html) throw new NotFoundException();
     res.set('Cache-Control', 'no-store');
     return res.type('html').send(html);
   }
 
+  /** 여러 페이지 사이트의 하위 경로(/site/<slug>/about …) */
+  @Get('site/:slug/*')
+  async sitePath(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
+    const r = await this.sites.renderSitePath(slug, req.params[0] || '', req.query || {});
+    if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
+    res.set('Cache-Control', /^contact/.test(req.params[0] || '') ? 'no-store' : 'public, max-age=60, s-maxage=300');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
+
+  /** 문의 접수 — 일반 HTML 폼(urlencoded). 전역 파서는 JSON만 읽으므로 여기서 직접 읽는다(최대 16KB) */
+  @Post('site/:slug/contact')
+  async contact(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
+    const raw = await readBody(req, 16 * 1024);
+    const form = Object.fromEntries(new URLSearchParams(raw || ''));
+    const result = await this.sites.submitInquiry(slug, form, String(req.ip || ''));
+    const q = result === 'ok' ? 'sent=1' : `error=${encodeURIComponent(result)}`;
+    res.set('Cache-Control', 'no-store');
+    return res.redirect(303, `/site/${encodeURIComponent(slug)}/contact?${q}`);
+  }
+
   @Get('site/:slug')
-  async site(@Param('slug') slug: string, @Res() res: any) {
+  async site(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
+    const multi = await this.sites.renderSitePath(slug, '', req.query || {});
+    if (multi) { res.set('Cache-Control', 'public, max-age=60, s-maxage=300'); return res.status(multi.status).type(multi.type).send(multi.body); }
     const html = await this.sites.renderPublished(slug);
     // 방문자가 보는 화면이라 JSON 대신 짧은 안내 페이지
     if (!html) return res.status(404).type('html').send(NOT_FOUND_HTML);
@@ -87,4 +132,15 @@ export class BusinessSitePagesController {
     res.set('Cache-Control', 'public, max-age=86400');
     return res.type(ph.type).send(ph.buf);
   }
+}
+
+/** urlencoded 본문을 직접 읽는다 — 크기 상한을 넘으면 빈 문자열 */
+function readBody(req: any, limit: number): Promise<string> {
+  if (typeof req.body === 'string') return Promise.resolve(req.body);
+  return new Promise((resolve) => {
+    let size = 0; const chunks: Buffer[] = [];
+    req.on('data', (c: Buffer) => { size += c.length; if (size <= limit) chunks.push(c); });
+    req.on('end', () => resolve(size > limit ? '' : Buffer.concat(chunks).toString('utf8')));
+    req.on('error', () => resolve(''));
+  });
 }

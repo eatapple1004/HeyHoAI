@@ -50,7 +50,7 @@ export interface SiteFacts {
 }
 
 /** kind·caption 은 AI가 사진을 직접 보고 붙인 것(content.photoNotes) — 템플릿이 섹션별로 사진을 나눠 쓴다 */
-export type PhotoKind = 'food' | 'interior' | 'exterior' | 'people' | 'other';
+export type PhotoKind = 'food' | 'interior' | 'exterior' | 'people' | 'other' | 'product' | 'factory';
 export interface SitePhoto { url: string; credit?: string; creditUri?: string; kind?: PhotoKind; caption?: string }
 export interface SiteReview { author: string; authorUri?: string; text: string; rating?: number; when?: string; source: string }
 export interface SiteBlog { title: string; link: string; blogger?: string }
