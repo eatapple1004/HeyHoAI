@@ -4,6 +4,7 @@ import { AdminGuard } from '../auth/admin.guard';
 import { AdminPageGuard } from '../pages/page-auth.guard';
 import { PageExceptionFilter } from '../pages/page-exception.filter';
 import { BusinessSiteService } from './business-site.service';
+import { DesignService } from './design/design.service';
 
 /**
  * 사업체 홈페이지 — 관리자 API. `/api/admin/business` 접두사는 이미 Nest 소유(main.ts NEST_PREFIXES).
@@ -12,7 +13,27 @@ import { BusinessSiteService } from './business-site.service';
 @Controller('api/admin/business')
 @UseGuards(AdminGuard)
 export class BusinessSiteAdminController {
-  constructor(private readonly sites: BusinessSiteService) {}
+  constructor(private readonly sites: BusinessSiteService, private readonly designs: DesignService) {}
+
+  // ── AI 맞춤 디자인 시안 ──
+  @Get(':id/site/designs')
+  async designList(@Param('id') id: string) {
+    return { success: true, data: await this.designs.list(id) };
+  }
+
+  @Post(':id/site/designs')
+  @HttpCode(200)
+  async designCreate(@Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.designs.create(id, body?.direction || '') };
+  }
+
+  /** 공개할 시안 — n 이 null 이면 템플릿 사이트로 */
+  @Post(':id/site/designs/publish')
+  @HttpCode(200)
+  async designPublish(@Param('id') id: string, @Body() body: any) {
+    const n = body?.n == null ? null : Number(body.n);
+    return { success: true, data: await this.designs.publish(id, Number.isInteger(n) ? n : null) };
+  }
 
   @Get(':id/site')
   async get(@Param('id') id: string) {
@@ -99,7 +120,26 @@ const NOT_FOUND_HTML = '<!doctype html><meta charset="utf-8"><meta name="viewpor
 @Controller()
 @UseFilters(PageExceptionFilter)
 export class BusinessSitePagesController {
-  constructor(private readonly sites: BusinessSiteService) {}
+  constructor(private readonly sites: BusinessSiteService, private readonly designs: DesignService) {}
+
+  /** AI 시안 미리보기 — /admin-business/:id/site/design/:n[/경로] */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/site/design/:n/*path')
+  async designPreviewPath(@Param('id') id: string, @Param('n', ParseIntPipe) n: number, @Req() req: any, @Res() res: any) {
+    const r = await this.designs.renderPreview(id, n, restPath(req), req.query || {});
+    if (!r) throw new NotFoundException();
+    res.set('Cache-Control', 'no-store');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
+
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/site/design/:n')
+  async designPreview(@Param('id') id: string, @Param('n', ParseIntPipe) n: number, @Req() req: any, @Res() res: any) {
+    const r = await this.designs.renderPreview(id, n, '', req.query || {});
+    if (!r) throw new NotFoundException();
+    res.set('Cache-Control', 'no-store');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
 
   @UseGuards(AdminPageGuard)
   @Get('admin-business/:id/site')
@@ -127,7 +167,10 @@ export class BusinessSitePagesController {
   /** 고객 검토 링크 — 로그인 없이 공개 전 사이트를 본다(noindex·검토용 표시). 링크를 끄면 바로 404 */
   @Get('site-review/:token/*path')
   async reviewPath(@Param('token') token: string, @Req() req: any, @Res() res: any) {
-    const r = await this.sites.renderSharePath(token, restPath(req), req.query || {});
+    // /site-review/:token/d<n>/… = 시안 n
+    const dm = /^d(\d+)(?:\/(.*))?$/.exec(restPath(req));
+    const r = dm ? await this.designs.renderShare(token, Number(dm[1]), dm[2] || '', req.query || {})
+      : await this.sites.renderSharePath(token, restPath(req), req.query || {});
     if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
     res.set('Cache-Control', 'no-store');
     res.set('X-Robots-Tag', 'noindex, nofollow');
@@ -169,7 +212,7 @@ export class BusinessSitePagesController {
   /** 여러 페이지 사이트의 하위 경로(/site/<slug>/about …) */
   @Get('site/:slug/*path')
   async sitePath(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
-    const r = await this.sites.renderSitePath(slug, restPath(req), req.query || {});
+    const r = (await this.designs.renderPublished(slug, restPath(req), req.query || {})) || (await this.sites.renderSitePath(slug, restPath(req), req.query || {}));
     if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
     res.set('Cache-Control', /^contact/.test(restPath(req)) ? 'no-store' : 'public, max-age=60, s-maxage=300');
     return res.status(r.status).type(r.type).send(r.body);
@@ -188,7 +231,7 @@ export class BusinessSitePagesController {
 
   @Get('site/:slug')
   async site(@Param('slug') slug: string, @Req() req: any, @Res() res: any) {
-    const multi = await this.sites.renderSitePath(slug, '', req.query || {});
+    const multi = (await this.designs.renderPublished(slug, '', req.query || {})) || (await this.sites.renderSitePath(slug, '', req.query || {}));
     if (multi) { res.set('Cache-Control', 'public, max-age=60, s-maxage=300'); return res.status(multi.status).type(multi.type).send(multi.body); }
     const html = await this.sites.renderPublished(slug);
     // 방문자가 보는 화면이라 JSON 대신 짧은 안내 페이지

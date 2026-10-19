@@ -632,13 +632,13 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
   }
 
   /** 자동 점검의 숫자 대조용 — 사이트에 쓸 수 있는 모든 원문 */
-  private sourceText(site: BusinessSiteRow): string {
+  sourceText(site: BusinessSiteRow): string {
     const f = this.facts(site.source || {});
     return [this.material(site), f.address, f.roadAddress, f.phone, f.category].join('\n');
   }
 
   /** 렌더 모델 — content(문구) + facts(수집 자료) + 사진. base 는 링크 앞부분 */
-  private async corpModel(site: BusinessSiteRow, base: string, preview: boolean): Promise<CorpSite> {
+  async corpModel(site: BusinessSiteRow, base: string, preview: boolean): Promise<CorpSite> {
     const b = await this.biz(site.business_id);
     const c = site.content || {};
     const f = this.facts(site.source || {});
@@ -767,7 +767,7 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
   }
 
   /** AI 첨부용 사진 — Google은 800px로 받고, 원본은 우리 썸네일(480 WebP)을 로컬에서 받는다. 실패하면 null(그 사진만 빠진다) */
-  private async loadPhoto(site: BusinessSiteRow, ref: string): Promise<{ data: string; mediaType: string } | null> {
+  async loadPhoto(site: BusinessSiteRow, ref: string): Promise<{ data: string; mediaType: string } | null> {
     try {
       const [kind, id] = ref.split(':');
       if (kind === 'google') {
