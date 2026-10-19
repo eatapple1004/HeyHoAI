@@ -219,14 +219,25 @@ export class DesignService {
       if (!patchCss) throw new Error('보정 CSS가 비었습니다');
       const trial = { ...d, design: { ...d.design, css: `${d.design.css}\n/* 대비 보정 ${new Date().toISOString().slice(0, 10)} */\n${patchCss}` } };
       const v1 = await visualCheck(await this.fullPages(site, trial), { shotPaths: [''] });
-      const before = (v0.contrast || []).length; const after = (v1.contrast || []).length;
-      const keep = !v1.skipped && after < before;
+      const before = (v0.contrast || []).length;
+      let best = { design: d.design, v: v0, n: before };
+      if (!v1.skipped && (v1.contrast || []).length < best.n) best = { design: trial.design, v: v1, n: (v1.contrast || []).length };
+      // 남은 곳은 계산으로 — 색상(hue)은 두고 밝기만 흰색·검정 쪽으로 옮겨 필요 대비를 맞춘다(!important). 페이지별 <style>이 AI 보정을 이기는 경우가 있다
+      if (best.n > 0) {
+        const css2 = forceContrast(best.v.contrast || []);
+        if (css2) {
+          const trial2 = { ...d, design: { ...best.design, css: `${best.design.css}\n/* 대비 보정(계산) */\n${css2}` } };
+          const v2 = await visualCheck(await this.fullPages(site, trial2), { shotPaths: [''] });
+          if (!v2.skipped && (v2.contrast || []).length < best.n) best = { design: trial2.design, v: v2, n: (v2.contrast || []).length };
+        }
+      }
+      const keep = best.n < before;
       const cur = (await this.row(site.id, n)) as DesignRow;
       await this.patch(cur.id, {
-        ...(keep ? { design: trial.design } : {}),
-        qa: { ...cur.qa, visual: { state: 'done', ...(keep ? v1 : v0), at: new Date().toISOString(), fix: { before, after, kept: keep } } },
+        ...(keep ? { design: best.design } : {}),
+        qa: { ...cur.qa, visual: { state: 'done', ...best.v, at: new Date().toISOString(), fix: { before, after: best.n, kept: keep } } },
       });
-      return { before, after, kept: keep };
+      return { before, after: best.n, kept: keep };
     } catch (e: any) {
       console.warn('[design] contrast fix failed', e?.message);
       const cur = (await this.row(site.id, n)) as DesignRow;
@@ -377,6 +388,26 @@ header a[href^="tel:"]{font-size:0!important;padding:10px 12px!important;white-s
 header a[href^="tel:"]::before{content:"전화";font-size:14px;font-weight:700}
 header a[href$="/contact"]:not(nav a):not(details a){display:none!important}
 }`;
+
+/** 측정된 미달 지점마다 필요 대비를 넘는 글자색을 계산해 덮어쓴다 */
+function forceContrast(hits: { sel: string; fg: string; bg: string; need: number }[]): string {
+  const rgb = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const lum = (c: number[]) => { const f = (v: number) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+  const ratio = (a: number[], b: number[]) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const hex = (c: number[]) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const rules: string[] = [];
+  for (const h of hits) {
+    if (!/^#[0-9a-f]{6}$/i.test(h.fg) || !/^#[0-9a-f]{6}$/i.test(h.bg) || !h.sel) continue;
+    const fg = rgb(h.fg); const bg = rgb(h.bg);
+    const to = lum(bg) < 0.18 ? [255, 255, 255] : [0, 0, 0]; // 어두운 배경이면 밝게, 밝은 배경이면 어둡게
+    let c = fg;
+    for (let t = 0.05; t <= 1.0001 && ratio(c, bg) < h.need + 0.3; t += 0.05) c = fg.map((v, i) => v + (to[i] - v) * t);
+    // 선택자에 쉼표·중괄호가 섞이면 규칙 전체가 깨지므로 거른다
+    if (/[{},;]/.test(h.sel)) continue;
+    rules.push(`body ${h.sel}{color:${hex(c)}!important}`);
+  }
+  return [...new Set(rules)].join('\n');
+}
 
 function photoUrls(m: CorpSite): Set<string> {
   const all: (CorpPhoto | undefined)[] = [m.heroPhoto, m.aboutPhoto, ...m.gallery, ...m.products.flatMap((p) => p.photos)];
