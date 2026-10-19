@@ -27,6 +27,8 @@ export interface CorpWriterInput {
   facts: Record<string, unknown>;
   material: string;
   images: { data: string; mediaType: string }[];
+  /** 관리자가 승인한 기획안 — 있으면 컨셉·분류·제품 목록을 따른다 */
+  plan?: { concept: string; tone: string; headlineDraft: string; audience: string[]; categories: { id: string; name: string }[]; products: string[] };
 }
 
 export interface CorpSkeleton {
@@ -91,7 +93,15 @@ ${JSON.stringify(input.facts, null, 1)}
 ${input.material.slice(0, 40000) || '없음'}
 
 [사진] ${nImg ? `${nImg}장 첨부 — 첨부 순서대로 0번부터` : '없음'}
-
+${input.plan ? `
+[승인된 기획안 — 반드시 따른다]
+컨셉: ${input.plan.concept}
+읽는 사람: ${input.plan.audience.join(', ')}
+문체: ${input.plan.tone}
+헤드라인 초안: ${input.plan.headlineDraft} (다듬어도 되지만 같은 사실을 말할 것)
+제품 분류: ${input.plan.categories.length ? input.plan.categories.map((c) => `${c.id}=${c.name}`).join(', ') + ' — categories에 이 id·이름 그대로' : '없음 — categories는 []'}
+올릴 제품: ${input.plan.products.join(', ') || '없음'} — products는 이 목록만(이름 그대로)
+` : ''}
 여러 페이지 회사 홈페이지(홈·회사 개요·인사말·연혁·인증·제품 목록·제품 상세·오시는 길·문의)의 골격을 만드세요.
 - headline: 홈 첫 화면 한 줄(25자 안팎). 이 회사만의 사실로.
 - sub: 60자 안팎.

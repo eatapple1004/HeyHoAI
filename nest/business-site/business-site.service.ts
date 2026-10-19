@@ -3,6 +3,9 @@ import * as path from 'path';
 import { BusinessSiteRepository, BusinessSiteRow } from './business-site.repository';
 import { SiteWriterService } from './site-writer.service';
 import { CorpWriterService } from './corp-writer.service';
+import { ProcessWriterService, ResearchFact, ResearchSheet, SitePlan, PLAN_PAGES } from './process-writer.service';
+import { runQa } from './site-qa';
+import { randomBytes } from 'crypto';
 import { CorpSite, CorpPhoto, routeCorp, RouteResult } from './multipage';
 import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
@@ -40,6 +43,7 @@ export class BusinessSiteService {
     private readonly repo: BusinessSiteRepository,
     private readonly writer: SiteWriterService,
     private readonly corpWriter: CorpWriterService,
+    private readonly procWriter: ProcessWriterService,
   ) {}
 
   private async biz(id: string) {
@@ -59,6 +63,8 @@ export class BusinessSiteService {
       templates: TEMPLATE_KEYS.map((k) => ({ key: k, label: TEMPLATES[k].label, fits: TEMPLATES[k].fits })),
       sources: sources.available(),
       publicUrl: site?.slug ? this.canonical(site.slug) : null,
+      versions: site ? await this.repo.versions(site.id) : [],
+      planPages: PLAN_PAGES,
     };
   }
 
@@ -133,6 +139,9 @@ export class BusinessSiteService {
       if (site.content?.gen?.state === 'running' && Date.now() - Date.parse(site.content.gen.at || 0) < 15 * 60 * 1000) {
         throw new ConflictException('이미 만드는 중입니다.');
       }
+      // 제작 과정을 밟는 사이트(조사 시트가 있음)는 기획안 승인 뒤에만 만든다 — 방향을 먼저 고정
+      const pr = site.process || {};
+      if (pr.research?.sheet && !pr.plan?.approvedAt) throw new BadRequestException('기획안을 먼저 승인하세요.');
       await this.setGen(businessId, { state: 'running', step: '사진과 자료를 읽는 중', done: 0, total: 0 }, 'corporate');
       this.runCorporate(businessId).catch(async (e) => {
         console.error('[business-site] corporate generate failed', e);
@@ -275,13 +284,20 @@ export class BusinessSiteService {
     const loaded = await Promise.all(usable.map((p) => this.loadPhoto(site, p.ref)));
     const refs = usable.filter((_, i) => loaded[i]).map((p) => p.ref);
     const images = loaded.filter(Boolean) as { data: string; mediaType: string }[];
-    const material = [
-      s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
-      ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
-    ].filter(Boolean).join('\n\n');
+    const material = this.material(site);
+    const plan: SitePlan | undefined = site.process?.plan?.approvedAt ? site.process.plan : undefined;
 
     await this.setGen(businessId, { state: 'running', step: '사이트 구성과 회사 소개를 쓰는 중', done: 0, total: 0 });
-    const sk = await this.corpWriter.skeleton({ name: b.name, industry: b.industry, memo: b.memo, facts: this.facts(s), material, images });
+    const sk = await this.corpWriter.skeleton({ name: siteName(b.name), industry: b.industry, memo: b.memo, facts: this.facts(s), material, images, plan });
+    // 기획안에서 뺀 페이지는 비운다(라우터·메뉴가 자료 없는 페이지를 숨긴다)
+    if (plan) {
+      const off = (k: string) => plan.pages.some((p) => p.key === k && !p.include);
+      if (off('history')) sk.history = [];
+      if (off('certifications')) sk.certifications = [];
+      if (off('ceo')) sk.ceo = undefined;
+      if (off('products')) { sk.products = []; sk.categories = []; }
+      if (plan.accent) sk.accent = plan.accent;
+    }
 
     // 제품 상세 — 3개씩 동시에
     const products: any[] = sk.products.map((p) => ({ ...p, photos: p.photos.map((i) => refs[i]).filter(Boolean) }));
@@ -291,7 +307,7 @@ export class BusinessSiteService {
     const worker = async () => {
       for (let p = queue.shift(); p; p = queue.shift()) {
         try {
-          Object.assign(p, await this.corpWriter.productDetail({ name: b.name, material, product: p }));
+          Object.assign(p, await this.corpWriter.productDetail({ name: siteName(b.name), material, product: p }));
         } catch (e: any) {
           console.warn('[business-site] product detail failed', p.id, e?.message);
         }
@@ -314,9 +330,236 @@ export class BusinessSiteService {
         ...rest, products, photoNotes,
         aboutPhoto: aboutPhoto == null ? null : refs[aboutPhoto],
         multipage: true,
-        gen: { state: 'done', done, total: products.length, at: new Date().toISOString() },
+        gen: { state: 'running', step: '버전 저장·자동 점검 중', done, total: products.length, at: new Date().toISOString() },
       },
     });
+    // 만들 때마다 버전으로 남기고 바로 자동 점검 — 끝나야 "완료"로 바꾼다(화면이 점검 결과까지 한 번에 받게)
+    const fresh = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+    await this.repo.addVersion(fresh, plan ? `AI 제작 — ${plan.concept}` : 'AI 제작');
+    await this.qa(businessId);
+    await this.setGen(businessId, { state: 'done', done, total: products.length });
+  }
+
+  // ── 제작 과정: 조사 → 기획안(승인) → 제작 → 자동 점검 → 고객 검토 → 공개 ──
+
+  /** process 컬럼을 읽고-고치고-쓴다 */
+  private async patchProcess(businessId: string, fn: (p: any) => void) {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site) throw new BadRequestException('먼저 자료를 수집하세요.');
+    const p = JSON.parse(JSON.stringify(site.process || {}));
+    fn(p);
+    await this.repo.update(businessId, { process: p });
+    return p;
+  }
+
+  /** 뒤에서 도는 조사·기획 작업 — 상태는 process.job 으로 폴링 */
+  private async startJob(businessId: string, kind: 'research' | 'plan', step: string, work: () => Promise<void>) {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site) throw new BadRequestException('먼저 자료를 수집하세요.');
+    const job = site.process?.job;
+    if (job?.state === 'running' && Date.now() - Date.parse(job.at || 0) < 10 * 60 * 1000) throw new ConflictException('다른 작업이 진행 중입니다.');
+    await this.patchProcess(businessId, (p) => { p.job = { kind, state: 'running', step, at: new Date().toISOString() }; });
+    work()
+      .then(() => this.patchProcess(businessId, (p) => { p.job = { kind, state: 'done', at: new Date().toISOString() }; }))
+      .catch(async (e) => {
+        console.error(`[business-site] ${kind} failed`, e);
+        await this.patchProcess(businessId, (p) => { p.job = { kind, state: 'error', error: String(e?.message || e).slice(0, 300), at: new Date().toISOString() }; });
+      });
+    return this.get(businessId);
+  }
+
+  /** 1단계: 조사 시트 — 수집 자료 + 웹 검색. 다시 돌리면 기획안 승인은 풀린다(근거가 바뀌므로) */
+  async research(businessId: string) {
+    const b = await this.biz(businessId);
+    return this.startJob(businessId, 'research', '웹 검색과 자료로 회사 사실을 모으는 중', async () => {
+      const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+      const s: SiteSource = site.source || {};
+      const f = this.facts(s);
+      const name = siteName(b.name);
+      // 같은 이름 다른 업체 — 카카오 검색에서 고른 장소와 주소가 다른 것
+      let homonyms: string[] = [];
+      try {
+        homonyms = (await sources.kakaoSearch(name)).filter((k) => k.id !== s.kakao?.id && k.address !== s.kakao?.address)
+          .map((k) => `${k.name} — ${k.roadAddress || k.address} (${k.category})`).slice(0, 8);
+      } catch { /* 카카오 실패는 조사를 막지 않는다 */ }
+      const sheet = await this.procWriter.research({
+        name, industry: b.industry, memo: b.memo,
+        place: { 이름: s.kakao?.name || s.google?.name, 주소: f.roadAddress || f.address, 전화: f.phone, 분류: f.category, 웹사이트: f.website, 구글평점: f.rating },
+        homonyms, material: this.material(site, false),
+        reviews: (s.google?.reviews || []).map((r) => `${r.rating}점: ${r.text}`),
+      });
+      await this.patchProcess(businessId, (p) => {
+        p.research = { sheet, at: new Date().toISOString() };
+        if (p.plan) p.plan.approvedAt = null;
+      });
+    });
+  }
+
+  /** 2단계: 기획안 초안 — 사이트에 쓰기로 둔 사실만 본다 */
+  async plan(businessId: string) {
+    const b = await this.biz(businessId);
+    const site = await this.repo.byBusiness(businessId);
+    const sheet: ResearchSheet | undefined = site?.process?.research?.sheet;
+    if (!sheet) throw new BadRequestException('조사를 먼저 하세요.');
+    return this.startJob(businessId, 'plan', '조사 시트로 기획안을 쓰는 중', async () => {
+      const cur = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
+      const sh: ResearchSheet = cur.process.research.sheet;
+      const photos = (await this.photoList(cur)).filter((p) => !p.hidden);
+      const plan = await this.procWriter.plan({
+        name: siteName(b.name), industry: b.industry, facts: sh.facts.filter((x) => x.use), products: sh.products, gaps: sh.gaps,
+        photoCount: photos.length, photoNotes: photos.map((p) => p.caption).filter(Boolean) as string[], benchmarks: sh.benchmarks,
+      });
+      await this.patchProcess(businessId, (p) => { p.plan = { ...plan, approvedAt: null, at: new Date().toISOString() }; });
+    });
+  }
+
+  /**
+   * 관리자 수정 — 사실 쓰기/빼기, 기획안 고치기, 승인.
+   *   사실이나 기획안을 고치면 승인이 풀린다(승인한 내용과 달라지므로).
+   */
+  async updateProcess(businessId: string, body: { factUse?: Record<string, boolean>; plan?: Partial<SitePlan>; approve?: boolean }) {
+    await this.biz(businessId);
+    await this.patchProcess(businessId, (p) => {
+      if (body.factUse && p.research?.sheet) {
+        for (const f of p.research.sheet.facts as ResearchFact[]) if (typeof body.factUse[f.id] === 'boolean') f.use = body.factUse[f.id];
+        if (p.plan) p.plan.approvedAt = null;
+      }
+      if (body.plan && p.plan) {
+        const q = body.plan; const s = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n);
+        if (q.concept !== undefined) p.plan.concept = s(q.concept, 60);
+        if (q.tone !== undefined) p.plan.tone = s(q.tone, 120);
+        if (q.headlineDraft !== undefined) p.plan.headlineDraft = s(q.headlineDraft, 60);
+        if (q.accent !== undefined) {
+          if (!/^#[0-9a-f]{6}$/i.test(String(q.accent))) throw new BadRequestException('강조색은 #RRGGBB 형식입니다.');
+          p.plan.accent = q.accent;
+        }
+        if (Array.isArray(q.pages)) {
+          const inc = new Map(q.pages.map((x: any) => [x?.key, x?.include !== false]));
+          p.plan.pages = p.plan.pages.map((x: any) => (inc.has(x.key) ? { ...x, include: inc.get(x.key) } : x));
+        }
+        if (Array.isArray(q.categories)) p.plan.categories = q.categories.map((c: any) => ({ id: s(c?.id, 40).toLowerCase().replace(/[^a-z0-9-]+/g, '-'), name: s(c?.name, 30) })).filter((c: any) => c.id && c.name).slice(0, 4);
+        if (Array.isArray(q.products)) p.plan.products = q.products.map((x: unknown) => s(x, 60)).filter(Boolean).slice(0, 40);
+        p.plan.approvedAt = null;
+      }
+      if (body.approve !== undefined) {
+        if (body.approve && !p.plan) throw new BadRequestException('기획안이 없습니다.');
+        if (p.plan) p.plan.approvedAt = body.approve ? new Date().toISOString() : null;
+      }
+    });
+    return this.get(businessId);
+  }
+
+  /** 자동 점검 — 제작 직후 자동, 관리자가 고친 뒤 다시 */
+  async qa(businessId: string) {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site?.content?.multipage) throw new BadRequestException('여러 페이지 사이트를 먼저 만드세요.');
+    const m = await this.corpModel(site, `/admin-business/${businessId}/site/preview`, true);
+    const pr = site.process || {};
+    const report = runQa(m, this.sourceText(site), {
+      homonyms: pr.research?.sheet?.homonyms,
+      planPages: pr.plan ? Object.fromEntries(pr.plan.pages.map((x: any) => [x.key, x.include])) : undefined,
+    });
+    await this.patchProcess(businessId, (p) => { p.qa = report; });
+    return this.get(businessId);
+  }
+
+  // ── 버전 ──
+  async saveVersion(businessId: string, label: string) {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site || !Object.keys(site.content || {}).length) throw new BadRequestException('저장할 내용이 없습니다.');
+    await this.repo.addVersion(site, String(label || '').trim() || '수동 저장');
+    return this.get(businessId);
+  }
+
+  /** 되돌리기 — 지금 상태도 버전으로 남긴 뒤 바꾼다(되돌리기를 되돌릴 수 있게) */
+  async restoreVersion(businessId: string, n: number) {
+    const site = await this.repo.byBusiness(businessId);
+    if (!site) throw new BadRequestException('사이트가 없습니다.');
+    const v = await this.repo.version(site.id, n);
+    if (!v) throw new NotFoundException('없는 버전입니다.');
+    await this.repo.addVersion(site, `되돌리기 전 자동 저장 (v${n}로 이동)`);
+    await this.repo.update(businessId, { template: v.template, content: { ...v.content, gen: { state: 'done', at: new Date().toISOString() } }, photos: v.photos });
+    if (v.content?.multipage) await this.qa(businessId);
+    return this.get(businessId);
+  }
+
+  // ── 고객 검토 링크 ──
+  async share(businessId: string, on: boolean) {
+    await this.patchProcess(businessId, (p) => {
+      p.share = on ? { token: p.share?.token || randomBytes(16).toString('hex'), at: new Date().toISOString() } : null;
+    });
+    return this.get(businessId);
+  }
+
+  async renderSharePath(token: string, path: string, query: Record<string, string>): Promise<RouteResult | null> {
+    const site = await this.repo.byShareToken(String(token || ''));
+    if (!site || !site.content?.multipage) return null;
+    return routeCorp(await this.corpModel(site, `/site-review/${token}`, true), path, query);
+  }
+
+  /** 자료 요청서 — 고객사에 보내는 문서(인쇄하면 PDF). 확인할 사실·참고 정보·보내 줄 자료·사이트 구성 */
+  async requestDoc(businessId: string): Promise<string> {
+    const b = await this.biz(businessId);
+    const site = await this.repo.byBusiness(businessId);
+    const pr = site?.process || {};
+    const sh: ResearchSheet | undefined = pr.research?.sheet;
+    const plan: SitePlan | undefined = pr.plan;
+    const qa = pr.qa;
+    const e = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+    const name = siteName(b.name);
+    const today = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
+    const used = (sh?.facts || []).filter((f) => f.use);
+    const ref = (sh?.facts || []).filter((f) => !f.use);
+    const src = (f: ResearchFact) => (f.source.url ? `<a href="${e(f.source.url)}">${e(f.source.title)}</a>` : e(f.source.title));
+    const asks = [
+      ...(sh?.gaps || []).map((g) => [g.item, g.why]),
+      ...(plan?.photoNeeds || []).map((x) => [x, '사진']),
+      ...((qa?.items || []) as any[]).filter((i) => i.level === 'warn' && ['연락처', '회사 정보', '사양'].includes(i.area)).map((i) => [i.msg, '자동 점검']),
+    ];
+    const review = pr.share?.token ? `${String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, '')}/site-review/${pr.share.token}/` : '';
+    return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${e(name)} 홈페이지 자료 요청서</title><meta name="robots" content="noindex">
+<style>
+@page{size:A4;margin:16mm 14mm}
+body{font:14px/1.7 'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1b1f24;background:#fff;max-width:820px;margin:0 auto;padding:28px 20px}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:34px 0 10px;padding-bottom:6px;border-bottom:2px solid #1b1f24}
+.meta{color:#5b6570}.box{background:#f3f4f5;padding:14px 16px;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #d6dadf;padding:7px 9px;text-align:left;vertical-align:top}th{background:#f3f4f5;white-space:nowrap}
+td.ck{width:70px;text-align:center;color:#8a929b}a{color:#2d5b8c;word-break:break-all}
+.noprint{margin:0 0 20px}@media print{.noprint{display:none}a{color:inherit;text-decoration:none}}
+</style></head><body>
+<div class="noprint"><button onclick="print()">PDF로 저장 / 인쇄</button></div>
+<h1>${e(name)} 홈페이지 제작 — 자료 요청서</h1>
+<div class="meta">작성일 ${e(today)} · 도피아(Doppia)</div>
+${plan ? `<h2>1. 사이트 방향 (기획안)</h2><div class="box"><b>컨셉</b> ${e(plan.concept)}<br><span class="meta">${e(plan.conceptWhy)}</span><br>
+<b>구성</b> 홈 · 회사 개요 · ${plan.pages.filter((p) => p.include).map((p) => e(PLAN_PAGES[p.key] || p.key)).join(' · ')}${plan.categories.length ? `<br><b>제품 분류</b> ${plan.categories.map((c) => e(c.name)).join(' · ')}` : ''}</div>` : ''}
+${review ? `<p>검토용 사이트: <a href="${e(review)}">${e(review)}</a> (검색엔진에 노출되지 않는 주소입니다)</p>` : ''}
+<h2>${plan ? 2 : 1}. 사이트에 들어갈 사실 — 맞는지 확인해 주세요</h2>
+${used.length ? `<table><tr><th>구분</th><th>내용</th><th>출처</th><th>확인</th></tr>${used.map((f) => `<tr><td>${e(f.topic)}</td><td>${e(f.text)}</td><td>${src(f)}</td><td class="ck">□ 맞음</td></tr>`).join('')}</table>` : '<p class="meta">아직 없습니다.</p>'}
+<h2>${plan ? 3 : 2}. 확인되지 않은 정보 — 맞으면 표시해 주세요 (표시한 것만 사이트에 씁니다)</h2>
+${ref.length ? `<table><tr><th>구분</th><th>내용</th><th>찾은 곳</th><th>확인</th></tr>${ref.map((f) => `<tr><td>${e(f.topic)}</td><td>${e(f.text)}</td><td>${src(f)}</td><td class="ck">□ 맞음</td></tr>`).join('')}</table>` : '<p class="meta">없습니다.</p>'}
+<h2>${plan ? 4 : 3}. 보내 주실 자료</h2>
+${asks.length ? `<table><tr><th>#</th><th>자료</th><th>이유</th></tr>${asks.map(([a, w], i) => `<tr><td>${i + 1}</td><td>${e(a)}</td><td>${e(w)}</td></tr>`).join('')}</table>` : '<p class="meta">없습니다.</p>'}
+${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p class="meta">검색에서 아래 업체가 함께 나옵니다. 귀사 정보와 섞이지 않도록 확인했습니다.</p><ul>${sh.homonyms.map((h) => `<li>${e(h)}</li>`).join('')}</ul>` : ''}
+<p class="meta" style="margin-top:36px">사진은 귀사가 보유하거나 사용 권한이 있는 것만 받습니다. 수치·연혁·인증은 확인해 주신 것만 사이트에 올립니다.</p>
+</body></html>`;
+  }
+
+  /** AI에 주는 자료 — 조사 시트에서 "쓰기"로 둔 사실 + 회사 자료 + 기존 홈페이지 글 */
+  private material(site: BusinessSiteRow, withResearch = true): string {
+    const s: SiteSource = site.source || {};
+    const sheet: ResearchSheet | undefined = site.process?.research?.sheet;
+    return [
+      withResearch && sheet ? `## 조사 시트 — 확인된 사실(이것과 아래 회사 자료만 근거로)\n${sheet.facts.filter((f) => f.use).map((f) => `- [${f.topic}] ${f.text} (출처: ${f.source.title})`).join('\n')}` : '',
+      s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
+      ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
+    ].filter(Boolean).join('\n\n');
+  }
+
+  /** 자동 점검의 숫자 대조용 — 사이트에 쓸 수 있는 모든 원문 */
+  private sourceText(site: BusinessSiteRow): string {
+    const f = this.facts(site.source || {});
+    return [this.material(site), f.address, f.roadAddress, f.phone, f.category].join('\n');
   }
 
   /** 렌더 모델 — content(문구) + facts(수집 자료) + 사진. base 는 링크 앞부분 */
@@ -333,7 +576,7 @@ export class BusinessSiteService {
     const productPhotoRefs = new Set((c.products || []).flatMap((p: any) => p.photos || []));
     const credits = [...new Map(list.filter((p) => p.credit).map((p) => [p.credit, { name: p.credit as string, uri: p.creditUri }])).values()];
     return {
-      name: b.name, base, origin: String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, ''), preview,
+      name: siteName(b.name), base, origin: String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, ''), preview,
       accent: /^#[0-9a-f]{6}$/i.test(c.accent || '') ? c.accent : '#2D5B8C',
       headline: c.headline || '', sub: c.sub || '', ctaLabel: c.ctaLabel || '견적 문의',
       stats: c.stats || [], highlights: c.highlights || [],
@@ -489,4 +732,9 @@ function pickNaver(n: any): NaverLocal {
   const s = (v: unknown) => String(v ?? '').slice(0, 300);
   return { name: s(n.name), category: s(n.category), phone: s(n.phone), address: s(n.address),
     roadAddress: s(n.roadAddress), link: /^https?:\/\//.test(n.link) ? s(n.link) : '' };
+}
+
+/** 관리자용 이름표("[예시] ", "[테스트] ")는 사이트에 쓰지 않는다 */
+function siteName(name: string): string {
+  return String(name || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || name;
 }

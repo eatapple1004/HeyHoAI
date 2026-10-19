@@ -41,6 +41,48 @@ export class BusinessSiteAdminController {
     return { success: true, data: await this.sites.inquiries(id) };
   }
 
+  // ── 제작 과정 ──
+  @Post(':id/site/research')
+  @HttpCode(200)
+  async research(@Param('id') id: string) {
+    return { success: true, data: await this.sites.research(id) };
+  }
+
+  @Post(':id/site/plan')
+  @HttpCode(200)
+  async plan(@Param('id') id: string) {
+    return { success: true, data: await this.sites.plan(id) };
+  }
+
+  @Patch(':id/site/process')
+  async updateProcess(@Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.sites.updateProcess(id, body || {}) };
+  }
+
+  @Post(':id/site/qa')
+  @HttpCode(200)
+  async qa(@Param('id') id: string) {
+    return { success: true, data: await this.sites.qa(id) };
+  }
+
+  @Post(':id/site/versions')
+  @HttpCode(200)
+  async saveVersion(@Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.sites.saveVersion(id, body?.label) };
+  }
+
+  @Post(':id/site/versions/:n/restore')
+  @HttpCode(200)
+  async restore(@Param('id') id: string, @Param('n', ParseIntPipe) n: number) {
+    return { success: true, data: await this.sites.restoreVersion(id, n) };
+  }
+
+  @Post(':id/site/share')
+  @HttpCode(200)
+  async share(@Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.sites.share(id, body?.on !== false) };
+  }
+
   @Patch(':id/site')
   async update(@Param('id') id: string, @Body() body: any) {
     return { success: true, data: await this.sites.update(id, body || {}) };
@@ -71,6 +113,38 @@ export class BusinessSitePagesController {
     const r = await this.sites.renderPreviewPath(id, restPath(req), req.query || {});
     if (!r) throw new NotFoundException();
     res.set('Cache-Control', 'no-store');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
+
+  /** 자료 요청서 — 고객사에 보내는 문서(브라우저 인쇄 → PDF) */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/site/request-doc')
+  async requestDoc(@Param('id') id: string, @Res() res: any) {
+    res.set('Cache-Control', 'no-store');
+    return res.type('html').send(await this.sites.requestDoc(id));
+  }
+
+  /** 고객 검토 링크 — 로그인 없이 공개 전 사이트를 본다(noindex·검토용 표시). 링크를 끄면 바로 404 */
+  @Get('site-review/:token/*path')
+  async reviewPath(@Param('token') token: string, @Req() req: any, @Res() res: any) {
+    const r = await this.sites.renderSharePath(token, restPath(req), req.query || {});
+    if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
+    res.set('Cache-Control', 'no-store');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    return res.status(r.status).type(r.type).send(r.body);
+  }
+
+  @Post('site-review/:token/contact')
+  reviewContact(@Param('token') token: string, @Res() res: any) {
+    return res.redirect(303, `/site-review/${encodeURIComponent(token)}/contact?error=${encodeURIComponent('검토용 사이트에서는 문의가 접수되지 않습니다.')}`);
+  }
+
+  @Get('site-review/:token')
+  async review(@Param('token') token: string, @Req() req: any, @Res() res: any) {
+    const r = await this.sites.renderSharePath(token, '', req.query || {});
+    if (!r) return res.status(404).type('html').send(NOT_FOUND_HTML);
+    res.set('Cache-Control', 'no-store');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
     return res.status(r.status).type(r.type).send(r.body);
   }
 
