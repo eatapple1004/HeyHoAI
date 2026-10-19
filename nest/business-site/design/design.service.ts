@@ -300,6 +300,11 @@ main [class]{flex-wrap:wrap}
 main h1,main h2,main h3{overflow-wrap:break-word}
 main table{display:block;overflow-x:auto;max-width:100%}
 main img{max-width:100%}
+header *{min-width:0}
+header [class]{flex-wrap:nowrap}
+header a[href^="tel:"]{font-size:0!important;padding:10px 12px!important;white-space:nowrap}
+header a[href^="tel:"]::before{content:"전화";font-size:14px;font-weight:700}
+header a[href$="/contact"]:not(nav a):not(details a){display:none!important}
 }`;
 
 function photoUrls(m: CorpSite): Set<string> {
