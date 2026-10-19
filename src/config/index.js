@@ -108,8 +108,11 @@ const envSchema = z.object({
   // 사업체 홈페이지 자료 수집 — 전부 선택. 없는 키의 출처는 건너뛴다(카카오만 있어도 동작).
   KAKAO_REST_KEY: z.string().optional(),          // 카카오 로컬(장소명·주소·전화·분류)
   GOOGLE_PLACES_API_KEY: z.string().optional(),   // Google Places API (New) — 사진·리뷰·평점·영업시간
-  NAVER_CLIENT_ID: z.string().optional(),         // 네이버 검색 API(지역·블로그)
+  NAVER_CLIENT_ID: z.string().optional(),         // 네이버 검색 API(지역·블로그) — 구 개발자센터 키(2027-06-30 종료)
   NAVER_CLIENT_SECRET: z.string().optional(),
+  // (2026-07-31~) 검색 API 신규 발급은 NAVER API HUB(네이버클라우드)로 이관 — 이 키가 있으면 우선 사용
+  NAVER_HUB_KEY_ID: z.string().optional(),
+  NAVER_HUB_KEY: z.string().optional(),
 
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),

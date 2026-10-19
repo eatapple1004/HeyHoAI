@@ -105,7 +105,7 @@ export const sources = {
     return {
       kakao: Boolean(env.KAKAO_REST_KEY),
       google: Boolean(env.GOOGLE_PLACES_API_KEY),
-      naver: Boolean(env.NAVER_CLIENT_ID && env.NAVER_CLIENT_SECRET),
+      naver: Boolean((env.NAVER_HUB_KEY_ID && env.NAVER_HUB_KEY) || (env.NAVER_CLIENT_ID && env.NAVER_CLIENT_SECRET)),
     };
   },
 
@@ -194,15 +194,25 @@ export const sources = {
   },
 
   // ── 네이버 ──
-  naverHeaders() {
-    return { 'X-Naver-Client-Id': env.NAVER_CLIENT_ID, 'X-Naver-Client-Secret': env.NAVER_CLIENT_SECRET };
+  /**
+   * 네이버 검색 호출 주소 — 2026-07-31부터 신규 키는 NAVER API HUB에서만 나온다.
+   *   HUB: naverapihub.apigw.ntruss.com/search/v1/<kind> + X-NCP-APIGW-API-KEY(-ID) (경로의 v1 위치가 뒤로 옮겨감)
+   *   구 개발자센터: openapi.naver.com/v1/search/<kind>.json + X-Naver-Client-Id/Secret (2027-06-30 종료)
+   *   요청 파라미터·응답 구조는 같다.
+   */
+  naverRequest(kind: 'local' | 'blog', qs: string): [string, Record<string, string>] {
+    if (env.NAVER_HUB_KEY_ID && env.NAVER_HUB_KEY) {
+      return [`https://naverapihub.apigw.ntruss.com/search/v1/${kind}?${qs}`,
+        { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_HUB_KEY_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_HUB_KEY }];
+    }
+    return [`https://openapi.naver.com/v1/search/${kind}.json?${qs}`,
+      { 'X-Naver-Client-Id': env.NAVER_CLIENT_ID, 'X-Naver-Client-Secret': env.NAVER_CLIENT_SECRET }];
   },
 
   async naverLocal(query: string): Promise<NaverLocal[]> {
     if (!this.available().naver) return [];
-    const j = await getJson(
-      `https://openapi.naver.com/v1/search/local.json?display=5&query=${encodeURIComponent(query)}`,
-      { headers: this.naverHeaders() });
+    const [url, headers] = this.naverRequest('local', `display=5&query=${encodeURIComponent(query)}`);
+    const j = await getJson(url, { headers });
     return (j.items || []).map((i: any) => ({
       name: stripTags(i.title), category: i.category, phone: i.telephone,
       address: i.address, roadAddress: i.roadAddress, link: i.link,
@@ -211,9 +221,8 @@ export const sources = {
 
   async naverBlogs(query: string): Promise<NaverBlog[]> {
     if (!this.available().naver) return [];
-    const j = await getJson(
-      `https://openapi.naver.com/v1/search/blog.json?display=15&sort=sim&query=${encodeURIComponent(query)}`,
-      { headers: this.naverHeaders() });
+    const [url, headers] = this.naverRequest('blog', `display=15&sort=sim&query=${encodeURIComponent(query)}`);
+    const j = await getJson(url, { headers });
     return (j.items || []).map((i: any) => ({
       title: stripTags(i.title), snippet: stripTags(i.description), link: i.link,
       blogger: i.bloggername, date: i.postdate,
