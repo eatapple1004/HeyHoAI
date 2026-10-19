@@ -136,15 +136,23 @@ export class BusinessSiteRepository {
     return r.rows;
   }
 
-  /** 사업체 원본 사진(관리자가 올린 것) — ★대표 먼저 */
-  async businessImages(businessId: string): Promise<{ id: string; file_path: string; is_base: boolean }[]> {
+  /** 기존 홈페이지에서 가져온 사진을 사업체 사진으로 등록 — id 를 돌려준다 */
+  async insertImportedImage(businessId: string, filePath: string, caption: string): Promise<string> {
     const r = await this.db.query(
-      `SELECT m.id, m.file_path, COALESCE(m.is_base, false) AS is_base
+      `INSERT INTO account_media (business_id, file_path, media_type, caption, is_base, source)
+       VALUES ($1, $2, 'image', $3, false, 'import') RETURNING id`, [businessId, filePath, caption]);
+    return r.rows[0].id;
+  }
+
+  /** 사업체 원본 사진(관리자가 올린 것) — ★대표 먼저 */
+  async businessImages(businessId: string): Promise<{ id: string; file_path: string; is_base: boolean; caption: string | null }[]> {
+    const r = await this.db.query(
+      `SELECT m.id, m.file_path, COALESCE(m.is_base, false) AS is_base, m.caption
          FROM account_media m
          LEFT JOIN social_accounts sa ON sa.id = m.account_id
         WHERE (m.business_id = $1 OR sa.business_id = $1) AND m.media_type = 'image'
         ORDER BY COALESCE(m.is_base, false) DESC, m.created_at DESC
-        LIMIT 24`, [businessId]);
+        LIMIT 48`, [businessId]);
     return r.rows;
   }
 }
