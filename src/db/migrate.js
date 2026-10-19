@@ -689,6 +689,26 @@ async function migrate() {
     );
   `);
 
+  // AI 맞춤 디자인 시안(2026-10-19) — 템플릿 대신 AI가 회사마다 CSS·머리말·페이지 HTML을 새로 쓴다.
+  //   pages = {경로: 본문 HTML}(서버가 소독한 뒤 저장), design = {css, header, footer, fonts, note}
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_site_designs (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        site_id     UUID NOT NULL REFERENCES business_sites(id) ON DELETE CASCADE,
+        n           INT NOT NULL,
+        direction   TEXT,
+        status      VARCHAR(20) NOT NULL DEFAULT 'running',
+        step        TEXT,
+        error       TEXT,
+        design      JSONB NOT NULL DEFAULT '{}',
+        pages       JSONB NOT NULL DEFAULT '{}',
+        qa          JSONB,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (site_id, n)
+    );
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).

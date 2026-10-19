@@ -169,6 +169,15 @@ button:disabled{opacity:.5;cursor:default}
         <div id="versions"></div>
       </div>
 
+      <!-- AI 맞춤 시안 -->
+      <div class="card" id="dsCard" style="display:none">
+        <h2>AI 맞춤 디자인 시안 <span class="hint">템플릿 대신 AI가 이 회사만의 디자인을 새로 짭니다. 문구·사실은 위에서 검증된 것 그대로</span></h2>
+        <div class="field"><label>이번 시안의 방향 <small>비우면 기획안 컨셉대로. 예: "도면·치수선 느낌의 차분한 엔지니어링", "현장 사진을 크게 쓰는 강한 인상"</small></label>
+          <textarea id="dsDir" rows="2"></textarea></div>
+        <div class="row"><button class="primary" id="dsBtn" onclick="createDesign()">시안 만들기</button><span class="prog">3~6분 · 시안마다 AI 비용이 듭니다</span></div>
+        <div id="designs" style="margin-top:12px"></div>
+      </div>
+
       <!-- 3. 사진 -->
       <div class="card">
         <h2>사진 <span class="hint">첫 번째(대표)가 맨 위 큰 사진이 됩니다. 원본 사진은 사업체 상세에서 올리세요</span></h2>
@@ -276,6 +285,7 @@ function render() {
   $('genBtn').disabled = !site;
   renderPages(site);
   renderProcess();
+  if (site && site.content && site.content.multipage) loadDesigns(); else $('dsCard').style.display = 'none';
   if (site) reloadPreview();
   if (site && site.content && site.content.multipage) loadInquiries();
   if (genState() === 'running' && !window._polling) { window._polling = true; pollGen().finally(() => { window._polling = false; }); }
@@ -639,13 +649,53 @@ async function restoreVersion(n) {
   try { STATE = await api(API + '/versions/' + n + '/restore', { method: 'POST' }); render(); flash('ok', 'v' + n + '로 되돌렸습니다.'); } catch (e) { flash('err', e.message); }
 }
 
+// ── AI 맞춤 시안 ──
+let DESIGNS = null; let DESIGN_N = null;
+async function loadDesigns() {
+  try { DESIGNS = await api(API + '/designs'); renderDesigns(); } catch (e) { /* 시안 목록 실패는 화면을 막지 않는다 */ }
+}
+function renderDesigns() {
+  const c = (STATE.site && STATE.site.content) || {};
+  $('dsCard').style.display = c.multipage ? '' : 'none';
+  if (!DESIGNS) return;
+  const tok = PR().share && PR().share.token;
+  const running = DESIGNS.designs.some((d) => d.status === 'running');
+  $('dsBtn').disabled = running;
+  $('designs').innerHTML = (DESIGNS.published == null ? '<div class="prog" style="margin-bottom:6px">지금 공개 화면: <b>템플릿 사이트</b></div>' : `<div class="prog" style="margin-bottom:6px">지금 공개 화면: <b>시안 ${DESIGNS.published}</b> <button class="sm" onclick="publishDesign(null)">템플릿으로 되돌리기</button></div>`) +
+    (DESIGNS.designs.length ? DESIGNS.designs.map((d) => `<div style="border-top:1px solid var(--border);padding:10px 0;font-size:.82rem">
+      <div class="row" style="justify-content:space-between"><b>시안 ${d.n}${DESIGNS.published === d.n ? ' <span class="badge b-on">공개 중</span>' : ''}</b>
+        <span class="prog">${d.status === 'running' ? esc(d.step || '만드는 중') : d.status === 'error' ? '<span style="color:var(--red)">실패</span>' : new Date(d.created_at).toLocaleString('ko-KR')}</span></div>
+      ${d.direction ? `<div class="prog">방향: ${esc(d.direction)}</div>` : ''}
+      ${d.note ? `<div class="facts" style="margin:4px 0">${esc(d.note)}</div>` : ''}
+      ${d.error ? `<div style="color:#fca5a5">${esc(d.error)}</div>` : ''}
+      ${d.qa ? `<div class="qa">${d.qa.items.filter((i) => i.level !== 'ok').slice(0, 6).map((i) => `<div class="${i.level}">${i.level === 'fail' ? '✕' : '!'} <b>${esc(i.area)}</b> ${esc(i.msg)}</div>`).join('') || '<div class="ok">✓ 점검 통과</div>'}</div>` : ''}
+      ${d.status === 'done' ? `<div class="row" style="margin-top:6px"><button class="sm${DESIGN_N === d.n ? ' primary' : ''}" onclick="viewDesign(${d.n})">미리보기</button>
+        <a href="/admin-business/${BIZ_ID}/site/design/${d.n}/" target="_blank" rel="noopener">새 탭</a>
+        ${tok ? `<a href="/site-review/${tok}/d${d.n}/" target="_blank" rel="noopener">검토 링크</a>` : ''}
+        ${DESIGNS.published === d.n ? '' : `<button class="sm" onclick="publishDesign(${d.n})">이 시안을 공개 화면으로</button>`}</div>` : ''}
+    </div>`).join('') : '<div class="empty">아직 시안이 없습니다.</div>') +
+    (DESIGN_N ? '<div style="margin-top:8px"><button class="sm" onclick="viewDesign(null)">미리보기를 템플릿 사이트로</button></div>' : '');
+  if (running && !window._dsPolling) {
+    window._dsPolling = true;
+    (async () => { while (DESIGNS.designs.some((d) => d.status === 'running')) { await new Promise((r) => setTimeout(r, 5000)); await loadDesigns(); } window._dsPolling = false; })();
+  }
+}
+async function createDesign() {
+  try { DESIGNS = await api(API + '/designs', { method: 'POST', body: JSON.stringify({ direction: $('dsDir').value }) }); renderDesigns(); flash('ok', '시안을 만들기 시작했습니다. 몇 분 걸립니다.'); } catch (e) { flash('err', e.message); }
+}
+function viewDesign(n) { DESIGN_N = n; renderDesigns(); reloadPreview(); }
+async function publishDesign(n) {
+  if (!confirm(n == null ? '공개 화면을 템플릿 사이트로 되돌릴까요?' : '시안 ' + n + '을(를) 공개 화면으로 바꿀까요? (사이트가 공개 상태일 때 바로 반영됩니다)')) return;
+  try { DESIGNS = await api(API + '/designs/publish', { method: 'POST', body: JSON.stringify({ n }) }); renderDesigns(); flash('ok', '바꿨습니다.'); } catch (e) { flash('err', e.message); }
+}
+
 // ── 미리보기 ──
 function setView(m) { MOBILE = m; $('frame').classList.toggle('mobile', m); }
 function reloadPreview() {
   const f = $('frame');
   let ifr = f.querySelector('iframe');
   if (!ifr) { f.innerHTML = '<iframe title="미리보기"></iframe>'; ifr = f.querySelector('iframe'); }
-  ifr.src = '/admin-business/' + BIZ_ID + '/site/preview' + (PREVIEW_PATH ? '/' + PREVIEW_PATH : '') + '?t=' + Date.now();
+  ifr.src = (DESIGN_N ? '/admin-business/' + BIZ_ID + '/site/design/' + DESIGN_N + '/' + PREVIEW_PATH : '/admin-business/' + BIZ_ID + '/site/preview' + (PREVIEW_PATH ? '/' + PREVIEW_PATH : '')) + '?t=' + Date.now();
 }
 
 load();

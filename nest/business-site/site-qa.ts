@@ -83,7 +83,7 @@ export function runQa(m: CorpSite, sourceText: string, opts: { homonyms?: string
 }
 
 /** 숫자 토큰 — 두 자리 이상이거나 단위가 붙은 것만(“3가지”, “1층” 같은 말은 빼려고 한 자리 맨숫자는 무시) */
-function numbers(text: string): string[] {
+export function numbers(text: string): string[] {
   const out: string[] = [];
   const re = /\d[\d,.]*\d|\d/g;
   for (let x = re.exec(text || ''); x; x = re.exec(text || '')) {
@@ -98,7 +98,7 @@ function numbers(text: string): string[] {
  * 표기만 다른 같은 숫자 — "2014.12" ↔ "2014  12"(연혁 이미지), "0.5톤" ↔ "0_5톤"(옛 사이트 제품명), "2015.02.16" ↔ "2015년 02월 16일".
  *   숫자 묶음이 같은 순서로, 사이에 숫자가 아닌 글자 1~6개만 두고 나오면 같은 값으로 본다.
  */
-function loosely(src: string, n: string): boolean {
+export function loosely(src: string, n: string): boolean {
   const groups = n.split('.').filter(Boolean);
   if (groups.length < 2) return false;
   const re = new RegExp(`(?<!\\d)${groups.map((g) => `0?${g.replace(/^0(?=\d)/, '')}`).join('[^0-9]{1,6}')}(?!\\d)`);
