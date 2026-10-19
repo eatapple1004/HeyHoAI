@@ -249,7 +249,15 @@ export const sources = {
     const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)].map((m) => {
       try { return new URL(m[1], base).href; } catch { return ''; }
     }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?)$/i.test(h));
-    const picked = [...new Set(links)].filter((h) => h !== base.href && PAGE_HINT.test(h)).slice(0, 8);
+    // 회사소개·연혁·인증 페이지를 먼저, 같은 페이지의 쿼리 변형(제품 상세 ?it_id=…)은 경로당 2개까지만
+    const score = (h: string) => (/(summary|about|intro|company|회사|소개)/i.test(h) ? 5 : 0) + (/(history|연혁)/i.test(h) ? 5 : 0)
+      + (/(greeting|ceo|인사)/i.test(h) ? 4 : 0) + (/(certif|patent|인증|특허)/i.test(h) ? 4 : 0)
+      + (/(business|product|prod|사업|제품)/i.test(h) ? 2 : 0) + (/(contact|location|오시는)/i.test(h) ? 1 : 0) - (new URL(h).search ? 1 : 0);
+    const perPath = new Map<string, number>();
+    const picked = [...new Set(links)].filter((h) => h !== base.href && PAGE_HINT.test(h))
+      .sort((a, b) => score(b) - score(a))
+      .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < 2; })
+      .slice(0, 10);
     const pages: WebPage[] = [{ url: base.href, ...htmlToText(home) }];
     for (const url of picked) {
       const html = await get(url);

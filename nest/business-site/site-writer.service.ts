@@ -112,7 +112,7 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
 
     const res = await this.anthropic().messages.create({
       model: env.CLAUDE_MODEL,
-      max_tokens: 6000,
+      max_tokens: 12000,
       system: SYSTEM_PROMPT,
       messages: [{
         role: 'user',
@@ -127,7 +127,11 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
     });
     const text = res.content.map((b: any) => (b.type === 'text' ? b.text : '')).join('');
     const json = parseJson(text);
-    if (!json) throw new InternalServerErrorException('AI 응답을 읽지 못했습니다. 다시 시도해 주세요.');
+    if (!json) {
+      console.warn('[business-site] AI JSON parse failed', { stop: (res as any).stop_reason, len: text.length, tail: text.slice(-200) });
+      throw new InternalServerErrorException((res as any).stop_reason === 'max_tokens'
+        ? 'AI 응답이 너무 길어 잘렸습니다. 사진 수를 줄이고 다시 시도해 주세요.' : 'AI 응답을 읽지 못했습니다. 다시 시도해 주세요.');
+    }
 
     const template = input.lockTemplate || !TEMPLATES[json.template] ? input.suggestedTemplate : json.template;
     const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
