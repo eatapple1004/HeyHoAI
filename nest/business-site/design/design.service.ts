@@ -222,12 +222,14 @@ export class DesignService {
       const before = (v0.contrast || []).length;
       let best = { design: d.design, v: v0, n: before };
       if (!v1.skipped && (v1.contrast || []).length < best.n) best = { design: trial.design, v: v1, n: (v1.contrast || []).length };
+      console.log('[design] contrast fix', n, { before, ai: v1.skipped ? `skipped ${v1.skipped}` : (v1.contrast || []).length });
       // 남은 곳은 계산으로 — 색상(hue)은 두고 밝기만 흰색·검정 쪽으로 옮겨 필요 대비를 맞춘다(!important). 페이지별 <style>이 AI 보정을 이기는 경우가 있다
       if (best.n > 0) {
         const css2 = forceContrast(best.v.contrast || []);
         if (css2) {
           const trial2 = { ...d, design: { ...best.design, css: `${best.design.css}\n/* 대비 보정(계산) */\n${css2}` } };
           const v2 = await visualCheck(await this.fullPages(site, trial2), { shotPaths: [''] });
+          console.log('[design] contrast force', n, { rules: css2.split('\n').length, after: v2.skipped ? `skipped ${v2.skipped}` : (v2.contrast || []).length, left: (v2.contrast || []).slice(0, 3).map((h) => `${h.sel} ${h.fg}/${h.bg}`) });
           if (!v2.skipped && (v2.contrast || []).length < best.n) best = { design: trial2.design, v: v2, n: (v2.contrast || []).length };
         }
       }
