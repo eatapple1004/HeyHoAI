@@ -11,7 +11,8 @@ export interface SiteContent {
   aboutTitle?: string;
   about?: string;
   highlights?: { title: string; body: string }[];
-  services?: { name: string; desc?: string; price?: string }[];
+  /** photo = 그 메뉴가 찍힌 사진의 ref(google:3 · media:<id>) — 렌더 때 photoUrl 로 바뀐다 */
+  services?: { name: string; desc?: string; price?: string; photo?: string; photoUrl?: string }[];
   servicesTitle?: string;
   reviewTitle?: string;
   reviewSummary?: string;
@@ -37,7 +38,9 @@ export interface SiteFacts {
   ratingCount?: number;
 }
 
-export interface SitePhoto { url: string; credit?: string; creditUri?: string }
+/** kind·caption 은 AI가 사진을 직접 보고 붙인 것(content.photoNotes) — 템플릿이 섹션별로 사진을 나눠 쓴다 */
+export type PhotoKind = 'food' | 'interior' | 'exterior' | 'people' | 'other';
+export interface SitePhoto { url: string; credit?: string; creditUri?: string; kind?: PhotoKind; caption?: string }
 export interface SiteReview { author: string; authorUri?: string; text: string; rating?: number; when?: string; source: string }
 export interface SiteBlog { title: string; link: string; blogger?: string }
 
@@ -159,3 +162,21 @@ export function actionBar(m: SiteModel, cls = 'abar'): string {
   return `<nav class="${cls}" aria-label="바로가기">${tel ? `<a href="${esc(tel)}">전화하기</a>` : ''}${dir
     ? `<a href="${esc(dir)}" target="_blank" rel="noopener">길찾기</a>` : ''}</nav>`;
 }
+
+/** 종류별 사진 — 없으면 빈 배열 */
+export const photosOf = (m: SiteModel, ...kinds: PhotoKind[]) => m.photos.filter((p) => p.kind && kinds.includes(p.kind));
+
+/**
+ * 지도 — OpenStreetMap 임베드(키·과금 없음). 좌표가 없으면 그리지 않는다.
+ *   카카오·구글 지도 임베드는 JS 키·도메인 등록이 필요해서 링크(길찾기)로만 보낸다.
+ */
+export function mapEmbed(m: SiteModel, cls = 'map'): string {
+  const { lat, lng } = m.facts;
+  if (!lat || !lng) return '';
+  const d = 0.0045;
+  const bbox = [lng - d, lat - d * 0.6, lng + d, lat + d * 0.6].map((v) => v.toFixed(5)).join('%2C');
+  return `<iframe class="${cls}" title="${esc(m.name)} 위치" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+    src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&amp;layer=mapnik&amp;marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}"></iframe>`;
+}
+
+export const fmtCount = (n?: number) => (n ? n.toLocaleString('ko-KR') : '');
