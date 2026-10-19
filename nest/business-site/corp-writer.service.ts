@@ -119,7 +119,7 @@ ${input.plan ? `
 - company: ceo, founded, fax, email, bizNo, address, phone — 자료에 있는 것만.
 - categories: 제품 분류 2~4개(예: 민수·군수). id는 영어 소문자·하이픈. 분류가 의미 없으면 [].
 - products: 자료에 나온 제품 전부(기획안이 있으면 기획안 목록). 사진 이름이 제품명과 같거나 그 제품의 변형이면 그 사진들을 photos에 넣는다. id는 영어 소문자·하이픈(예: "aluminum-flatbed"). summary 1~2문장, keySpec은 대표 사양 한 줄(자료에 있으면). photos는 그 제품이 주인공인 사진 번호들.
-- photos: 사진마다 kind(product·factory·people·other)와 짧은 설명.
+- photos: 첨부한 사진(0~${Math.max(nSeen - 1, 0)}번)만 kind(product·factory·people·other)와 15자 이내 설명. 이름만 받은 사진은 쓰지 않는다.
 - hero: 첫 화면 사진 번호 — 회사의 대표 제품·현장이 선명하게 보이는 사진. 다른 회사·옛 상호 로고가 크게 보이는 사진은 피한다.
 - aboutPhoto: 회사 개요 옆 사진 번호(공장·현장이 있으면 우선), 없으면 null.
 - accent: 로고·제품에서 보이는 회사 색(#RRGGBB), 확실하지 않으면 "".
