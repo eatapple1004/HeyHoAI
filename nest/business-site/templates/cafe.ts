@@ -29,8 +29,15 @@ export function renderCafe(m: SiteModel): string {
   const withPhoto: typeof services = [];
   for (const s of services) {
     if (withPhoto.length >= 6 || !s.photoUrl || used.has(s.photoUrl)) continue;
+    // 메뉴 카드에는 음식 사진만 — 매장·진열대 사진이 "식빵" 카드에 붙지 않게
+    const ph = m.photos.find((p) => p.url === s.photoUrl);
+    if (ph?.kind && ph.kind !== 'food') continue;
     used.add(s.photoUrl);
     withPhoto.push(s);
+  }
+  // 카드 줄이 꽉 차게 — 3칸 격자에 4·5장이면 3장만 카드로, 나머지는 목록으로(혼자 남는 줄 방지)
+  if (withPhoto.length === 4 || withPhoto.length === 5) {
+    withPhoto.splice(3).forEach((s) => used.delete(s.photoUrl as string));
   }
   const plainMenu = services.filter((s) => !withPhoto.includes(s));
   // 메뉴 사진이 없을 때는 음식 사진을 "진열대"로 대신 보여준다
@@ -81,6 +88,7 @@ figcaption{font-size:14px;color:var(--soft);margin-top:10px}
 .also b{color:var(--ink);font-weight:600}
 
 .sig{display:grid;grid-template-columns:repeat(3,1fr);gap:40px 28px}
+.sig.two{grid-template-columns:repeat(2,1fr)}
 .sig figure{margin:0}
 .sig img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;margin-bottom:16px}
 .sig b{display:flex;justify-content:space-between;gap:12px;font:700 21px/1.4 'Gowun Batang',serif}
@@ -111,7 +119,7 @@ figcaption{font-size:14px;color:var(--soft);margin-top:10px}
 .rev .sum{font:400 22px/1.75 'Gowun Batang',serif;margin:0 0 22px;max-width:30em;word-break:keep-all}
 .kw{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 40px;padding:0}
 .kw li{background:var(--paper);padding:7px 14px;border-radius:999px;font-size:15px}
-.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.quotes{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:16px}
 blockquote{margin:0;background:var(--paper);border-radius:4px;padding:24px}
 blockquote p{margin:0 0 14px;font:400 16px/1.75 'Gowun Batang',serif}
 blockquote cite{font-style:normal;color:var(--soft);font-size:13px}
@@ -147,6 +155,7 @@ footer{padding:40px 0 64px;color:var(--soft);font-size:14px;border-top:1px solid
  .menu,.quotes{grid-template-columns:1fr}
  .space{grid-template-columns:1fr}
  .space figure:first-child{grid-row:auto}
+ .space img,.space figure:not(:first-child) img,.space figure:first-child img{height:auto;aspect-ratio:4/3}
  .big{font-size:72px}
  .map{min-height:280px}
  .card{padding:26px}
@@ -196,7 +205,7 @@ ${c.about ? `<section class="intro${aboutPhoto ? '' : ' solo'}">
 
 ${hasMenuSection ? `<section id="menu">
   <h2>${esc(c.servicesTitle || '대표 메뉴')}</h2>
-  ${withPhoto.length >= 2 ? `<div class="sig">${withPhoto.map((s) => `<figure><img src="${esc(s.photoUrl)}" alt="${esc(s.name)}" loading="lazy" decoding="async"><b>${esc(s.name)}${s.price ? `<span>${esc(s.price)}</span>` : ''}</b>${s.desc ? `<p>${esc(s.desc)}</p>` : ''}</figure>`).join('')}</div>` : ''}
+  ${withPhoto.length >= 2 ? `<div class="sig${withPhoto.length === 2 ? ' two' : ''}">${withPhoto.map((s) => `<figure><img src="${esc(s.photoUrl)}" alt="${esc(s.name)}" loading="lazy" decoding="async"><b>${esc(s.name)}${s.price ? `<span>${esc(s.price)}</span>` : ''}</b>${s.desc ? `<p>${esc(s.desc)}</p>` : ''}</figure>`).join('')}</div>` : ''}
   ${counter.length >= 2 ? `<div class="counter">${counter.map((p) => fig(p)).join('')}</div>` : ''}
   ${(withPhoto.length >= 2 ? plainMenu : services).length ? `<div class="menu">${(withPhoto.length >= 2 ? plainMenu : services).map((s) => `<div><span>${esc(s.name)}${s.desc ? `<small>${esc(s.desc)}</small>` : ''}</span>${s.price ? `<b>${esc(s.price)}</b>` : ''}</div>`).join('')}</div>` : ''}
 </section>` : ''}
@@ -216,7 +225,7 @@ ${showReviews ? `<section id="reviews" class="rev">
   <div>
     ${c.reviewSummary ? `<p class="sum">${esc(c.reviewSummary)}</p>` : ''}
     ${c.keywords?.length ? `<ul class="kw">${c.keywords.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>` : ''}
-    ${m.reviews.length ? `<div class="quotes">${m.reviews.slice(0, 3).map((r) => `<blockquote><p>“${esc(clip(r.text, 140))}”</p><cite>${esc(r.author)} · ${esc(r.source)} 리뷰</cite></blockquote>`).join('')}</div>` : ''}
+    ${m.reviews.length ? `<div class="quotes" style="--n:${Math.min(3, m.reviews.length)}">${m.reviews.slice(0, 3).map((r) => `<blockquote><p>“${esc(clip(r.text, 140))}”</p><cite>${esc(r.author)} · ${esc(r.source)} 리뷰</cite></blockquote>`).join('')}</div>` : ''}
     ${m.blogs.length ? `<ul class="blogs">${m.blogs.slice(0, 4).map((b) => `<li><a href="${esc(b.link)}" target="_blank" rel="nofollow noopener">${esc(b.title)}</a></li>`).join('')}</ul>` : ''}
   </div>
 </section>` : ''}
