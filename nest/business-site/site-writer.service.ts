@@ -19,11 +19,11 @@ const SYSTEM_PROMPT = `당신은 동네 가게와 중소기업의 홈페이지 �
 7. blogPicks는 이 가게에 대한 글이 확실한 블로그 번호(0부터) 최대 4개. 광고·체험단 표시가 있거나 다른 가게 글로 보이면 고르지 않는다.
 8. 헤드라인은 20자 안팎, 부제(sub)는 60자 안팎. "성수동 베이커리 카페"처럼 같은 업종 아무 가게에나 붙는 말은 금지 — 사진과 리뷰에서 본 **이 가게만의 구체적인 것**(대표 메뉴, 공간의 특징, 손님이 반복해서 말하는 점)으로 쓴다.
 9. 사진이 첨부되면 한 장씩 직접 보고 종류(food·interior·exterior·people·other)와 짧은 설명(15자 안팎, 보이는 것만)을 단다. 사진에 보이는 메뉴는 services에 넣고 그 메뉴가 주인공인 음식(food) 사진 번호를 photo로 연결한다(진열대·매장 사진은 연결하지 않는다)(이름을 모르면 "크루아상"처럼 보이는 그대로의 일반 명칭).
-10. hero는 첫 화면 큰 사진 번호 — 이 가게의 성격이 한눈에 보이고 선명한 사진. 흐리거나 사람 얼굴이 크게 나온 사진은 피한다.
+10. hero는 첫 화면 큰 사진 번호 — 이 가게·회사의 성격이 한눈에 보이고 선명한 사진. 흐리거나 사람 얼굴이 크게 나온 사진, 다른 회사나 옛 상호의 로고·글자가 크게 보이는 사진은 피한다.
 11. corporate(중소기업) 템플릿이면 stats·history·certifications·company를 채운다. 수치·연도·인증·특허·대표 이름·사업자번호는 **회사 자료에 글자로 적힌 것만** 옮기고, 계산하거나 추정하지 않는다. 손님 말투가 아니라 발주처·협력사에게 신뢰를 주는 단정한 문체로 쓴다. 매출 감소·소송·회생 같은 민감한 경영 정보는 쓰지 않는다.
    - stats는 이 회사를 가장 잘 증명하는 수치 3~4개(예: {"value":"−2t","label":"공차중량 감소","note":"동급 스틸 대비"}). 연혁 연도 개수 같은 뻔한 수치는 피한다.
    - history는 자료의 연혁을 연도 오름차순으로, 같은 해는 한 줄로 묶어 최대 20줄.
-   - services는 사업분야·대표 제품. 사진이 있으면 그 제품이 주인공인 사진 번호를 photo로 연결하고, price 자리에는 가격 대신 핵심 사양 한 줄(자료에 있는 것만)을 넣어도 된다.
+   - services는 사업분야·대표 제품. 사진이 있으면 그 제품이 주인공인 사진 번호를 photo로 연결하고, price 자리에는 가격 대신 핵심 사양 한 줄(자료에 있는 것만, 60자 이내)을 넣어도 된다. 사진 있는 대표 제품을 앞쪽에 둔다.
    - accent는 로고·제품 사진에서 보이는 회사 색 하나(#RRGGBB). 확실하지 않으면 "".
 12. 설명 없이 JSON만 반환한다.`;
 
@@ -134,7 +134,14 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
     }
 
     const template = input.lockTemplate || !TEMPLATES[json.template] ? input.suggestedTemplate : json.template;
-    const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+    // 길이 제한은 단어 경계에서 자른다 — "집중하중 3" 처럼 숫자 중간에서 끊기지 않게
+    const str = (v: unknown, n: number) => {
+      const t = typeof v === 'string' ? v.trim() : '';
+      if (t.length <= n) return t;
+      const cut = t.slice(0, n);
+      const i = Math.max(cut.lastIndexOf(' '), cut.lastIndexOf(','), cut.lastIndexOf('·'));
+      return (i > n * 0.5 ? cut.slice(0, i) : cut).replace(/[\s,·]+$/, '');
+    };
     const idx = (v: unknown, max: number, n: number) => (Array.isArray(v) ? v : [])
       .map(Number).filter((i) => Number.isInteger(i) && i >= 0 && i < max).slice(0, n);
     const noReviews = !TEMPLATES[template].reviews;
@@ -159,7 +166,7 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
         highlights: (Array.isArray(json.highlights) ? json.highlights : []).slice(0, 4)
           .map((h: any) => ({ title: str(h?.title, 40), body: str(h?.body, 160) })).filter((h: any) => h.title),
         servicesTitle: str(json.servicesTitle, 30),
-        services: rawServices.map((x: any) => ({ name: str(x?.name, 50), desc: str(x?.desc, 120), price: str(x?.price, 30) })),
+        services: rawServices.map((x: any) => ({ name: str(x?.name, 50), desc: str(x?.desc, 120), price: str(x?.price, 70) })),
         reviewTitle: str(json.reviewTitle, 40),
         reviewSummary: noReviews ? '' : str(json.reviewSummary, 400),
         keywords: noReviews ? [] : (Array.isArray(json.keywords) ? json.keywords : []).map((k: unknown) => str(k, 20)).filter(Boolean).slice(0, 6),
