@@ -8,6 +8,10 @@ import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePho
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
 
+/** AI에 첨부하는 사진 한도 — 장수·용량이 커지면 응답이 느려지고 비싸진다 */
+const MAX_VISION_PHOTOS = 10;
+const MAX_VISION_BYTES = 3 * 1024 * 1024;
+
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])$/;
 /** 서비스 경로와 겹치면 안 되는 이름 */
 const RESERVED = new Set(['admin', 'api', 'site', 'www', 'doppia', 'login', 'signup', 'preview', 'photo']);
@@ -106,6 +110,11 @@ export class BusinessSiteService {
     const s: SiteSource = site.source || {};
     const facts = this.facts(s);
     const lock = Boolean(body.template && TEMPLATES[body.template]);
+    // AI가 사진을 직접 보게 한다 — 메뉴 이름·공간 특징·대표 사진을 사진에서 고른다(쓰는 사진만, 최대 10장)
+    const usable = (site.photos as PhotoEntry[]).filter((p) => !p.hidden).slice(0, MAX_VISION_PHOTOS);
+    const loaded = await Promise.all(usable.map((p) => this.loadPhoto(site, p.ref)));
+    const refs = usable.filter((_, i) => loaded[i]).map((p) => p.ref);
+    const images = loaded.filter(Boolean) as { data: string; mediaType: string }[];
     const out = await this.writer.write({
       name: b.name,
       industry: b.industry,
@@ -115,8 +124,19 @@ export class BusinessSiteService {
       blogs: s.naver?.blogs || [],
       suggestedTemplate: lock ? (body.template as string) : site.template,
       lockTemplate: lock,
+      images,
     });
-    await this.repo.update(businessId, { template: out.template, content: out.content });
+    const photoNotes: Record<string, { kind: string; caption: string }> = {};
+    for (const p of out.photos) photoNotes[refs[p.i]] = { kind: p.kind, caption: p.caption };
+    const services = (out.content.services || []).map((x, k) => {
+      const i = out.servicePhotos[k];
+      return i == null ? x : { ...x, photo: refs[i] };
+    });
+    // 대표 사진을 맨 앞으로 — 나머지 순서·숨김은 그대로
+    let photos = site.photos as PhotoEntry[];
+    const heroRef = out.hero == null ? null : refs[out.hero];
+    if (heroRef) photos = [...photos.filter((p) => p.ref === heroRef), ...photos.filter((p) => p.ref !== heroRef)];
+    await this.repo.update(businessId, { template: out.template, content: { ...out.content, services, photoNotes }, photos });
     return this.get(businessId);
   }
 
@@ -138,7 +158,13 @@ export class BusinessSiteService {
     }
     if (body.content !== undefined) {
       if (typeof body.content !== 'object' || Array.isArray(body.content)) throw new BadRequestException('content 형식이 잘못됐습니다.');
-      patch.content = { ...(site.content || {}), ...body.content };
+      const next = { ...(site.content || {}), ...body.content };
+      // 화면은 메뉴를 "이름 | 설명 | 가격" 글로 고친다 — 사진 연결(photo)은 같은 이름이면 이어 붙인다
+      if (Array.isArray(body.content.services)) {
+        const prevPhoto = new Map(((site.content || {}).services || []).filter((x: any) => x.photo).map((x: any) => [x.name, x.photo]));
+        next.services = body.content.services.map((x: any) => ({ ...x, photo: x.photo || prevPhoto.get(x.name) || undefined }));
+      }
+      patch.content = next;
     }
     if (body.photos !== undefined) {
       const known = new Set((site.photos as PhotoEntry[]).map((p) => p.ref));
@@ -179,13 +205,16 @@ export class BusinessSiteService {
       .map((r) => ({ author: r.author, authorUri: r.authorUri, text: r.text, rating: r.rating, when: r.when, source: 'Google' }));
     const blogs = s.naver?.blogs || [];
     const bPicks: number[] = Array.isArray(content.blogPicks) ? content.blogPicks : [];
+    const photoList = await this.photoList(site);
+    const urlOf = new Map(photoList.filter((p) => !p.hidden).map((p) => [p.ref, p.url]));
+    const services = (content.services || []).map((x: any) => ({ ...x, photoUrl: x.photo ? urlOf.get(x.photo) : undefined }));
     const model: SiteModel = {
       name: b.name,
       slug: site.slug || '',
       canonical: site.slug ? this.canonical(site.slug) : (env.PUBLIC_URL || 'https://doppia.ai'),
-      content,
+      content: { ...content, services },
       facts: this.facts(s),
-      photos: (await this.photoList(site)).filter((p) => !p.hidden),
+      photos: photoList.filter((p) => !p.hidden),
       reviews,
       blogs: !usesReviews ? [] : bPicks.map((i) => blogs[i]).filter(Boolean).map((x) => ({ title: x.title, link: x.link, blogger: x.blogger })),
       preview,
@@ -241,18 +270,41 @@ export class BusinessSiteService {
   private async photoList(site: BusinessSiteRow): Promise<(SitePhoto & PhotoEntry)[]> {
     const own = new Map((await this.repo.businessImages(site.business_id)).map((m) => [m.id, m]));
     const gph = site.source?.google?.photos || [];
+    const notes = (site.content && site.content.photoNotes) || {};
     const out: (SitePhoto & PhotoEntry)[] = [];
     for (const p of (site.photos || []) as PhotoEntry[]) {
       const [kind, id] = p.ref.split(':');
       if (kind === 'media' && own.has(id)) {
         const file = String(own.get(id)!.file_path).split('/').pop();
-        out.push({ ...p, url: `/images/t/960/${file}` });
+        out.push({ ...p, ...notes[p.ref], url: `/images/t/960/${file}` });
       } else if (kind === 'google' && gph[Number(id)]) {
         const a = gph[Number(id)].authors?.[0];
-        out.push({ ...p, url: `/site-photo/${site.id}/${id}`, credit: a?.name, creditUri: a?.uri });
+        out.push({ ...p, ...notes[p.ref], url: `/site-photo/${site.id}/${id}`, credit: a?.name, creditUri: a?.uri });
       }
     }
     return out;
+  }
+
+  /** AI 첨부용 사진 — Google은 800px로 받고, 원본은 우리 썸네일(480 WebP)을 로컬에서 받는다. 실패하면 null(그 사진만 빠진다) */
+  private async loadPhoto(site: BusinessSiteRow, ref: string): Promise<{ data: string; mediaType: string } | null> {
+    try {
+      const [kind, id] = ref.split(':');
+      if (kind === 'google') {
+        const name = site.source?.google?.photos?.[Number(id)]?.name;
+        const ph = name ? await sources.googlePhoto(name, 800) : null;
+        return ph && ph.buf.length < MAX_VISION_BYTES ? { data: ph.buf.toString('base64'), mediaType: ph.type.split(';')[0] } : null;
+      }
+      const m = (await this.repo.businessImages(site.business_id)).find((x) => x.id === id);
+      if (!m) return null;
+      const file = String(m.file_path).split('/').pop();
+      const res = await fetch(`http://127.0.0.1:${env.PORT}/images/t/480/${file}`);
+      if (!res.ok) return null;
+      const buf = Buffer.from(await res.arrayBuffer());
+      const type = (res.headers.get('content-type') || 'image/webp').split(';')[0];
+      return buf.length < MAX_VISION_BYTES && /^image\/(jpeg|png|webp|gif)$/.test(type) ? { data: buf.toString('base64'), mediaType: type } : null;
+    } catch {
+      return null;
+    }
   }
 
   /** 기본 주소 — 영문이 아니면 이름으로 못 만드니 짧은 무작위 주소. 관리자가 바꾼다 */

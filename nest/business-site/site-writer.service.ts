@@ -17,8 +17,10 @@ const SYSTEM_PROMPT = `당신은 동네 가게의 홈페이지 문구를 쓰는 
 5. 이 글은 사장님 홈페이지에 실린다. 리뷰 요약(reviewSummary)과 keywords에는 여러 리뷰에서 반복되는 **좋은 점만** 담는다(불만·주의사항·혼잡·가격 불평 등 단점은 빼고, 사실을 부풀리지도 않는다). 2~3문장. 리뷰가 없으면 빈 문자열.
 6. reviewPicks는 홈페이지에 인용할 구글 리뷰 번호(0부터) 최대 3개 — 4점 이상이고, 단점·불만·주의 문장이 섞이지 않은 긍정적인 리뷰만. 개인정보·욕설·다른 가게 언급이 있으면 고르지 않는다. 마땅한 게 없으면 [].
 7. blogPicks는 이 가게에 대한 글이 확실한 블로그 번호(0부터) 최대 4개. 광고·체험단 표시가 있거나 다른 가게 글로 보이면 고르지 않는다.
-8. 헤드라인은 20자 안팎, 부제(sub)는 60자 안팎. 가게 이름을 헤드라인에 반복하지 않아도 된다.
-9. 설명 없이 JSON만 반환한다.`;
+8. 헤드라인은 20자 안팎, 부제(sub)는 60자 안팎. "성수동 베이커리 카페"처럼 같은 업종 아무 가게에나 붙는 말은 금지 — 사진과 리뷰에서 본 **이 가게만의 구체적인 것**(대표 메뉴, 공간의 특징, 손님이 반복해서 말하는 점)으로 쓴다.
+9. 사진이 첨부되면 한 장씩 직접 보고 종류(food·interior·exterior·people·other)와 짧은 설명(15자 안팎, 보이는 것만)을 단다. 사진에 보이는 메뉴는 services에 넣고 그 사진 번호를 photo로 연결한다(이름을 모르면 "크루아상"처럼 보이는 그대로의 일반 명칭).
+10. hero는 첫 화면 큰 사진 번호 — 이 가게의 성격이 한눈에 보이고 선명한 사진. 흐리거나 사람 얼굴이 크게 나온 사진은 피한다.
+11. 설명 없이 JSON만 반환한다.`;
 
 export interface WriterInput {
   name: string;
@@ -28,6 +30,8 @@ export interface WriterInput {
   reviews: { author: string; rating?: number; text: string }[];
   blogs: { title: string; snippet: string; blogger?: string }[];
   suggestedTemplate: string;
+  /** 사진(번호 = 배열 순서). 이미지를 못 읽은 건 빠진 채로 온다 */
+  images?: { data: string; mediaType: string }[];
   /** 관리자가 템플릿을 이미 골랐으면 AI가 바꾸지 않는다 */
   lockTemplate?: boolean;
 }
@@ -35,6 +39,11 @@ export interface WriterInput {
 export interface WriterOutput {
   template: string;
   content: SiteContent & { reviewPicks?: number[]; blogPicks?: number[] };
+  /** 사진 번호별 AI 판독 — 서비스가 ref 로 바꿔 저장한다 */
+  photos: { i: number; kind: string; caption: string }[];
+  hero: number | null;
+  /** services[k] 에 연결된 사진 번호 */
+  servicePhotos: (number | null)[];
 }
 
 @Injectable()
@@ -66,6 +75,8 @@ ${input.blogs.length ? input.blogs.map((b, i) => `${i}. ${b.title} — ${b.snipp
 
 [템플릿 — 하나만 고른다]
 ${templateList}
+[사진] ${input.images?.length ? `${input.images.length}장 첨부 — 첨부 순서대로 0번부터` : '없음 — photos는 [], hero는 null'}
+
 ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(으)로 정했다. 그대로 쓴다.` : `분류로 추정한 기본값: ${input.suggestedTemplate}`}
 ※ clinic(병원·약국)은 의료광고 규정 때문에 리뷰를 싣지 않는다 — clinic이면 reviewSummary는 "", reviewPicks·blogPicks는 [], 효과·치료 결과를 말하지 않는다.
 
@@ -75,18 +86,29 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
   "headline": "", "sub": "",
   "aboutTitle": "", "about": "두세 문단, 문단 사이는 빈 줄",
   "highlights": [{"title": "", "body": ""}],
-  "servicesTitle": "", "services": [{"name": "", "desc": "", "price": ""}],
+  "servicesTitle": "", "services": [{"name": "", "desc": "", "price": "", "photo": null}],
   "reviewTitle": "", "reviewSummary": "", "keywords": ["리뷰에서 반복되는 짧은 말 3~6개"],
   "reviewPicks": [0], "blogPicks": [0],
   "ctaLabel": "첫 화면 버튼 문구(예: 예약 전화, 길찾기)",
+  "photos": [{"i": 0, "kind": "food|interior|exterior|people|other", "caption": ""}],
+  "hero": 0,
   "seoTitle": "검색 결과 제목 40자 이내", "seoDescription": "검색 결과 설명 120자 이내"
 }`;
 
     const res = await this.anthropic().messages.create({
       model: env.CLAUDE_MODEL,
-      max_tokens: 3000,
+      max_tokens: 4000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: user }],
+      messages: [{
+        role: 'user',
+        content: [
+          ...(input.images || []).flatMap((im, i) => [
+            { type: 'text' as const, text: `사진 ${i}` },
+            { type: 'image' as const, source: { type: 'base64' as const, media_type: im.mediaType as any, data: im.data } },
+          ]),
+          { type: 'text' as const, text: user },
+        ],
+      }],
     });
     const text = res.content.map((b: any) => (b.type === 'text' ? b.text : '')).join('');
     const json = parseJson(text);
@@ -98,8 +120,18 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
       .map(Number).filter((i) => Number.isInteger(i) && i >= 0 && i < max).slice(0, n);
     const noReviews = !TEMPLATES[template].reviews;
 
+    const nImg = input.images?.length || 0;
+    const KINDS = ['food', 'interior', 'exterior', 'people', 'other'];
+    const photoIdx = (v: unknown) => (Number.isInteger(Number(v)) && v !== null && v !== '' && Number(v) >= 0 && Number(v) < nImg ? Number(v) : null);
+    const rawServices = (Array.isArray(json.services) ? json.services : []).slice(0, 16).filter((x: any) => str(x?.name, 50));
+
     return {
       template,
+      photos: (Array.isArray(json.photos) ? json.photos : [])
+        .map((p: any) => ({ i: photoIdx(p?.i), kind: KINDS.includes(p?.kind) ? p.kind : 'other', caption: str(p?.caption, 40) }))
+        .filter((p: any) => p.i !== null) as { i: number; kind: string; caption: string }[],
+      hero: photoIdx(json.hero),
+      servicePhotos: rawServices.map((x: any) => photoIdx(x?.photo)),
       content: {
         headline: str(json.headline, 60),
         sub: str(json.sub, 200),
@@ -108,8 +140,7 @@ ${input.lockTemplate ? `템플릿은 관리자가 "${input.suggestedTemplate}"(�
         highlights: (Array.isArray(json.highlights) ? json.highlights : []).slice(0, 4)
           .map((h: any) => ({ title: str(h?.title, 40), body: str(h?.body, 160) })).filter((h: any) => h.title),
         servicesTitle: str(json.servicesTitle, 30),
-        services: (Array.isArray(json.services) ? json.services : []).slice(0, 16)
-          .map((s: any) => ({ name: str(s?.name, 50), desc: str(s?.desc, 120), price: str(s?.price, 30) })).filter((s: any) => s.name),
+        services: rawServices.map((x: any) => ({ name: str(x?.name, 50), desc: str(x?.desc, 120), price: str(x?.price, 30) })),
         reviewTitle: str(json.reviewTitle, 40),
         reviewSummary: noReviews ? '' : str(json.reviewSummary, 400),
         keywords: noReviews ? [] : (Array.isArray(json.keywords) ? json.keywords : []).map((k: unknown) => str(k, 20)).filter(Boolean).slice(0, 6),
