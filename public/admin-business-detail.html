@@ -103,7 +103,8 @@ button:disabled{opacity:.5;cursor:default}
   <div id="adminNav"></div>
 
   <h1><span class="dot"></span> <span id="bizName">…</span> <span id="bizStatus"></span>
-    <a id="planLink" href="#" style="margin-left:auto;font-size:.85rem;font-weight:700;text-decoration:none;border:1px solid var(--accent2);border-radius:10px;padding:8px 14px;color:var(--accent2)">📅 월간 운영</a></h1>
+    <a id="planLink" href="#" style="margin-left:auto;font-size:.85rem;font-weight:700;text-decoration:none;border:1px solid var(--accent2);border-radius:10px;padding:8px 14px;color:var(--accent2)">📅 월간 운영</a>
+    <a id="siteLink" href="#" style="font-size:.85rem;font-weight:700;text-decoration:none;border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text)">🌐 홈페이지</a></h1>
   <div class="sub" id="bizMeta"></div>
 
   <div class="msg err" id="err"></div>
@@ -291,6 +292,7 @@ button:disabled{opacity:.5;cursor:default}
 const BIZ_ID = location.pathname.split('/').filter(Boolean).pop();
 // 월간 운영 플랜(한 달치 계획 → Doppia 검수 → 고객 승인 → 일괄 예약)으로 가는 입구
 document.getElementById('planLink').href = '/admin-business/' + BIZ_ID + '/plan';
+document.getElementById('siteLink').href = '/admin-business/' + BIZ_ID + '/site';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isVideo = (u) => /\.(mp4|mov|webm|m4v)$/i.test(u || '');

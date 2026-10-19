@@ -632,6 +632,27 @@ async function migrate() {
     );
   `);
 
+  // 사업체 홈페이지(2026-10-19) — 사업체 1곳당 사이트 1개. 업종별 템플릿 + AI 문구.
+  //   source  = 카카오·구글·네이버에서 모은 원자료(주소·전화·영업시간·리뷰·사진 참조). 사실 정보는 여기서만 나온다.
+  //   content = AI가 쓴 문구(JSON). 관리자가 고친 값도 여기 그대로 덮어쓴다.
+  //   photos  = 사이트에 쓸 사진 순서·포함 여부([{ref, url, credit?, hidden?}]) — 첫 장이 히어로.
+  //   status: draft(관리자만 미리보기) → published(/site/<slug> 공개)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_sites (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        business_id  UUID NOT NULL UNIQUE REFERENCES businesses(id) ON DELETE CASCADE,
+        slug         VARCHAR(60) UNIQUE,
+        template     VARCHAR(30) NOT NULL DEFAULT 'general',
+        status       VARCHAR(20) NOT NULL DEFAULT 'draft',
+        source       JSONB NOT NULL DEFAULT '{}',
+        content      JSONB NOT NULL DEFAULT '{}',
+        photos       JSONB NOT NULL DEFAULT '[]',
+        published_at TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).

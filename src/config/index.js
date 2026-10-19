@@ -105,6 +105,12 @@ const envSchema = z.object({
   // redirect_uri 미지정 시 PUBLIC_URL(또는 요청 host) + /api/auth/google/callback 사용
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
 
+  // 사업체 홈페이지 자료 수집 — 전부 선택. 없는 키의 출처는 건너뛴다(카카오만 있어도 동작).
+  KAKAO_REST_KEY: z.string().optional(),          // 카카오 로컬(장소명·주소·전화·분류)
+  GOOGLE_PLACES_API_KEY: z.string().optional(),   // Google Places API (New) — 사진·리뷰·평점·영업시간
+  NAVER_CLIENT_ID: z.string().optional(),         // 네이버 검색 API(지역·블로그)
+  NAVER_CLIENT_SECRET: z.string().optional(),
+
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
   REPLICATE_MODEL: z.string().default('black-forest-labs/flux-1.1-pro'),
