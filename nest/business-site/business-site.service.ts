@@ -577,7 +577,7 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
       withResearch && sheet ? `## 조사 시트 — 확인된 사실(이것과 아래 회사 자료만 근거로)\n${sheet.facts.filter((f) => f.use).map((f) => `- [${f.topic}] ${f.text} (출처: ${f.source.title})`).join('\n')}` : '',
       s.manual ? `## 회사가 준 자료\n${s.manual}` : '',
       // 이미지 속 글(인사말·연혁·회사개요)이 페이지 글보다 알차다 — 길이 제한에 잘리지 않게 앞에 둔다
-      ...(s.web?.ocr || []).map((o) => `## 기존 홈페이지 이미지 속 글 (${o.page})\n${o.text}`),
+      ...[...new Map((s.web?.ocr || []).map((o) => [o.url, o])).values()].map((o) => `## 기존 홈페이지 이미지 속 글 (${o.page})\n${o.text}`),
       ...(s.web?.pages || []).map((p) => `## 기존 홈페이지: ${p.title || p.url}\n${p.text}`),
     ].filter(Boolean).join('\n\n');
   }
@@ -615,7 +615,7 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
       try { read = await this.procWriter.readImages(vis, batch.map((g) => g.im.near || g.im.alt || '')); } catch (e: any) { console.warn('[business-site] readImages failed', e?.message); continue; }
       for (const r of read) {
         const g = batch[r.i];
-        if (r.text) ocr.push({ url: g.im.url, page: g.im.page, text: r.text });
+        if (r.text) { const k = ocr.findIndex((o) => o.url === g.im.url); if (k >= 0) ocr.splice(k, 1); ocr.push({ url: g.im.url, page: g.im.page, text: r.text }); }
         // 사진만 가져온다 — 너무 작으면(가로 500 미만) 화면에서 깨져 보여 뺀다
         if (['product', 'factory', 'people', 'other'].includes(r.kind) && g.w >= 500 && !imported[g.im.url]) {
           const file = `${randomUUID()}.jpg`;

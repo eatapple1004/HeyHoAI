@@ -152,7 +152,7 @@ export class BusinessSiteRepository {
          LEFT JOIN social_accounts sa ON sa.id = m.account_id
         WHERE (m.business_id = $1 OR sa.business_id = $1) AND m.media_type = 'image'
         ORDER BY COALESCE(m.is_base, false) DESC, m.created_at DESC
-        LIMIT 48`, [businessId]);
+        LIMIT 120`, [businessId]);
     return r.rows;
   }
 }
