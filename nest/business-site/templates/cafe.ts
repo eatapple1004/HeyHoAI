@@ -25,13 +25,18 @@ export function renderCafe(m: SiteModel): string {
 
   const hero = take(m.photos, 1)[0];
   const services = c.services || [];
-  const withPhoto = services.filter((s) => s.photoUrl && !used.has(s.photoUrl)).slice(0, 6);
-  withPhoto.forEach((s) => used.add(s.photoUrl as string));
+  // 같은 사진이 여러 메뉴에 연결돼 있어도(한 접시에 빵 세 개) 카드에는 한 번만 — 나머지는 목록으로
+  const withPhoto: typeof services = [];
+  for (const s of services) {
+    if (withPhoto.length >= 6 || !s.photoUrl || used.has(s.photoUrl)) continue;
+    used.add(s.photoUrl);
+    withPhoto.push(s);
+  }
   const plainMenu = services.filter((s) => !withPhoto.includes(s));
   // 메뉴 사진이 없을 때는 음식 사진을 "진열대"로 대신 보여준다
   const counter = withPhoto.length < 2 ? take(photosOf(m, 'food'), 4) : [];
   const aboutPhoto = take(photosOf(m, 'interior'), 1)[0];
-  const space = take(photosOf(m, 'interior', 'exterior'), 3);
+  const space = take(photosOf(m, 'interior', 'exterior', 'other'), 3);
   const rest = take(m.photos.filter((p) => p.kind !== 'people'), 8);
 
   const css = `
@@ -201,7 +206,7 @@ ${space.length ? `<section id="space">
   <div class="space${space.length === 1 ? ' one' : ''}">${space.map((p) => fig(p)).join('')}</div>
 </section>` : ''}
 
-${rest.length >= 2 ? `<section aria-label="사진 더 보기"><div class="grid">${rest.slice(0, rest.length >= 8 ? 8 : 4).map((p) => img(p)).join('')}</div></section>` : ''}
+${rest.length >= 4 ? `<section aria-label="사진 더 보기"><div class="grid">${rest.slice(0, rest.length >= 8 ? 8 : 4).map((p) => img(p)).join('')}</div></section>` : ''}
 
 ${showReviews ? `<section id="reviews" class="rev">
   <div>
