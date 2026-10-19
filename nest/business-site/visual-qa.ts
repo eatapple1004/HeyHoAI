@@ -154,13 +154,24 @@ const MEASURE = `(() => {
     }
     return { r: 255, g: 255, b: 255, a: 1 };
   };
+  // 선택자 = 들어 있는 큰 구역(main 의 n번째 자식, header, footer) + 가까운 클래스 3단계.
+  //   같은 카드 클래스가 밝은 구역·어두운 구역에 다 쓰이므로 구역까지 넣어야 보정이 한쪽만 맞추고 다른 쪽을 깨지 않는다
   const selOf = (el) => {
     const parts = [];
-    for (let e = el; e && e !== document.body && parts.length < 4; e = e.parentElement) {
+    for (let e = el; e && e !== document.body && parts.length < 3; e = e.parentElement) {
+      if (/^(MAIN|HEADER|FOOTER)$/.test(e.tagName) || (e.parentElement && e.parentElement.tagName === 'MAIN')) break;
       const cls = typeof e.className === 'string' ? e.className.trim().split(/\\s+/).filter((c) => c && !/^pg-/.test(c)).slice(0, 2) : [];
-      if (cls.length || parts.length === 0 || /^(HEADER|FOOTER|MAIN|SECTION|NAV)$/.test(e.tagName)) parts.unshift(e.tagName.toLowerCase() + cls.map((c) => '.' + CSS.escape(c)).join(''));
+      if (cls.length || parts.length === 0) parts.unshift(e.tagName.toLowerCase() + cls.map((c) => '.' + CSS.escape(c)).join(''));
     }
-    return parts.join(' ');
+    let scope = '';
+    const top = el.closest('header,footer');
+    if (top) scope = top.tagName.toLowerCase();
+    else {
+      let s = el; while (s && s.parentElement && s.parentElement.tagName !== 'MAIN') s = s.parentElement;
+      if (s && s.parentElement) scope = 'main > ' + s.tagName.toLowerCase() + ':nth-child(' + ([...s.parentElement.children].indexOf(s) + 1) + ')';
+    }
+    const pg = (document.body.className.match(/\\bpg-[a-z]+/) || [''])[0];
+    return (pg ? 'body.' + pg + ' ' : '') + (scope ? scope + ' ' : '') + parts.join(' ');
   };
   const seen = new Set(); const contrast = [];
   for (const el of document.querySelectorAll('body *')) {

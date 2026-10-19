@@ -398,7 +398,11 @@ function forceContrast(hits: { sel: string; fg: string; bg: string; need: number
   const ratio = (a: number[], b: number[]) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const hex = (c: number[]) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
   const rules: string[] = [];
+  // 같은 선택자인데 배경이 밝은 곳·어두운 곳 둘 다면 한 색으로 못 맞춘다 — 건너뛴다(사람이 볼 것)
+  const sides = new Map<string, Set<boolean>>();
+  for (const h of hits) if (/^#[0-9a-f]{6}$/i.test(h.bg)) sides.set(h.sel, (sides.get(h.sel) || new Set()).add(lum(rgb(h.bg)) < 0.18));
   for (const h of hits) {
+    if ((sides.get(h.sel)?.size || 0) > 1) continue;
     if (!/^#[0-9a-f]{6}$/i.test(h.fg) || !/^#[0-9a-f]{6}$/i.test(h.bg) || !h.sel) continue;
     const fg = rgb(h.fg); const bg = rgb(h.bg);
     const to = lum(bg) < 0.18 ? [255, 255, 255] : [0, 0, 0]; // 어두운 배경이면 밝게, 밝은 배경이면 어둡게
@@ -406,7 +410,7 @@ function forceContrast(hits: { sel: string; fg: string; bg: string; need: number
     for (let t = 0.05; t <= 1.0001 && ratio(c, bg) < h.need + 0.3; t += 0.05) c = fg.map((v, i) => v + (to[i] - v) * t);
     // 선택자에 쉼표·중괄호가 섞이면 규칙 전체가 깨지므로 거른다
     if (/[{},;]/.test(h.sel)) continue;
-    rules.push(`body ${h.sel}{color:${hex(c)}!important}`);
+    rules.push(`${/^body\b/.test(h.sel) ? '' : 'body '}${h.sel}{color:${hex(c)}!important}`);
   }
   return [...new Set(rules)].join('\n');
 }
