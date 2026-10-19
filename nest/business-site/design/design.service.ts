@@ -264,6 +264,7 @@ ${m.heroPhoto ? `<meta property="og:image" content="${esc(m.origin + m.heroPhoto
 ${d.design.fonts ? `<link rel="stylesheet" href="${esc(d.design.fonts)}">` : ''}
 <style>${BASE_CSS}</style>
 <style>${d.design.css}</style>
+<style>${MOBILE_GUARD}</style>
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 </head>
 <body class="pg-${spec.key}">
@@ -285,6 +286,21 @@ const BASE_CSS = `*,*::before,*::after{box-sizing:border-box}html{-webkit-text-s
 .dp-map{width:100%;height:420px;border:0;display:block}.dp-legal{max-width:860px;margin:0 auto;padding:64px 24px}.dp-legal table{width:100%;border-collapse:collapse}.dp-legal th,.dp-legal td{border:1px solid #d6dadf;padding:10px;text-align:left}
 .dp-pv{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;background:#222;color:#fff;font:600 12px/1 sans-serif;padding:8px 12px;border-radius:999px}
 @media (max-width:640px){.dp-form .dp-row{grid-template-columns:1fr}.dp-map{height:300px}}`;
+
+/**
+ * 모바일 안전망 — AI CSS 뒤에 붙는다. 페이지별 <style>의 다단 그리드가 모바일 규칙에서 빠지는 일이 실제로 있었다(시안 3, 390px에서 4단 유지).
+ *   760px 이하에서 본문·꼬리말의 그리드는 1단, 칸 걸치기 해제, 고정 높이 해제, 표는 가로 스크롤.
+ *   서버에 브라우저가 없어 렌더 결과를 직접 재지 못하므로 규칙으로 막는다(시각 확인은 REA 캡처).
+ */
+const MOBILE_GUARD = `@media (max-width:760px){
+main *,footer *{min-width:0}
+main [class],footer [class]{grid-template-columns:minmax(0,1fr)!important;grid-column:auto!important;grid-row:auto!important}
+main [class]:not(img):not(iframe):not(.photo){height:auto!important;max-height:none!important}
+main [class]{flex-wrap:wrap}
+main h1,main h2,main h3{overflow-wrap:break-word}
+main table{display:block;overflow-x:auto;max-width:100%}
+main img{max-width:100%}
+}`;
 
 function photoUrls(m: CorpSite): Set<string> {
   const all: (CorpPhoto | undefined)[] = [m.heroPhoto, m.aboutPhoto, ...m.gallery, ...m.products.flatMap((p) => p.photos)];
