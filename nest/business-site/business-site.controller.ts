@@ -27,6 +27,12 @@ export class BusinessSiteAdminController {
     return { success: true, data: await this.designs.create(id, body?.direction || '') };
   }
 
+  @Post(':id/site/designs/:n/qa')
+  @HttpCode(200)
+  async designQa(@Param('id') id: string, @Param('n', ParseIntPipe) n: number) {
+    return { success: true, data: await this.designs.recheck(id, n) };
+  }
+
   /** 공개할 시안 — n 이 null 이면 템플릿 사이트로 */
   @Post(':id/site/designs/publish')
   @HttpCode(200)

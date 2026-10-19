@@ -105,4 +105,4 @@ export function loosely(src: string, n: string): boolean {
   return re.test(src);
 }
 
-const norm = (t: string) => (t || '').replace(/(\d),(?=\d{3})/g, '$1');
+export const norm = (t: string) => (t || '').replace(/(\d),(?=\d{3})/g, '$1');

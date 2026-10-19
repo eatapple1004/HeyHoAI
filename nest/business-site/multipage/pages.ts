@@ -50,6 +50,7 @@ export function home(m: CorpSite): string {
 .stats .it{padding:32px 30px 30px;border-left:1px solid var(--line)}
 .stats .it:first-child{border-left:0}
 .stats .v{font:700 clamp(30px,3.4vw,48px)/1.1 'IBM Plex Sans KR',sans-serif;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stats .v.long{font-size:clamp(24px,2.4vw,34px);white-space:nowrap}
 .stats .l{margin-top:10px;font-weight:600}
 .stats .n{color:var(--steel);font-size:14px}
 .intro{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}
@@ -86,7 +87,7 @@ ${PCARD_CSS}
     <div class="btns"><a class="btn" href="${esc(href(m, 'contact'))}">${esc(m.ctaLabel || '견적 문의')}</a>${m.products.length ? `<a class="btn ghost" href="${esc(href(m, 'products'))}">제품 보기</a>` : ''}</div>
   </div>
 </div>
-${stats.length ? `<div class="stats"><div class="wrap"><div class="band2">${stats.map((s) => `<div class="it"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div>${s.note ? `<div class="n">${esc(s.note)}</div>` : ''}</div>`).join('')}</div></div></div>` : ''}
+${stats.length ? `<div class="stats"><div class="wrap"><div class="band2">${stats.map((s) => `<div class="it"><div class="v${s.value.length > 6 ? ' long' : ''}">${esc(s.value)}</div><div class="l">${esc(s.label)}</div>${s.note ? `<div class="n">${esc(s.note)}</div>` : ''}</div>`).join('')}</div></div></div>` : ''}
 
 ${m.about ? `<section><div class="wrap">
   <div class="intro">
