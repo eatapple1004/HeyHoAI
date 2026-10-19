@@ -15,7 +15,7 @@ const { env } = require(path.join(__dirname, '..', '..', '..', 'src', 'config'))
 const SYSTEM = `당신은 한국 중소 제조·B2B 기업 홈페이지를 만드는 시니어 웹 디자이너 겸 프론트엔드 개발자입니다. 결과물은 실제로 돈을 받고 납품합니다.
 반드시 지킬 것:
 1. 정적 HTML과 CSS만. <script>·이벤트 속성·외부 이미지·iframe·폼 태그를 쓰지 않는다(지도·문의 폼은 지정된 자리표시자만).
-2. 사실(회사명·수치·연도·사양·인증·고객사·연락처)은 넘겨받은 데이터에 있는 것만, 글자 그대로. 새 수치·고객·수상·약속을 지어내지 않는다. 데이터 문구를 고쳐 쓰지 말고 배치·강조만 디자인한다. 섹션 제목·버튼 같은 짧은 안내 말은 써도 된다.
+2. 사실(회사명·수치·연도·사양·인증·고객사·연락처)은 넘겨받은 데이터에 있는 것만, 글자 그대로. 장식용 눈금·축·번호에도 데이터에 없는 연도·숫자를 만들지 않는다. 새 수치·고객·수상·약속을 지어내지 않는다. 데이터 문구를 고쳐 쓰지 말고 배치·강조만 디자인한다. 섹션 제목·버튼 같은 짧은 안내 말은 써도 된다.
 3. 이미지는 넘겨받은 사진 주소만 그대로 쓴다. 사진이 없는 자리는 사진 없이도 완성된 구성으로 만든다(회색 상자·"이미지 준비 중" 금지).
 4. 반응형: 360px~1440px에서 가로 스크롤이 생기지 않게. 모바일 메뉴는 <details>/<summary>로.
 5. 접근성: 본문 대비 4.5:1 이상, :focus-visible 표시, prefers-reduced-motion 존중, 이미지 alt.
@@ -87,7 +87,7 @@ body 에는 페이지별로 pg-home, pg-about, pg-history, pg-certs, pg-location
   }
 
   /** 한 페이지 본문 — 디자인 시스템 CSS 를 보고 그 클래스로 */
-  async page(input: { name: string; css: string; note: string; page: { key: string; title: string; data: unknown; placeholders?: string[]; links: { label: string; href: string }[] } }): Promise<string> {
+  async page(input: { name: string; css: string; note: string; fix?: string[]; page: { key: string; title: string; data: unknown; placeholders?: string[]; links: { label: string; href: string }[] } }): Promise<string> {
     const p = input.page;
     const text = `회사: ${input.name}
 [디자인 방향]
@@ -106,7 +106,9 @@ ${p.placeholders?.length ? `\n[반드시 넣을 자리표시자 — 서버가 �
 
 <main> 안에 들어갈 본문 HTML만 쓰세요(머리말·꼬리말·<html>·<head> 제외). 서브 페이지는 상단에 제목 띠(페이지 제목과 상위 경로)를 둔다.
 이 페이지만의 스타일이 필요하면 맨 앞에 짧은 <style> 하나를 둘 수 있다(디자인 시스템과 같은 토큰 사용).
-데이터에 없는 항목은 섹션째 생략한다. 형식: <page>…</page>`;
+데이터에 없는 항목은 섹션째 생략한다. 형식: <page>…</page>${input.fix?.length ? `
+
+⚠️ 지난번에 이 페이지를 쓸 때 데이터에 없는 숫자(${input.fix.join(', ')})가 들어가 반려됐습니다. 이 숫자들을 쓰지 말고(눈금·장식 포함), 데이터의 숫자만 글자 그대로 쓰세요.` : ''}`;
     const out = await this.call([{ type: 'text', text }], 14000);
     const html = /<page>([\s\S]*?)<\/page>/i.exec(out)?.[1] || '';
     if (!html.trim()) throw new InternalServerErrorException(`${p.title} 페이지 응답을 읽지 못했습니다.`);

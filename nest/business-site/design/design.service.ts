@@ -6,7 +6,7 @@ import { BusinessSiteService } from '../business-site.service';
 import { CorpSite, CorpPhoto } from '../multipage';
 import { privacy as privacyPage } from '../multipage/pages';
 import { esc, mapEmbed } from '../templates/shared';
-import { numbers, loosely } from '../site-qa';
+import { numbers, loosely, norm } from '../site-qa';
 import { DesignWriterService, DesignSystem } from './design-writer.service';
 import { cleanCss, cleanHtml, rebase, FONT_CSS } from './sanitize';
 
@@ -88,6 +88,16 @@ export class DesignService {
     return this.list(businessId);
   }
 
+  /** 시안 다시 점검 — 점검 규칙이 바뀐 뒤 예전 시안에 */
+  async recheck(businessId: string, n: number) {
+    const site = await this.site(businessId);
+    const d = await this.row(site.id, n);
+    if (!d || d.status !== 'done') throw new BadRequestException('완성된 시안만 점검할 수 있습니다.');
+    const m = await this.sites.corpModel(site, '', false);
+    await this.patch(d.id, { qa: this.qa(m, d.pages, norm(this.sites.sourceText(site)), []) });
+    return this.list(businessId);
+  }
+
   async publish(businessId: string, n: number | null) {
     const site = await this.site(businessId);
     if (n !== null) {
@@ -130,6 +140,8 @@ export class DesignService {
     await this.patch(row.id, { design, step: '페이지를 쓰는 중' });
 
     const specs = pageSpecs(m);
+    const source = norm(this.sites.sourceText(site));
+    const unsourced = (html: string) => [...new Set(numbers(html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ')))].filter((n) => !source.includes(n) && !loosely(source, n));
     const pages: Record<string, string> = {};
     let done = 0;
     const queue = [...specs];
@@ -143,6 +155,14 @@ export class DesignService {
             console.warn('[design] page failed', s.path, attempt, e?.message);
           }
         }
+        // 자동 교정 — 데이터에 없는 숫자(장식용 눈금·추정치 포함)가 있으면 그 숫자를 알려 주고 한 번 다시 쓴다. 더 나은 쪽을 남긴다
+        const bad = html ? unsourced(html) : [];
+        if (bad.length) {
+          try {
+            const again = await this.writer.page({ name: m.name, css: design.css, note: design.note, page: { ...s, links }, fix: bad });
+            if (unsourced(again).length < bad.length) html = again;
+          } catch (e: any) { console.warn('[design] page fix failed', s.path, e?.message); }
+        }
         pages[s.path] = cleanHtml(html, allowed);
         done++;
         await this.patch(row.id, { step: `페이지를 쓰는 중 ${done}/${specs.length}` });
@@ -150,7 +170,7 @@ export class DesignService {
     };
     await Promise.all([worker(), worker(), worker(), worker()]);
     const failed = specs.filter((s) => s.key !== 'privacy' && !pages[s.path]).map((s) => s.title);
-    const qa = this.qa(m, pages, this.sites.sourceText(site), failed);
+    const qa = this.qa(m, pages, source, failed);
     await this.patch(row.id, { pages, qa, status: failed.length === specs.length - 1 ? 'error' : 'done', step: null, error: failed.length ? `만들지 못한 페이지: ${failed.join(', ')}` : null });
   }
 
