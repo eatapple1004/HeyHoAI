@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 마케팅 팀 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--blue:#7cc4ff;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1360px;margin:0 auto}
+a{color:var(--accent2)}
+.back{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px;display:inline-block;margin-bottom:16px}
+h1{font-size:1.6rem;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sub{color:var(--dim);margin:6px 0 16px;font-size:.92rem;line-height:1.6}
+h2{font-size:1.02rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h2 .hint{font-weight:400;font-size:.78rem;color:var(--faint)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.88rem;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+textarea{width:100%;resize:vertical;line-height:1.6}
+button{font-family:inherit;font-size:.85rem;font-weight:600;padding:9px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.primary{background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;color:#fff}
+button.ok{background:rgba(74,222,128,.14);border-color:#2e5b3a;color:var(--green)}
+button.sm{padding:5px 10px;font-size:.74rem}
+button:disabled{opacity:.5;cursor:default}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.b-on{background:rgba(74,222,128,.16);color:var(--green)}
+.b-off{background:rgba(154,154,178,.16);color:var(--dim)}
+.b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
+.b-run{background:rgba(124,196,255,.16);color:var(--blue)}
+.b-err{background:rgba(248,113,113,.16);color:var(--red)}
+.layout{display:grid;grid-template-columns:400px 1fr;gap:18px;align-items:start}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:.78rem;padding:6px 11px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.chip b{color:var(--text)}.chip.bad{border-color:#5b2e2e;color:#fca5a5}
+.agent{border-top:1px solid var(--border);padding:12px 0}
+.agent:first-of-type{border-top:0;padding-top:0}
+.agent .t{display:flex;align-items:center;gap:8px;font-weight:700}
+.agent .t label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.agent .t input{width:auto}
+.agent .t button{margin-left:auto}
+.agent p{color:var(--dim);font-size:.8rem;line-height:1.6;margin-top:4px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:.76rem;color:var(--dim);margin-bottom:5px;font-weight:600}
+.prog{color:var(--faint);font-size:.78rem}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border-radius:20px;padding:6px 12px;font-size:.78rem}
+.tabs button.on{border-color:var(--accent2);color:#fff;background:rgba(106,64,224,.25)}
+.task{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.task.ready{border-color:#6b5525}
+.task .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.task .hd b{font-size:.95rem}
+.task .hd .when{margin-left:auto;color:var(--faint);font-size:.74rem}
+.ag{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--panel2);color:var(--accent2)}
+.post{display:grid;grid-template-columns:200px 1fr;gap:14px}
+.post img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px;background:var(--panel2)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.text{font-size:.85rem;line-height:1.7;color:var(--dim);white-space:pre-wrap}
+.ul{font-size:.82rem;color:var(--dim);padding-left:18px;line-height:1.7}
+.todo{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:flex-start}
+.todo div{flex:1;font-size:.83rem;line-height:1.6}
+.todo small{display:block;color:var(--faint)}
+.kind{font-size:.66rem;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--panel2);color:var(--gold);margin-right:4px}
+.review{background:var(--panel2);border-radius:10px;padding:10px 12px;font-size:.83rem;line-height:1.6;color:var(--dim);margin-bottom:8px}
+.empty{color:var(--faint);font-size:.86rem;padding:20px 0}
+.msg{padding:12px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.88rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+.errtxt{color:#fca5a5;font-size:.83rem}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.post{grid-template-columns:1fr}.post img{max-width:260px}}
+@media(max-width:600px){body{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" id="backLink" href="/admin-business">← 사업체 상세</a>
+  <div id="adminNav"></div>
+  <h1>🤖 <span id="bizName">…</span> AI 마케팅 팀</h1>
+  <div class="sub">담당 AI가 일을 해서 아래 피드에 올립니다. <b>승인한 것만 실행</b>됩니다 — 게시물은 승인하면 인스타 게시 큐에 예약되고, 거절하면서 남긴 이유는 브랜드 노트에 쌓여 다음 초안부터 지킵니다.</div>
+  <div class="chips" id="chips"></div>
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h2>팀 구성 <span class="hint">켜 둔 담당이 "모두 실행"과 주간 자동 실행에 참여합니다</span></h2>
+        <div id="agents"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="primary" id="runAll" onclick="run()">모두 지금 실행</button>
+          <label class="prog" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="auto" style="width:auto" onchange="saveTeam()"> 매주 자동 실행</label>
+        </div>
+        <p class="prog" id="lastRun" style="margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <h2>지시하기 <span class="hint">팀에게 한 줄로 일을 시키세요</span></h2>
+        <textarea id="direct" rows="3" placeholder="예: 다음 주 화이트데이에 맞춰 케이크 게시물 2개 준비해줘"></textarea>
+        <div class="row" style="margin-top:8px"><button id="directBtn" onclick="direct()">보내기</button></div>
+      </div>
+
+      <div class="card">
+        <h2>브랜드 노트 <span class="hint">모든 담당이 지킵니다. 거절 사유가 자동으로 쌓입니다</span></h2>
+        <textarea id="notes" rows="6" placeholder="예: 반말 쓰지 않기 · 가격은 언급하지 않기 · 이모지는 1개까지"></textarea>
+        <div class="row" style="margin-top:8px"><button onclick="saveTeam(true)">노트 저장</button></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tabs" id="tabs"></div>
+      <div id="feed"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BIZ_ID = location.pathname.split('/').filter(Boolean)[1];
+const API = '/api/admin/business/' + BIZ_ID + '/marketing';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let STATE = null;
+let TAB = 'ready';
+let POLL = null;
+
+const AGENTS = [
+  ['instagram', '📸 인스타 담당', '아직 게시하지 않은 사업체 사진으로 게시물(캡션·해시태그)을 만들고 게시 시각을 제안합니다.'],
+  ['trends', '🔎 동향 담당', '웹 검색으로 동네·업종 동향을 보고 이번 주 할 일을 제안합니다. 할 일의 "실행"을 누르면 다른 담당이 이어받습니다.'],
+  ['reviews', '💬 리뷰 담당', 'Google 리뷰에 사장님 답글 초안을 씁니다(답글은 복사해서 다세요).'],
+];
+const AG_LABEL = { instagram: '인스타', trends: '동향', reviews: '리뷰', direct: '지시' };
+const ST = { running: ['b-run', '일하는 중'], ready: ['b-wait', '승인 대기'], done: ['b-on', '완료'], rejected: ['b-off', '거절'], error: ['b-err', '실패'] };
+const KIND = { post: '게시물', site: '홈페이지', review: '리뷰', other: '기타' };
+
+$('backLink').href = '/admin-business/' + BIZ_ID;
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || j.success === false) throw new Error(j.message || j.error || ('요청 실패 (' + res.status + ')'));
+  return j.data;
+}
+function flash(kind, text) {
+  const el = $(kind); el.textContent = text; el.classList.add('show');
+  $(kind === 'err' ? 'ok' : 'err').classList.remove('show');
+  if (kind === 'ok') setTimeout(() => el.classList.remove('show'), 2500);
+}
+async function busy(btn, label, fn) {
+  const old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = label; }
+  try { await fn(); } catch (e) { flash('err', e.message); } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
+}
+async function load() { try { STATE = await api(API); render(); } catch (e) { flash('err', e.message); } }
+
+function render() {
+  const { business, team, tasks, status } = STATE;
+  $('bizName').textContent = business.name;
+  document.title = business.name + ' AI 마케팅 팀 · Doppia Admin';
+  $('chips').innerHTML = [
+    status.instagram ? '<span class="chip">인스타 <b>연결됨</b></span>' : '<span class="chip bad">인스타 미연결 — 승인해도 게시 큐에 못 넣습니다</span>',
+    `<span class="chip${status.photos ? '' : ' bad'}">안 쓴 사진 <b>${status.photos}${status.photos >= 50 ? '+' : ''}장</b></span>`,
+    `<span class="chip${status.reviews ? '' : ' bad'}">Google 리뷰 <b>${status.reviews}개</b>${status.reviews ? '' : ' — 홈페이지 자료 수집에서 Google 장소를 고르면 생깁니다'}</span>`,
+    status.place ? '<span class="chip">지도 정보 <b>있음</b></span>' : '<span class="chip bad">지도 정보 없음 — 동향 담당이 위치를 모릅니다</span>',
+  ].join('');
+  const a = team.settings.agents || {};
+  $('agents').innerHTML = AGENTS.map(([k, l, d]) => `<div class="agent"><div class="t"><label><input type="checkbox" data-agent="${k}"${a[k] ? ' checked' : ''} onchange="saveTeam()">${l}</label><button class="sm" onclick="run('${k}', this)">지금 실행</button></div><p>${d}</p>
+    ${k === 'instagram' ? `<div class="row" style="margin-top:8px"><span class="prog">한 번에</span><select id="ppr" onchange="saveTeam()">${[1, 2, 3, 4, 5, 7].map((n) => `<option${n === team.settings.postsPerRun ? ' selected' : ''}>${n}</option>`).join('')}</select><span class="prog">개 · 게시 시각</span><input id="ptime" type="time" value="${esc(team.settings.postTime)}" style="width:120px" onchange="saveTeam()"></div>` : ''}</div>`).join('');
+  $('auto').checked = !!team.auto;
+  $('lastRun').textContent = team.last_run_at ? '마지막 실행 ' + new Date(team.last_run_at).toLocaleString('ko-KR') + (team.auto ? ' · 7일마다 자동' : '') : '아직 실행한 적 없습니다';
+  if (document.activeElement !== $('notes')) $('notes').value = team.notes || '';
+
+  const counts = { ready: 0, running: 0, done: 0, all: tasks.length };
+  for (const t of tasks) { if (t.status === 'ready') counts.ready++; else if (t.status === 'running') counts.running++; else if (t.status === 'done') counts.done++; }
+  $('tabs').innerHTML = [['ready', '승인 대기'], ['running', '일하는 중'], ['done', '완료'], ['all', '전체']]
+    .map(([k, l]) => `<button class="${TAB === k ? 'on' : ''}" onclick="TAB='${k}';render()">${l} ${counts[k]}</button>`).join('');
+  const list = tasks.filter((t) => TAB === 'all' || t.status === TAB || (TAB === 'ready' && t.status === 'error'));
+  $('feed').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">${TAB === 'ready' ? '승인할 것이 없습니다. 왼쪽에서 담당을 실행하거나 지시하세요.' : '없습니다.'}</div>`;
+
+  clearTimeout(POLL);
+  if (counts.running) POLL = setTimeout(load, 4000);
+}
+
+function toLocalInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso); const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function card(t) {
+  const [cls, label] = ST[t.status] || ['b-off', t.status];
+  const b = t.body || {};
+  const ready = t.status === 'ready';
+  let inner = '';
+  if (t.status === 'running') inner = '<div class="prog">담당이 일하는 중입니다…</div>';
+  else if (t.status === 'error') inner = `<div class="errtxt">${esc(t.error || '실패')}</div><div class="acts"><button class="sm" onclick="reject('${t.id}', true)">지우기</button></div>`;
+  else if (t.kind === 'post') {
+    inner = `<div class="post"><img src="${esc(b.imageUrl)}" alt="${esc(b.altText || '')}" loading="lazy"><div>
+      ${b.brief ? `<div class="prog" style="margin-bottom:6px">주제: ${esc(b.brief)}</div>` : ''}
+      ${ready ? `<textarea id="cap-${t.id}" rows="6">${esc(b.caption)}</textarea>
+        <div class="field" style="margin-top:8px"><label>해시태그</label><input id="tag-${t.id}" style="width:100%" value="${esc((b.hashtags || []).map((h) => '#' + h).join(' '))}"></div>
+        <div class="field"><label>게시 시각 (비우면 다음 발행 차례에 바로)</label><input id="at-${t.id}" type="datetime-local" value="${toLocalInput(b.scheduledAt)}"></div>`
+      : `<div class="text">${esc(b.caption)}</div><div class="prog" style="margin-top:6px">${esc((b.hashtags || []).map((h) => '#' + h).join(' '))}</div>
+        ${b.queueId ? `<div class="prog" style="margin-top:6px">게시 큐에 넣음 · ${b.scheduledAt ? new Date(b.scheduledAt).toLocaleString('ko-KR') + ' 예약' : '다음 발행 차례'}</div>` : ''}`}
+      ${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">승인 — 게시 큐에 예약</button><button onclick="savePost('${t.id}', this)">수정 저장</button><button onclick="reject('${t.id}')">거절</button></div>` : ''}
+    </div></div>`;
+  } else if (t.kind === 'report' || t.kind === 'direct') {
+    inner = `${b.instruction ? `<div class="review">지시: ${esc(b.instruction)}</div>` : ''}
+      <div class="text">${esc(b.summary || b.reply || '')}</div>
+      ${(b.findings || []).length ? `<ul class="ul" style="margin-top:8px">${b.findings.map((f) => `<li>${esc(f.text)}${f.source ? ` — <a href="${esc(f.source.url)}" target="_blank" rel="noopener">${esc(f.source.title)}</a>` : ''}</li>`).join('')}</ul>` : ''}
+      ${(b.actions || []).map((a, i) => `<div class="todo"><div><span class="kind">${esc(KIND[a.kind] || a.kind)}</span><b>${esc(a.title)}</b><small>${esc(a.why)}</small>${a.brief ? `<small>${esc(a.brief)}</small>` : ''}</div>
+        <button class="sm" ${a.startedAt ? 'disabled' : ''} onclick="act('${t.id}', ${i}, this)">${a.startedAt ? '시작함' : a.kind === 'post' ? '게시물 만들기' : '할 일로'}</button></div>`).join('')}
+      ${(b.searches || []).length ? `<div class="prog" style="margin-top:8px">검색어: ${b.searches.map(esc).join(' · ')}</div>` : ''}
+      ${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">확인</button><button onclick="reject('${t.id}')">거절</button></div>` : ''}`;
+  } else if (t.kind === 'review_reply') {
+    inner = `<div class="review">${b.rating ? '★'.repeat(Math.round(b.rating)) + ' ' : ''}<b>${esc(b.author)}</b>${b.when ? ' · ' + esc(b.when) : ''}<br>${esc(b.text)}</div>
+      ${ready ? `<textarea id="rep-${t.id}" rows="3">${esc(b.reply)}</textarea>` : `<div class="text">${esc(b.reply)}</div>`}
+      <div class="acts"><button class="sm" onclick="copyReply('${t.id}')">답글 복사</button>${ready ? `<button class="ok" onclick="saveReply('${t.id}').then(()=>approve('${t.id}'))">답글 달았음</button><button onclick="reject('${t.id}')">거절</button>` : ''}</div>`;
+  } else if (t.kind === 'todo') {
+    inner = `<div class="text">${esc(b.why || '')}${b.brief ? '\n' + esc(b.brief) : ''}</div>${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">완료</button><button onclick="reject('${t.id}')">거절</button></div>` : ''}`;
+  }
+  return `<div class="task ${t.status}"><div class="hd"><span class="ag">${esc(AG_LABEL[t.agent] || t.agent)}</span><b>${esc(t.title)}</b><span class="badge ${cls}">${label}</span>
+    <span class="when">${new Date(t.created_at).toLocaleString('ko-KR')}</span></div>${inner}${t.feedback ? `<div class="prog" style="margin-top:8px">거절 사유: ${esc(t.feedback)}</div>` : ''}</div>`;
+}
+
+async function saveTeam(withNotes) {
+  const agents = {}; document.querySelectorAll('[data-agent]').forEach((el) => { agents[el.dataset.agent] = el.checked; });
+  const body = { settings: { agents, postsPerRun: Number(($('ppr') || {}).value || 3), postTime: ($('ptime') || {}).value || '19:00' }, auto: $('auto').checked };
+  if (withNotes) body.notes = $('notes').value;
+  try { STATE = await api(API, { method: 'PATCH', body: JSON.stringify(body) }); render(); if (withNotes) flash('ok', '노트를 저장했습니다.'); } catch (e) { flash('err', e.message); }
+}
+async function run(agent, btn) {
+  await busy(btn || $('runAll'), '시작 중…', async () => {
+    STATE = await api(API + '/run', { method: 'POST', body: JSON.stringify(agent ? { agent } : {}) });
+    TAB = 'running'; render(); flash('ok', '일을 시작했습니다. 끝나면 "승인 대기"에 올라옵니다(1~3분).');
+  });
+}
+async function direct() {
+  const text = $('direct').value.trim(); if (!text) return flash('err', '지시할 내용을 적으세요.');
+  await busy($('directBtn'), '보내는 중…', async () => {
+    STATE = await api(API + '/direct', { method: 'POST', body: JSON.stringify({ text }) });
+    $('direct').value = ''; TAB = 'all'; render();
+  });
+}
+async function act(id, i, btn) {
+  await busy(btn, '…', async () => { STATE = await api(API + '/tasks/' + id + '/actions/' + i, { method: 'POST' }); render(); flash('ok', '담당에게 넘겼습니다.'); });
+}
+function postBody(id) {
+  const at = $('at-' + id).value;
+  return { caption: $('cap-' + id).value, hashtags: $('tag-' + id).value, scheduledAt: at ? new Date(at).toISOString() : '' };
+}
+async function savePost(id, btn) {
+  await busy(btn, '저장 중…', async () => { STATE = await api(API + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify(postBody(id)) }); render(); flash('ok', '저장했습니다.'); });
+}
+async function saveReply(id) {
+  const el = $('rep-' + id); if (!el) return;
+  STATE = await api(API + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ reply: el.value }) });
+}
+async function approve(id, btn) {
+  await busy(btn, '처리 중…', async () => {
+    if ($('cap-' + id)) await api(API + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify(postBody(id)) });
+    STATE = await api(API + '/tasks/' + id + '/approve', { method: 'POST' }); render(); flash('ok', '승인했습니다.');
+  });
+}
+async function reject(id, silent) {
+  const reason = silent ? '' : prompt('거절 이유를 적으면 브랜드 노트에 남아 다음부터 지킵니다(비워도 됩니다).', '');
+  if (reason === null) return;
+  try { STATE = await api(API + '/tasks/' + id + '/reject', { method: 'POST', body: JSON.stringify({ reason }) }); render(); } catch (e) { flash('err', e.message); }
+}
+function copyReply(id) {
+  const el = $('rep-' + id); const t = STATE.tasks.find((x) => x.id === id);
+  navigator.clipboard.writeText(el ? el.value : (t.body.reply || '')).then(() => flash('ok', '복사했습니다. Google 지도에서 답글로 붙여 넣으세요.'));
+}
+load();
+</script>
+<script src="/js/admin-nav.js?v=3" defer></script>
+</body>
+</html>

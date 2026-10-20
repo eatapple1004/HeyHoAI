@@ -709,6 +709,35 @@ async function migrate() {
     );
   `);
 
+  // AI 마케팅 팀(2026-10-20) — 사업체마다 에이전트(인스타·동향·리뷰)가 일을 만들어 피드에 올리고, 관리자가 승인하면 실행한다.
+  //   marketing_teams: 켜진 에이전트·주간 자동 실행·브랜드 노트(거절 사유에서 배운 것)
+  //   marketing_tasks: 피드 한 줄 = 에이전트가 만든 결과 하나(게시물 초안·동향 보고·리뷰 답글·할 일)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS marketing_teams (
+        business_id  UUID PRIMARY KEY REFERENCES businesses(id) ON DELETE CASCADE,
+        settings     JSONB NOT NULL DEFAULT '{}',
+        notes        TEXT NOT NULL DEFAULT '',
+        auto         BOOLEAN NOT NULL DEFAULT false,
+        last_run_at  TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS marketing_tasks (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        business_id  UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        agent        VARCHAR(20) NOT NULL,
+        kind         VARCHAR(20) NOT NULL,
+        status       VARCHAR(20) NOT NULL DEFAULT 'running',
+        title        TEXT NOT NULL DEFAULT '',
+        body         JSONB NOT NULL DEFAULT '{}',
+        feedback     TEXT,
+        error        TEXT,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_marketing_tasks_biz ON marketing_tasks(business_id, created_at DESC);
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).
