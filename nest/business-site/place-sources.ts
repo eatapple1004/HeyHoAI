@@ -313,6 +313,19 @@ export const sources = {
       }
     };
     takeImages(home, homeUrl.href);
+    // 슬라이드 배경 사진 — <img>가 아니라 스크립트 배열·CSS background 로 넣는 사이트가 많다(명동교자: bgStretcher 의 1310px 매장 사진).
+    //   첫 화면에서만, 같은 도메인 사진 파일만 8장까지
+    let bgN = 0;
+    for (const m of home.matchAll(/["'(]([^"'()\s<>]+\.(?:jpe?g|png|webp))["')]/gi)) {
+      if (bgN >= 8) break;
+      if (/(btn|button|icon|logo|arrow|bullet|blank|spacer|sns|popup)/i.test(m[1])) continue;
+      try {
+        const u = new URL(m[1], homeUrl);
+        if (u.hostname !== base.hostname || images.has(u.href)) continue;
+        images.set(u.href, { url: u.href, page: homeUrl.href, alt: undefined, near: undefined });
+        bgN++;
+      } catch { /* 깨진 주소 */ }
+    }
     // 첫 화면 링크만 따라가면 하위 메뉴(연혁·메뉴 상세)를 놓친다 — 읽은 페이지의 링크도 한 단계 더(전체 24쪽까지)
     const fetched = new Set<string>([homeUrl.href]);
     const deeper: string[] = [];

@@ -216,7 +216,7 @@ JSON: {"concept":"","conceptWhy":"","audience":[""],"tone":"","accent":"#","acce
     const content: any[] = [
       ...images.flatMap((im, i) => [{ type: 'text', text: `이미지 ${i}${hints[i] ? ` (페이지에서 이 이미지 옆 글: "${hints[i]}")` : ''}` }, { type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } }]),
       { type: 'text', text: `회사 홈페이지에서 가져온 이미지 ${images.length}장입니다. 이미지마다:
-- kind: text(인사말·연혁·회사개요·사양표처럼 글이 주인공인 이미지) / product(제품·완성차) / factory(공장·설비·작업) / people(사람) / other(그 밖의 쓸 만한 사진) / skip(로고·장식·아이콘·너무 흐림·다른 회사 광고)
+- kind: text(인사말·연혁·회사개요·사양표처럼 글이 주인공인 이미지) / product(제품·완성차·음식·메뉴 사진) / factory(공장·설비·작업·주방) / people(사람) / other(매장 내부·외관 등 그 밖의 쓸 만한 사진) / skip(로고·장식·아이콘·너무 흐림·다른 회사 광고·잡지 지면 스캔)
 - caption: 무엇인지 20자 이내
 - text: kind가 text면 이미지 속 글을 빠짐없이 그대로 옮겨 적는다(줄바꿈 유지, 고치거나 요약하지 않는다). 아니면 "" — 단, 사진에 제품명·규격 글자가 크게 보이면 그 글자만.
 JSON: {"images":[{"i":0,"kind":"","caption":"","text":""}]}` },
