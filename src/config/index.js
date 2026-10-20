@@ -119,6 +119,8 @@ const envSchema = z.object({
   YOUTUBE_API_KEY: z.string().optional(),            // YouTube Data API v3(채널·영상 통계). 기존 Google 키는 API 제한으로 막혀 있음
   META_DISCOVERY_TOKEN: z.string().optional(),       // Facebook 로그인 방식 토큰(instagram_basic·pages_read_engagement) — 남의 인스타 비즈니스 계정 조회(Business Discovery)
   META_DISCOVERY_IG_USER_ID: z.string().optional(),  // 그 토큰에 연결된 우리 인스타 비즈니스 계정 id
+  // (2026-10-21) 틱톡 — 공식 조회 API가 없어 외부 수집(Apify TikTok Profile Scraper). 사업자 결정. 없으면 건너뛴다
+  APIFY_TOKEN: z.string().optional(),
 
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),

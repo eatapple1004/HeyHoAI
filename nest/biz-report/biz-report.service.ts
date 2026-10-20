@@ -3,7 +3,7 @@ import { BizReportRepository } from './biz-report.repository';
 import { BizReportWriterService, ReportStory, normUrl } from './biz-report-writer.service';
 import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
 import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
-import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, SnsStats } from './sns-stats';
+import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats } from './sns-stats';
 import { sources } from '../business-site/place-sources';
 import { numbers, loosely, norm } from '../business-site/site-qa';
 
@@ -132,6 +132,7 @@ export class BizReportService {
         }
         if (a.platform === 'youtube') return youtubeAvailable() ? { stats: await youtubeChannel(a.handle) } : { statsNote: '유튜브 API 키(YOUTUBE_API_KEY)가 필요합니다' };
         if (a.platform === 'naverBlog') return { stats: await naverBlogRss(a.handle) };
+        if (a.platform === 'tiktok') return tiktokAvailable() ? { stats: await tiktokExternal(a.handle) } : { statsNote: '틱톡은 외부 수집 키(APIFY_TOKEN)가 필요합니다' };
         return { statsNote: '공식 조회 API가 없는 채널 — 검색 결과에 보인 수치만' };
       } catch (e: any) {
         return { statsNote: `수치를 받지 못했습니다: ${String(e?.message || e).slice(0, 100)}${/business_discovery|Unsupported get|does not exist/i.test(String(e?.message)) ? ' (비즈니스·크리에이터 계정이 아니면 조회되지 않습니다)' : ''}` };
@@ -149,7 +150,7 @@ export class BizReportService {
     const order: Record<string, number> = { 확인: 0, '검색 결과 확인': 1, '출처 미확인': 2 };
     return {
       accounts: withStats.map((a) => ({ ...a, label: SNS_LABEL[a.platform] })).sort((x, y) => order[x.level] - order[y.level]),
-      setup: { youtube: youtubeAvailable(), discovery: discoveryAvailable(), connectedInstagram: connected.map((c) => c.username) },
+      setup: { youtube: youtubeAvailable(), discovery: discoveryAvailable(), tiktok: tiktokAvailable(), connectedInstagram: connected.map((c) => c.username) },
       searches: found.searches.slice(0, 8), naverAvailable, checkedAt: new Date().toISOString(),
     };
   }
@@ -181,7 +182,7 @@ export class BizReportService {
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
       .sort((a, b2) => b2.reviews - a.reviews).slice(0, 10);
 
-    const sns = await safe('sns', () => this.sns(businessId, { name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '', setup: { youtube: false, discovery: false, connectedInstagram: [] as string[] } });
+    const sns = await safe('sns', () => this.sns(businessId, { name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '', setup: { youtube: false, discovery: false, tiktok: false, connectedInstagram: [] as string[] } });
 
     // 네이버 플레이스(외부 수집) — 키가 있을 때만, 카카오 장소와 주소·좌표가 맞는 곳만
     const naver = naverPlaceAvailable() && k
