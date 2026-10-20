@@ -1,8 +1,10 @@
 import { CorpSite } from './model';
-import { href, aboutPages } from './layout';
+import { href, sitePages, itemPages, hasReviews } from './layout';
 import * as P from './pages';
 
 export * from './model';
+export * from './profile';
+export { sitePages, navGroups } from './layout';
 
 export interface RouteResult { status: number; type: string; body: string }
 
@@ -21,9 +23,10 @@ export function routeCorp(m: CorpSite, rawPath: string, query: Record<string, st
   if (path === 'products' && m.products.length) return html(P.products(m, query.c));
   const pm = /^products\/([a-z0-9-]+)$/.exec(path);
   if (pm) {
-    const p = m.products.find((x) => x.id === pm[1]);
+    const p = itemPages(m).find((x) => x.id === pm[1]);
     if (p) return html(P.product(m, p));
   }
+  if (path === 'reviews' && hasReviews(m)) return html(P.reviews(m));
   if (path === 'contact') return html(P.contact(m, { sent: query.sent === '1', error: query.error, product: query.product }));
   if (path === 'privacy') return html(P.privacy(m));
   if (path === 'sitemap.xml' && !m.preview) return { status: 200, type: 'application/xml; charset=utf-8', body: sitemap(m) };
@@ -34,7 +37,7 @@ export function routeCorp(m: CorpSite, rawPath: string, query: Record<string, st
 }
 
 function sitemap(m: CorpSite): string {
-  const paths = ['', ...aboutPages(m).map((p) => p.path), ...(m.products.length ? ['products', ...m.products.map((p) => `products/${p.id}`)] : []), 'contact', 'privacy'];
+  const paths = sitePages(m).map((p) => p.path);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${paths.map((p) => `<url><loc>${m.origin}${href(m, p)}</loc></url>`).join('\n')}

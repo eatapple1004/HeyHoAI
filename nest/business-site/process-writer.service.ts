@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import { SiteProfile, PROFILES, planPages } from './multipage/profile';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
@@ -51,11 +52,7 @@ export interface SitePlan {
   risks: string[];
 }
 
-export const PLAN_PAGES: Record<string, string> = {
-  ceo: '대표 인사말', history: '연혁', certifications: '인증·특허', products: '제품 소개(목록·상세)', location: '오시는 길', contact: '문의 폼',
-};
-
-const RULES = `당신은 중소기업 홈페이지 제작 에이전시의 기획자입니다. 결과는 관리자가 검토한 뒤 고객사에 확인받습니다.
+const RULES = `당신은 회사·가게 홈페이지 제작 에이전시의 기획자입니다. 결과는 관리자가 검토한 뒤 고객사에 확인받습니다.
 규칙:
 1. 사실은 출처가 있는 것만. 출처 없는 추정·일반 상식으로 채우지 않는다.
 2. 이름이 같은 다른 회사 정보를 섞지 않는다 — 주소·업종이 다르면 다른 회사다.
@@ -78,7 +75,9 @@ export class ProcessWriterService {
    * 조사 — 웹 검색(Anthropic 서버 도구)을 켜고 부른다. 검색 도구가 막혀 있으면(조직 설정) 수집 자료만으로 다시 한다.
    *   웹 출처 URL은 실제 검색 결과에 나온 주소인지 대조한다 — 없는 주소면 'unverified'.
    */
-  async research(input: { name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; homonyms: string[]; material: string; reviews: string[] }): Promise<ResearchSheet> {
+  async research(input: { profile?: SiteProfile; name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; homonyms: string[]; material: string; reviews: string[] }): Promise<ResearchSheet> {
+    const pf = input.profile || PROFILES.corporate;
+    const store = pf.store;
     const user = `조사 대상: ${input.name}
 ${input.industry ? `업종(관리자 입력): ${input.industry}` : ''}
 ${input.memo ? `관리자 메모: ${input.memo}` : ''}
@@ -96,14 +95,16 @@ ${input.material.slice(0, 30000) || '없음'}
 ${input.reviews.slice(0, 5).join('\n') || '없음'}
 
 할 일:
-1. 웹 검색으로 이 회사(위 주소의 회사)의 공개 정보를 찾는다 — 공식 홈페이지, 기업정보(대표·설립·업종), 제조사 협력사 목록, 납품·인증·특허, 뉴스, 제품 카탈로그.
-   검색어는 회사명+지역, 회사명+제품, 회사명+대표자 처럼 바꿔 가며 4~8번.
+${store ? `1. 웹 검색으로 이 가게(위 주소의 지점)의 공개 정보를 찾는다 — 가게 홈페이지·인스타그램, 지도 서비스 정보(영업시간·주차·좌석), 메뉴·가격, 언론·매거진 소개.
+   프랜차이즈 지점이면 브랜드(본사) 정보와 이 지점 정보를 구분한다 — 브랜드 사실은 topic "브랜드"로, 지점 사실(위치·공간·운영)은 따로.
+   검색어는 가게명+동네, 가게명+메뉴, 가게명+주차 처럼 바꿔 가며 4~8번.` : `1. 웹 검색으로 이 회사(위 주소의 회사)의 공개 정보를 찾는다 — 공식 홈페이지, 기업정보(대표·설립·업종), 제조사 협력사 목록, 납품·인증·특허, 뉴스, 제품 카탈로그.
+   검색어는 회사명+지역, 회사명+제품, 회사명+대표자 처럼 바꿔 가며 4~8번.`}
 2. 사실을 한 줄씩 정리하고 출처를 단다. source.kind: company(회사 자료), site(기존 홈페이지), place(지도 서비스), web(검색 결과 — url 필수).
-   level: confirmed(공식 출처·회사 자료·두 곳 이상 일치) / reference(한 곳뿐이거나 2차 출처).
-   topic: 회사 / 연혁 / 제품 / 고객·납품 / 인증 / 설비·규모 / 연락처 중 하나.
-3. products: 이 회사가 만드는 것으로 확인된 제품·서비스.
-4. gaps: 홈페이지를 제대로 만들려면 회사에 받아야 할 자료(제품 사진, 사양, 연혁, 인증서, 대표 인사말, 로고, 납품 실적 등)와 이유.
-5. benchmarks: 같은 업종에서 홈페이지 구성이 잘 된 회사 2~4곳(url은 검색 결과에서 확인한 것만) — 구성 참고용.
+   level: confirmed(공식 출처·회사 자료·두 곳 이상 일치) / reference(한 곳뿐이거나 2차 출처, 리뷰·블로그).
+   topic: ${store ? `매장 / 브랜드 / ${pf.items} / 가격 / 영업 / 연락처 중 하나. 리뷰·블로그에서 본 가격·영업시간은 바뀌었을 수 있어 reference.` : '회사 / 연혁 / 제품 / 고객·납품 / 인증 / 설비·규모 / 연락처 중 하나.'}
+3. products: 이 ${store ? `가게의 ${pf.items}(이름만 확인된 것도 포함, note에 출처)` : '회사가 만드는 것으로 확인된 제품·서비스'}.
+4. gaps: 홈페이지를 제대로 만들려면 ${store ? `가게에 받아야 할 자료(${pf.items}판·가격표, 대표 ${pf.items} 사진, 매장 내부·외관 사진, 영업시간·휴무일, 주차 안내, 사장님 인사말, 로고 등)` : '회사에 받아야 할 자료(제품 사진, 사양, 연혁, 인증서, 대표 인사말, 로고, 납품 실적 등)'}와 이유.
+5. benchmarks: 같은 업종에서 홈페이지 구성이 잘 된 ${store ? '가게' : '회사'} 2~4곳(url은 검색 결과에서 확인한 것만) — 구성 참고용.
 6. homonyms: 대상과 헷갈리기 쉬운 같은 이름 회사(지역·업종 포함 한 줄씩).
 
 JSON:
@@ -147,13 +148,17 @@ JSON:
   }
 
   /** 기획안 — 사이트에 쓰기로 한 사실만 본다 */
-  async plan(input: { name: string; industry?: string | null; facts: ResearchFact[]; products: { name: string; note?: string }[]; gaps: { item: string }[]; photoCount: number; photoNotes: string[]; benchmarks: { name: string; why: string }[] }): Promise<SitePlan> {
-    const user = `회사: ${input.name}${input.industry ? ` (${input.industry})` : ''}
+  async plan(input: { profile?: SiteProfile; name: string; industry?: string | null; facts: ResearchFact[]; products: { name: string; note?: string }[]; gaps: { item: string }[]; photoCount: number; photoNotes: string[]; benchmarks: { name: string; why: string }[] }): Promise<SitePlan> {
+    const pf = input.profile || PROFILES.corporate;
+    const PP = planPages(pf);
+    const it = pf.items;
+    const user = `${pf.store ? '가게' : '회사'}: ${input.name}${input.industry ? ` (${input.industry})` : ''}
+읽는 사람: ${pf.audience}
 
 [확인된 사실 — 이것만 근거로]
 ${input.facts.map((f) => `- [${f.topic}] ${f.text}`).join('\n') || '없음'}
 
-[제품 후보]
+[${it} 후보]
 ${input.products.map((p) => `- ${p.name}${p.note ? `: ${p.note}` : ''}`).join('\n') || '없음'}
 
 [아직 없는 자료]
@@ -164,21 +169,21 @@ ${input.gaps.map((g) => `- ${g.item}`).join('\n') || '없음'}
 [구성 참고 사이트]
 ${input.benchmarks.map((b) => `- ${b.name}: ${b.why}`).join('\n') || '없음'}
 
-이 회사의 여러 페이지 홈페이지 기획안을 쓰세요.
-- concept: 사이트 전체를 꿰는 한 줄(예: "숫자로 증명하는 트레일러"). 이 회사 사실에서 나와야 한다. conceptWhy: 근거 사실.
+이 ${pf.store ? '가게' : '회사'}의 여러 페이지 홈페이지 기획안을 쓰세요.
+- concept: 사이트 전체를 꿰는 한 줄(예: ${pf.store ? '"아침 7시, 갓 구운 빵이 나오는 동네 빵집"' : '"숫자로 증명하는 트레일러"'}). 이 ${pf.store ? '가게' : '회사'} 사실에서 나와야 한다. conceptWhy: 근거 사실.
 - audience: 사이트를 볼 사람 2~3부류(구체적으로).
 - tone: 문체 한 줄.
 - accent: 강조색 #RRGGBB 하나와 accentWhy(로고·제품·업종에서 온 이유, 근거가 없으면 업종에 맞는 차분한 색이라고 쓴다).
 - headlineDraft: 첫 화면 헤드라인 초안(25자 안팎, 확인된 사실로).
-- pages: ${Object.entries(PLAN_PAGES).map(([k, v]) => `${k}(${v})`).join(', ')} 각각 include(true/false)와 reason. 자료가 없는 페이지는 false — 빈 페이지를 만들지 않는다.
-- categories: 제품 분류 0~4개(id는 영어 소문자·하이픈). 제품이 적으면 [].
-- products: 사이트에 올릴 제품 이름(확인된 것만).
-- photoNeeds: 위 [가진 사진]으로 채울 수 없어 회사에서 더 받아야 할 사진만(구체적으로, 예: "냉동탑차 적재함 내부 사진"). 이미 있는 사진은 다시 요청하지 않는다.
+- pages: ${Object.entries(PP).map(([k, v]) => `${k}(${v})`).join(', ')} 각각 include(true/false)와 reason. 자료가 없는 페이지는 false — 빈 페이지를 만들지 않는다.${pf.reviews ? ' reviews는 지도 서비스 리뷰가 있으면 true.' : ''}
+- categories: ${it} 분류 0~4개(id는 영어 소문자·하이픈). ${it}이(가) 적으면 [].
+- products: 사이트에 올릴 ${it} 이름(확인된 것만${pf.store ? ', 사진에 보이는 것 포함' : ''}).
+- photoNeeds: 위 [가진 사진]으로 채울 수 없어 ${pf.store ? '가게' : '회사'}에서 더 받아야 할 사진만(구체적으로, 예: ${pf.store ? '"케이크 진열장 정면 사진"' : '"냉동탑차 적재함 내부 사진"'}). 이미 있는 사진은 다시 요청하지 않는다.
 - risks: 공개 전에 고객에게 꼭 확인할 것.
 JSON: {"concept":"","conceptWhy":"","audience":[""],"tone":"","accent":"#","accentWhy":"","headlineDraft":"","pages":[{"key":"","include":true,"reason":""}],"categories":[{"id":"","name":""}],"products":[""],"photoNeeds":[""],"risks":[""]}`;
     const j = parseJson((await this.run(user, 6000, false)).text);
     const s = clip;
-    const pages = Object.keys(PLAN_PAGES).map((key) => {
+    const pages = Object.keys(PP).map((key) => {
       const p = arr(j.pages).find((x: any) => x?.key === key);
       return { key, include: p ? p.include !== false : true, reason: s(p?.reason, 160) };
     });

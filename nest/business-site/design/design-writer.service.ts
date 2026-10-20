@@ -12,7 +12,7 @@ const { env } = require(path.join(__dirname, '..', '..', '..', 'src', 'config'))
  * 결과는 서버에서 소독(sanitize.ts)한 뒤 저장·렌더한다. JS 는 쓰지 않는다(모바일 메뉴도 <details>).
  */
 
-const SYSTEM = `당신은 한국 중소 제조·B2B 기업 홈페이지를 만드는 시니어 웹 디자이너 겸 프론트엔드 개발자입니다. 결과물은 실제로 돈을 받고 납품합니다.
+const SYSTEM = `당신은 한국 중소기업·동네 가게 홈페이지를 만드는 시니어 웹 디자이너 겸 프론트엔드 개발자입니다. 결과물은 실제로 돈을 받고 납품합니다.
 반드시 지킬 것:
 1. 정적 HTML과 CSS만. <script>·이벤트 속성·외부 이미지·iframe·폼 태그를 쓰지 않는다(지도·문의 폼은 지정된 자리표시자만).
 2. 사실(회사명·수치·연도·사양·인증·고객사·연락처)은 넘겨받은 데이터에 있는 것만, 글자 그대로. 장식용 눈금·축·번호에도 데이터에 없는 연도·숫자를 만들지 않는다. 새 수치·고객·수상·약속을 지어내지 않는다. 데이터 문구를 고쳐 쓰지 말고 배치·강조만 디자인한다. 섹션 제목·버튼 같은 짧은 안내 말은 써도 된다.
@@ -20,7 +20,7 @@ const SYSTEM = `당신은 한국 중소 제조·B2B 기업 홈페이지를 만�
 4. 반응형: 360px~1440px에서 가로 스크롤이 생기지 않게. 모바일 메뉴는 <details>/<summary>로.
 5. 접근성: 본문 대비 4.5:1 이상, :focus-visible 표시, prefers-reduced-motion 존중, 이미지 alt.
 6. 피할 것(흔한 AI 사이트 티): 보라·파랑 그라데이션, 모든 요소 가운데 정렬, 둥근 카드 남발, 이모지 아이콘, 의미 없는 장식 블롭, 영어 대문자 슬로건 남발.
-7. 업종의 실물에서 온 시각 요소 하나를 기억에 남는 장치로 쓴다(예: 특장차라면 적재함 치수선·톤수 눈금·도면 격자, 트레일러라면 축 배열). 과하지 않게 한 군데.
+7. 업종의 실물에서 온 시각 요소 하나를 기억에 남는 장치로 쓴다(예: 특장차라면 적재함 치수선·도면 격자, 빵집이라면 종이 봉투·가격 이름표, 미용실이라면 거울·빗 선). 과하지 않게 한 군데. 숫자가 들어가는 장치는 데이터의 숫자만.
 8. 한국어 타이포: word-break:keep-all, 본문 16~18px, 줄간격 1.7 안팎.`;
 
 export interface DesignSystem { note: string; fonts: string; css: string; header: string; footer: string }
@@ -46,11 +46,11 @@ export class DesignWriterService {
   }
 
   async system(input: {
-    name: string; brief: string; direction: string; accent: string; nav: { label: string; href: string; sub?: { label: string; href: string }[] }[];
+    name: string; audience?: string; brief: string; direction: string; accent: string; nav: { label: string; href: string; sub?: { label: string; href: string }[] }[];
     company: Record<string, string>; images: { data: string; mediaType: string }[];
   }): Promise<DesignSystem> {
     const text = `회사: ${input.name}
-[기획 요약 — 승인된 기획안·조사 시트]
+${input.audience ? `읽는 사람: ${input.audience}\n` : ''}[기획 요약 — 승인된 기획안·조사 시트]
 ${input.brief}
 
 [이번 시안의 방향]
@@ -69,7 +69,7 @@ ${input.direction || '기획안의 컨셉을 가장 잘 드러내는 방향으�
 <css>
 사이트 전체 CSS. :root 에 색·간격 토큰(--accent 포함). 리셋, 타이포, .wrap 레이아웃, 머리말·꼬리말, 버튼, 섹션, 제목 띠(서브 페이지 상단), 표(사양표), 카드/목록, 사진 비율, 반응형 미디어쿼리까지.
 페이지들이 재사용할 클래스 이름을 일관되게 정해 두고 주석으로 짧게 용도를 적는다.
-body 에는 페이지별로 pg-home, pg-about, pg-history, pg-certs, pg-location, pg-products, pg-product, pg-contact, pg-privacy 클래스가 붙는다(홈 머리말을 다르게 하고 싶으면 활용).
+body 에는 페이지별로 pg-home, pg-about, pg-history, pg-certs, pg-location, pg-products, pg-product, pg-reviews, pg-contact, pg-privacy 클래스가 붙는다(홈 머리말을 다르게 하고 싶으면 활용).
 문의 폼은 서버가 class="dp-form" 으로 넣는다 — .dp-form 의 입력칸·버튼·동의 문구 스타일도 이 CSS에 포함한다(label, input, select, textarea, button, .dp-agree, .dp-msg.ok, .dp-msg.err).
 </css>
 <site-header>머리말 HTML 전체(<header>…</header>, 여는·닫는 태그 포함) — 회사명 로고 글자, 데스크톱 메뉴(하위 메뉴 포함), 모바일 <details> 메뉴, 전화 문의 버튼</site-header>

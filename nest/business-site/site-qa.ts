@@ -1,5 +1,4 @@
-import { CorpSite, routeCorp } from './multipage';
-import { aboutPages } from './multipage/layout';
+import { CorpSite, routeCorp, sitePages } from './multipage';
 
 /**
  * 자동 점검 — 사람이 보기 전에 기계로 걸러낼 수 있는 것.
@@ -19,7 +18,7 @@ export function runQa(m: CorpSite, sourceText: string, opts: { homonyms?: string
   const src = norm(sourceText);
 
   // 1) 모든 페이지가 열리는지 + 템플릿 구멍(undefined·NaN·[object Object])
-  const paths = ['', ...aboutPages(m).map((p) => p.path), ...(m.products.length ? ['products', ...m.products.map((p) => `products/${p.id}`)] : []), 'contact', 'privacy', 'robots.txt'];
+  const paths = [...sitePages(m).map((p) => p.path), 'robots.txt'];
   let broken = 0;
   for (const p of paths) {
     const r = routeCorp(m, p, {});
@@ -33,14 +32,14 @@ export function runQa(m: CorpSite, sourceText: string, opts: { homonyms?: string
   // 2) 출처에 없는 숫자 — 연도·수량·사양 숫자를 지어냈는지
   const copy: { where: string; path: string; text: string }[] = [
     { where: '헤드라인', path: '/', text: m.headline }, { where: '부제', path: '/', text: m.sub },
-    { where: '회사 개요', path: 'about', text: m.about },
+    { where: m.profile.aboutPage, path: 'about', text: m.about },
     ...m.highlights.map((h) => ({ where: '강점', path: 'about', text: `${h.title} ${h.body}` })),
     ...m.stats.map((s) => ({ where: '핵심 수치', path: '/', text: `${s.value} ${s.label} ${s.note || ''}` })),
     ...m.history.map((h) => ({ where: '연혁', path: 'about/history', text: `${h.year} ${h.text}` })),
     ...(m.ceo ? [{ where: '대표 인사말', path: 'about', text: m.ceo.body }] : []),
     ...m.certifications.map((c) => ({ where: '인증', path: 'about/certifications', text: c })),
     ...m.products.flatMap((p) => [
-      { where: `제품 ${p.name}`, path: `products/${p.id}`, text: [p.name, p.summary, p.keySpec, p.body, ...(p.features || []).map((f) => `${f.title} ${f.body || ''}`)].join(' ') },
+      { where: `${m.profile.items} ${p.name}`, path: m.profile.itemDetail ? `products/${p.id}` : 'products', text: [p.name, p.summary, p.keySpec, p.price, p.body, ...(p.features || []).map((f) => `${f.title} ${f.body || ''}`)].join(' ') },
       ...(p.specs || []).map((s) => ({ where: `제품 ${p.name} 사양 "${s.k}"`, path: `products/${p.id}`, text: s.v })),
     ]),
   ];
@@ -70,11 +69,16 @@ export function runQa(m: CorpSite, sourceText: string, opts: { homonyms?: string
   if (!m.facts.address && !m.company.address) items.push({ level: 'warn', area: '연락처', msg: '주소가 없음 — 오시는 길 지도가 빠집니다', path: 'about/location' });
   if (!m.company.bizNo) items.push({ level: 'warn', area: '회사 정보', msg: '사업자등록번호가 없음 — 꼬리말 표기 필요' });
   if (!m.heroPhoto) items.push({ level: 'warn', area: '사진', msg: '첫 화면 사진이 없음', path: '/' });
+  const it = m.profile.items;
   const noPhoto = m.products.filter((p) => !p.photos.length);
-  if (noPhoto.length) items.push({ level: 'warn', area: '사진', msg: `제품 ${noPhoto.length}개에 사진 없음: ${noPhoto.slice(0, 6).map((p) => p.name).join(', ')}${noPhoto.length > 6 ? ' …' : ''}` });
-  const noSpec = m.products.filter((p) => !(p.specs || []).length);
-  if (noSpec.length) items.push({ level: 'warn', area: '사양', msg: `제품 ${noSpec.length}개에 사양표 없음: ${noSpec.slice(0, 6).map((p) => p.name).join(', ')}${noSpec.length > 6 ? ' …' : ''}` });
-  if (!m.products.length && opts.planPages?.products !== false) items.push({ level: 'warn', area: '제품', msg: '제품이 하나도 없음 — 제품 메뉴가 빠집니다' });
+  if (noPhoto.length) items.push({ level: 'warn', area: '사진', msg: `${it} ${noPhoto.length}개에 사진 없음: ${noPhoto.slice(0, 6).map((p) => p.name).join(', ')}${noPhoto.length > 6 ? ' …' : ''}` });
+  if (m.profile.itemDetail) {
+    const noSpec = m.products.filter((p) => !(p.specs || []).length);
+    if (noSpec.length) items.push({ level: 'warn', area: '사양', msg: `제품 ${noSpec.length}개에 사양표 없음: ${noSpec.slice(0, 6).map((p) => p.name).join(', ')}${noSpec.length > 6 ? ' …' : ''}` });
+  }
+  if (m.profile.store && m.products.length && !m.products.some((p) => p.price)) items.push({ level: 'warn', area: '가격', msg: `${it} 가격이 하나도 없음 — 가격표를 받으면 넣을 수 있습니다`, path: 'products' });
+  if (m.profile.store && !m.hours.length) items.push({ level: 'warn', area: '영업시간', msg: '영업시간이 없음 — Google 장소를 고르거나 고객에게 받으세요', path: 'about/location' });
+  if (!m.products.length && opts.planPages?.products !== false) items.push({ level: 'warn', area: it, msg: `${it}이(가) 하나도 없음 — ${it} 메뉴가 빠집니다` });
   if (opts.homonyms?.length) items.push({ level: 'warn', area: '동명 업체', msg: `이름이 같은 다른 업체 ${opts.homonyms.length}곳 — 공개 전 고객에게 회사 정보 확인: ${opts.homonyms.slice(0, 3).join(' / ')}` });
 
   const counts = { fail: 0, warn: 0, ok: 0 };

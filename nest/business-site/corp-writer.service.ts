@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import { SiteProfile, PROFILES } from './multipage/profile';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
@@ -12,7 +13,7 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  * 사실(수치·연도·사양·인증·이름·번호)은 회사 자료에 글자로 적힌 것만. 없으면 비운다 — 화면이 그 블록을 숨긴다.
  */
 
-const BASE_RULES = `당신은 중소기업 홈페이지를 만드는 에이전시의 카피라이터입니다. 발주처·구매 담당자·협력사가 읽습니다.
+const BASE_RULES = `당신은 회사·가게 홈페이지를 만드는 에이전시의 카피라이터입니다. 읽는 사람은 요청마다 알려 줍니다.
 규칙:
 1. 수치·연도·사양·인증·특허·대표 이름·사업자번호·연락처는 아래 자료에 글자로 적힌 것만 옮긴다. 계산·추정·일반 상식으로 채우지 않는다. 모르면 비운다.
 2. "최고", "1위", "유일한", "완벽한" 같은 최상급·비교 표현과 확인할 수 없는 주장은 쓰지 않는다.
@@ -31,6 +32,10 @@ export interface CorpWriterInput {
   photoNames?: string[];
   /** 관리자가 승인한 기획안 — 있으면 컨셉·분류·제품 목록을 따른다 */
   plan?: { concept: string; tone: string; headlineDraft: string; audience: string[]; categories: { id: string; name: string }[]; products: string[] };
+  /** 업종 프로필 — 없으면 회사형 */
+  profile?: SiteProfile;
+  /** 매장형: 방문자 리뷰(분위기·자주 언급되는 메뉴 참고용) */
+  reviews?: string[];
 }
 
 export interface CorpSkeleton {
@@ -43,7 +48,7 @@ export interface CorpSkeleton {
   certifications: string[];
   company: Record<string, string>;
   categories: { id: string; name: string; summary?: string }[];
-  products: { id: string; name: string; category?: string; summary?: string; keySpec?: string; photos: number[] }[];
+  products: { id: string; name: string; category?: string; summary?: string; keySpec?: string; price?: string; photos: number[] }[];
   photos: { i: number; kind: string; caption: string }[];
   hero: number | null;
   aboutPhoto: number | null;
@@ -86,7 +91,10 @@ export class CorpWriterService {
     const nSeen = input.images.length;
     const names = input.photoNames || [];
     const nImg = Math.max(nSeen, names.length);
-    const user = `회사: ${input.name}
+    const pf = input.profile || PROFILES.corporate;
+    const it = pf.items;
+    const user = `${pf.store ? '가게' : '회사'}: ${input.name}
+읽는 사람: ${pf.audience}
 ${input.industry ? `업종: ${input.industry}` : ''}
 ${input.memo ? `관리자 메모: ${input.memo}` : ''}
 
@@ -95,7 +103,10 @@ ${JSON.stringify(input.facts, null, 1)}
 
 [회사 자료·기존 홈페이지]
 ${input.material.slice(0, 40000) || '없음'}
-
+${input.reviews?.length ? `
+[방문자 리뷰 — 분위기·자주 칭찬받는 점 참고용. 리뷰의 가격·숫자는 옮기지 않는다]
+${input.reviews.map((r) => `- ${r.slice(0, 300)}`).join('\n')}
+` : ''}
 [사진] ${nImg ? `모두 ${nImg}장 — 0~${nSeen - 1}번은 첨부(직접 보고 판단)${nImg > nSeen ? `, ${nSeen}~${nImg - 1}번은 첨부 없이 이름만` : ''}` : '없음'}
 ${names.some(Boolean) ? names.map((n, i) => (n ? `사진 ${i}: ${n}` : '')).filter(Boolean).join('\n') : ''}
 ${input.plan ? `
@@ -104,10 +115,18 @@ ${input.plan ? `
 읽는 사람: ${input.plan.audience.join(', ')}
 문체: ${input.plan.tone}
 헤드라인 초안: ${input.plan.headlineDraft} (다듬어도 되지만 같은 사실을 말할 것)
-제품 분류: ${input.plan.categories.length ? input.plan.categories.map((c) => `${c.id}=${c.name}`).join(', ') + ' — categories에 이 id·이름 그대로' : '없음 — categories는 []'}
-올릴 제품: ${input.plan.products.join(', ') || '없음'} — products는 이 목록만(이름 그대로)
+${it} 분류: ${input.plan.categories.length ? input.plan.categories.map((c) => `${c.id}=${c.name}`).join(', ') + ' — categories에 이 id·이름 그대로' : '없음 — categories는 []'}
+올릴 ${it}: ${input.plan.products.join(', ') || '없음'} — products는 이 목록만(이름 그대로)
 ` : ''}
-여러 페이지 회사 홈페이지(홈·회사 개요·인사말·연혁·인증·제품 목록·제품 상세·오시는 길·문의)의 골격을 만드세요.
+${pf.store
+    ? `여러 페이지 가게 홈페이지(홈·${pf.aboutPage}·인사말·${it}·후기·오시는 길과 영업시간·문의)의 골격을 만드세요. 아래 "제품"은 이 가게의 ${it}입니다.
+- 가게 사이트다: 회사 소개서 말투(“기술력”, “고객사”, “납품”)를 쓰지 않는다. 손님에게 말하듯 따뜻하고 구체적으로 — 공간·대표 ${it}·분위기·찾아오는 길.
+- 프랜차이즈 지점이면 브랜드 일반 소개보다 이 지점(위치·공간·운영)의 사실을 앞세운다. 본사 수치(매장 수 등)를 지점 자랑처럼 쓰지 않는다.
+- products의 price: 회사 자료·관리자 메모·기존 홈페이지·조사 시트에 적힌 가격만. 리뷰·블로그에서 본 가격은 쓰지 않는다(바뀌었을 수 있다). 없으면 "".
+- 사진에 보이는 ${it}(음식·상품이 주인공인 사진)는 products에 넣고 그 사진 번호를 photos에 넣는다. 이름을 모르면 보이는 그대로의 일반 명칭(예: "크루아상"). 진열대·매장 전경 사진은 연결하지 않는다.
+- stats: 가게는 대개 비운다([]). 자료에 있는 수치(개업 연도 등)만.
+- history·certifications: 자료에 있을 때만, 없으면 [].`
+    : '여러 페이지 회사 홈페이지(홈·회사 개요·인사말·연혁·인증·제품 목록·제품 상세·오시는 길·문의)의 골격을 만드세요.'}
 - headline: 홈 첫 화면 한 줄(25자 안팎). 이 회사만의 사실로.
 - sub: 60자 안팎.
 - about: 회사 개요 3~4문단(빈 줄로 구분). aboutTitle은 짧게.
@@ -117,16 +136,16 @@ ${input.plan ? `
 - history: 연도 오름차순, 같은 해는 한 줄로, 최대 30줄.
 - certifications: 인증·특허·지정 이름.
 - company: ceo, founded, fax, email, bizNo, address, phone — 자료에 있는 것만.
-- categories: 제품 분류 2~4개(예: 민수·군수). id는 영어 소문자·하이픈. 분류가 의미 없으면 [].
-- products: 자료에 나온 제품 전부(기획안이 있으면 기획안 목록). 사진 이름이 제품명과 같거나 그 제품의 변형이면 그 사진들을 photos에 넣는다. id는 영어 소문자·하이픈(예: "aluminum-flatbed"). summary 1~2문장, keySpec은 대표 사양 한 줄(자료에 있으면). photos는 그 제품이 주인공인 사진 번호들.
-- photos: 첨부한 사진(0~${Math.max(nSeen - 1, 0)}번)만 kind(product·factory·people·other)와 15자 이내 설명. 이름만 받은 사진은 쓰지 않는다.
-- hero: 첫 화면 사진 번호 — 회사의 대표 제품·현장이 선명하게 보이는 사진. 다른 회사·옛 상호 로고가 크게 보이는 사진은 피한다.
-- aboutPhoto: 회사 개요 옆 사진 번호(공장·현장이 있으면 우선), 없으면 null.
+- categories: ${it} 분류 2~4개(${pf.store ? '예: 빵·케이크·음료' : '예: 민수·군수'}). id는 영어 소문자·하이픈. 분류가 의미 없으면 [].
+- products: 자료에 나온 ${it} 전부(기획안이 있으면 기획안 목록, 최대 40개). 사진 이름이 제품명과 같거나 그 제품의 변형이면 그 사진들을 photos에 넣는다. id는 영어 소문자·하이픈(예: "aluminum-flatbed"). summary 1~2문장, keySpec은 대표 사양 한 줄(자료에 있으면). photos는 그 제품이 주인공인 사진 번호들.
+- photos: 첨부한 사진(0~${Math.max(nSeen - 1, 0)}번)만 kind(${pf.photoKinds.join('·')})와 15자 이내 설명. 이름만 받은 사진은 쓰지 않는다.
+- hero: 첫 화면 사진 번호 — ${pf.store ? `가게의 대표 ${it}나 공간이 선명하고 밝게 보이는 사진` : '회사의 대표 제품·현장이 선명하게 보이는 사진'}. 다른 회사·옛 상호 로고가 크게 보이는 사진은 피한다.
+- aboutPhoto: ${pf.aboutPage} 옆 사진 번호(${pf.store ? '실내·외관' : '공장·현장'}이 있으면 우선), 없으면 null.
 - accent: 로고·제품에서 보이는 회사 색(#RRGGBB), 확실하지 않으면 "".
 - seoDescription: 검색 결과 설명 120자 이내.
 
 JSON 형식:
-{"headline":"","sub":"","ctaLabel":"견적 문의","seoDescription":"","accent":"","aboutTitle":"","about":"","highlights":[{"title":"","body":""}],"stats":[{"value":"","label":"","note":""}],"ceo":{"title":"","body":"","name":""},"history":[{"year":"","text":""}],"certifications":[""],"company":{},"categories":[{"id":"","name":"","summary":""}],"products":[{"id":"","name":"","category":"","summary":"","keySpec":"","photos":[0]}],"photos":[{"i":0,"kind":"","caption":""}],"hero":0,"aboutPhoto":null}`;
+{"headline":"","sub":"","ctaLabel":"${pf.cta}","seoDescription":"","accent":"","aboutTitle":"","about":"","highlights":[{"title":"","body":""}],"stats":[{"value":"","label":"","note":""}],"ceo":{"title":"","body":"","name":""},"history":[{"year":"","text":""}],"certifications":[""],"company":{},"categories":[{"id":"","name":"","summary":""}],"products":[{"id":"","name":"","category":"","summary":"","keySpec":"","price":"","photos":[0]}],"photos":[{"i":0,"kind":"","caption":""}],"hero":0,"aboutPhoto":null}`;
     const content = [
       ...input.images.flatMap((im, i) => [
         { type: 'text', text: `사진 ${i}` },
@@ -153,11 +172,12 @@ JSON 형식:
       category: categories.some((c: any) => c.id === p?.category) ? p.category : (categories.find((c: any) => c.name === p?.category)?.id || ''),
       summary: str(p?.summary, 200),
       keySpec: str(p?.keySpec, 80),
+      ...(str(p?.price, 40) ? { price: str(p?.price, 40) } : {}),
       photos: [...new Set(arr(p?.photos).map(idx).filter((x: any) => x !== null))] as number[],
     })).filter((p: any) => p.name);
-    const KINDS = ['product', 'factory', 'people', 'other'];
+    const KINDS = pf.photoKinds;
     return {
-      headline: str(j.headline, 60), sub: str(j.sub, 200), ctaLabel: str(j.ctaLabel, 16) || '견적 문의',
+      headline: str(j.headline, 60), sub: str(j.sub, 200), ctaLabel: str(j.ctaLabel, 16) || pf.cta,
       seoDescription: str(j.seoDescription, 160), accent: /^#[0-9a-f]{6}$/i.test(j.accent || '') ? j.accent : '',
       aboutTitle: str(j.aboutTitle, 40), about: str(j.about, 3000),
       highlights: arr(j.highlights).slice(0, 3).map((h: any) => ({ title: str(h?.title, 40), body: str(h?.body, 200) })).filter((h: any) => h.title),

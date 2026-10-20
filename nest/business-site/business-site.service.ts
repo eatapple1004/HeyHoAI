@@ -3,15 +3,14 @@ import * as path from 'path';
 import { BusinessSiteRepository, BusinessSiteRow } from './business-site.repository';
 import { SiteWriterService } from './site-writer.service';
 import { CorpWriterService } from './corp-writer.service';
-import { ProcessWriterService, ResearchFact, ResearchSheet, SitePlan, PLAN_PAGES } from './process-writer.service';
+import { ProcessWriterService, ResearchFact, ResearchSheet, SitePlan } from './process-writer.service';
 import { runQa } from './site-qa';
 import { visualCheck } from './visual-qa';
-import { aboutPages } from './multipage/layout';
 import { randomBytes, randomUUID } from 'crypto';
 import * as fs from 'fs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sharp = require('sharp');
-import { CorpSite, CorpPhoto, routeCorp, RouteResult } from './multipage';
+import { CorpSite, CorpPhoto, routeCorp, RouteResult, profileOf, planPages, sitePages } from './multipage';
 import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage, WebImage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
 
@@ -73,7 +72,10 @@ export class BusinessSiteService {
       sources: sources.available(),
       publicUrl: site?.slug ? this.canonical(site.slug) : null,
       versions: site ? await this.repo.versions(site.id) : [],
-      planPages: PLAN_PAGES,
+      planPages: planPages(this.profile(site)),
+      profile: (({ key, store, items, aboutPage }) => ({ key, store, items, aboutPage }))(this.profile(site)),
+      // 관리자 페이지 목록 — 사이트가 실제로 가진 페이지
+      sitePages: site?.content?.multipage ? sitePages(await this.corpModel(site, '', true)) : [],
     };
   }
 
@@ -144,23 +146,33 @@ export class BusinessSiteService {
     return this.get(businessId);
   }
 
-  /** 3단계: AI가 템플릿을 고르고 문구를 쓴다. template 을 넘기면 그 템플릿으로 고정 */
-  async generate(businessId: string, body: { template?: string }) {
+  /** 업종 프로필 — 만든 사이트는 만들 때 정한 것(content.profile), 아직이면 템플릿 */
+  private profile(site?: BusinessSiteRow | null) {
+    return profileOf(site?.content?.profile || site?.template);
+  }
+
+  /**
+   * 3단계: 사이트 만들기 — 모든 업종을 여러 페이지로 만든다(회사형: 제품 상세까지, 매장형: 메뉴·후기·영업시간).
+   *   template 을 넘기면 그 업종으로 고정. single=true 면 예전 한 장짜리 템플릿(빠른 초안용).
+   */
+  async generate(businessId: string, body: { template?: string; single?: boolean }) {
     const b = await this.biz(businessId);
     const site = await this.repo.byBusiness(businessId);
     if (!site) throw new BadRequestException('먼저 자료를 수집하세요.');
-    // 기업형은 여러 페이지 — 골격 + 제품별 상세를 나눠 쓰느라 수 분 걸린다. 요청은 바로 돌려주고 뒤에서 만든다
+    if (body.template && !TEMPLATES[body.template]) throw new BadRequestException('없는 템플릿입니다.');
+    // 여러 페이지 — 골격 + 제품별 상세를 나눠 쓰느라 수 분 걸린다. 요청은 바로 돌려주고 뒤에서 만든다
     //   (Cloudflare 100초 제한에 걸려 화면이 524로 끊기지 않게). 진행 상황은 content.gen 으로 폴링한다.
-    if ((body.template || site.template) === 'corporate') {
+    if (!body.single) {
+      const key = body.template || site.template;
       if (site.content?.gen?.state === 'running' && Date.now() - Date.parse(site.content.gen.at || 0) < 15 * 60 * 1000) {
         throw new ConflictException('이미 만드는 중입니다.');
       }
       // 제작 과정을 밟는 사이트(조사 시트가 있음)는 기획안 승인 뒤에만 만든다 — 방향을 먼저 고정
       const pr = site.process || {};
       if (pr.research?.sheet && !pr.plan?.approvedAt) throw new BadRequestException('기획안을 먼저 승인하세요.');
-      await this.setGen(businessId, { state: 'running', step: '사진과 자료를 읽는 중', done: 0, total: 0 }, 'corporate');
-      this.runCorporate(businessId).catch(async (e) => {
-        console.error('[business-site] corporate generate failed', e);
+      await this.setGen(businessId, { state: 'running', step: '사진과 자료를 읽는 중', done: 0, total: 0 }, key);
+      this.runMulti(businessId, key).catch(async (e) => {
+        console.error('[business-site] multipage generate failed', e);
         await this.setGen(businessId, { state: 'error', error: String(e?.message || e).slice(0, 300) });
       });
       return this.get(businessId);
@@ -200,6 +212,7 @@ export class BusinessSiteService {
     const heroRef = out.hero == null ? null : refs[out.hero];
     if (heroRef) photos = [...photos.filter((p) => p.ref === heroRef), ...photos.filter((p) => p.ref !== heroRef)];
     await this.repo.update(businessId, { template: out.template, content: { ...out.content, services, photoNotes }, photos });
+    await this.repo.addVersion((await this.repo.byBusiness(businessId)) as BusinessSiteRow, '한 페이지 초안');
     return this.get(businessId);
   }
 
@@ -292,10 +305,11 @@ export class BusinessSiteService {
     await this.repo.update(businessId, { content: { ...(site?.content || {}), gen: { ...gen, at: new Date().toISOString() } }, ...(template ? { template } : {}) });
   }
 
-  private async runCorporate(businessId: string) {
+  private async runMulti(businessId: string, key: string) {
     const b = await this.biz(businessId);
     const site = (await this.repo.byBusiness(businessId)) as BusinessSiteRow;
     const s: SiteSource = site.source || {};
+    const prof = profileOf(key);
     // 앞쪽 사진은 AI가 직접 보고, 나머지는 이름(가져온 사진의 제품명 캡션)만으로 제품과 짝짓는다
     const all = (site.photos as PhotoEntry[]).filter((p) => !p.hidden).slice(0, 80);
     const loaded = await Promise.all(all.slice(0, MAX_CORP_PHOTOS).map((p) => this.loadPhoto(site, p.ref)));
@@ -308,7 +322,10 @@ export class BusinessSiteService {
     const plan: SitePlan | undefined = site.process?.plan?.approvedAt ? site.process.plan : undefined;
 
     await this.setGen(businessId, { state: 'running', step: '사이트 구성과 회사 소개를 쓰는 중', done: 0, total: 0 });
-    const sk = await this.corpWriter.skeleton({ name: siteName(b.name), industry: b.industry, memo: b.memo, facts: this.facts(s), material, images, photoNames, plan });
+    const sk = await this.corpWriter.skeleton({
+      name: siteName(b.name), industry: b.industry, memo: b.memo, facts: this.facts(s), material, images, photoNames, plan, profile: prof,
+      reviews: prof.store ? (s.google?.reviews || []).map((r) => r.text).filter(Boolean).slice(0, 5) : [],
+    });
     // 기획안에서 뺀 페이지는 비운다(라우터·메뉴가 자료 없는 페이지를 숨긴다)
     if (plan) {
       const off = (k: string) => plan.pages.some((p) => p.key === k && !p.include);
@@ -316,14 +333,15 @@ export class BusinessSiteService {
       if (off('certifications')) sk.certifications = [];
       if (off('ceo')) sk.ceo = undefined;
       if (off('products')) { sk.products = []; sk.categories = []; }
+      if (off('reviews')) (sk as any).reviewsOff = true;
       if (plan.accent) sk.accent = plan.accent;
     }
 
-    // 제품 상세 — 3개씩 동시에
+    // 제품 상세 — 3개씩 동시에. 매장형 메뉴는 상세 페이지가 없다(목록 카드만)
     const products: any[] = sk.products.map((p) => ({ ...p, photos: p.photos.map((i) => refs[i]).filter(Boolean) }));
     let done = 0;
-    await this.setGen(businessId, { state: 'running', step: '제품 상세 페이지를 쓰는 중', done, total: products.length });
-    const queue = [...products];
+    if (prof.itemDetail) await this.setGen(businessId, { state: 'running', step: '제품 상세 페이지를 쓰는 중', done, total: products.length });
+    const queue = prof.itemDetail ? [...products] : [];
     const worker = async () => {
       for (let p = queue.shift(); p; p = queue.shift()) {
         try {
@@ -344,12 +362,12 @@ export class BusinessSiteService {
     if (heroRef) photos = [...photos.filter((p) => p.ref === heroRef), ...photos.filter((p) => p.ref !== heroRef)];
     const { photos: _ph, hero: _h, aboutPhoto, products: _pr, ...rest } = sk;
     await this.repo.update(businessId, {
-      template: 'corporate',
+      template: prof.key,
       photos,
       content: {
         ...rest, products, photoNotes,
         aboutPhoto: aboutPhoto == null ? null : refs[aboutPhoto],
-        multipage: true,
+        multipage: true, profile: prof.key,
         gen: { state: 'running', step: '버전 저장·자동 점검 중', done, total: products.length, at: new Date().toISOString() },
       },
     });
@@ -409,7 +427,7 @@ export class BusinessSiteService {
           .map((k) => `${k.name} — ${k.roadAddress || k.address} (${k.category})`).slice(0, 8);
       } catch { /* 카카오 실패는 조사를 막지 않는다 */ }
       const sheet = await this.procWriter.research({
-        name, industry: b.industry, memo: b.memo,
+        profile: this.profile(site), name, industry: b.industry, memo: b.memo,
         place: { 이름: s.kakao?.name || s.google?.name, 주소: f.roadAddress || f.address, 전화: f.phone, 분류: f.category, 웹사이트: f.website, 구글평점: f.rating },
         homonyms, material: this.material(site, false),
         reviews: (s.google?.reviews || []).map((r) => `${r.rating}점: ${r.text}`),
@@ -432,7 +450,7 @@ export class BusinessSiteService {
       const sh: ResearchSheet = cur.process.research.sheet;
       const photos = (await this.photoList(cur)).filter((p) => !p.hidden);
       const plan = await this.procWriter.plan({
-        name: siteName(b.name), industry: b.industry, facts: sh.facts.filter((x) => x.use), products: sh.products, gaps: sh.gaps,
+        profile: this.profile(cur), name: siteName(b.name), industry: b.industry, facts: sh.facts.filter((x) => x.use), products: sh.products, gaps: sh.gaps,
         photoCount: photos.length, photoNotes: photos.map((p) => p.caption).filter(Boolean) as string[], benchmarks: sh.benchmarks,
       });
       await this.patchProcess(businessId, (p) => { p.plan = { ...plan, approvedAt: null, at: new Date().toISOString() }; });
@@ -488,7 +506,7 @@ export class BusinessSiteService {
     const at = report.at;
     await this.patchProcess(businessId, (p) => { p.qa = { ...report, visual: { state: 'running', at } }; });
     // 화면 점검(실제 브라우저, 1분 안팎)은 뒤에서 — 끝나면 같은 점검 회차(at)에만 붙인다
-    const paths = ['', ...aboutPages(m).map((x) => x.path), ...(m.products.length ? ['products', ...m.products.map((x) => `products/${x.id}`)] : []), 'contact', 'privacy'];
+    const paths = sitePages(m).map((x) => x.path);
     const pages = paths.map((x) => ({ path: x, html: routeCorp(m, x, {}).body }));
     visualCheck(pages, { shotPaths: [''] })
       .then((v) => this.patchProcess(businessId, (p) => { if (p.qa?.at === at) p.qa.visual = { state: v.skipped ? 'skipped' : 'done', ...v, at: new Date().toISOString() }; }))
@@ -538,6 +556,8 @@ export class BusinessSiteService {
     const sh: ResearchSheet | undefined = pr.research?.sheet;
     const plan: SitePlan | undefined = pr.plan;
     const qa = pr.qa;
+    const prof = this.profile(site);
+    const PP = planPages(prof);
     const e = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
     const name = siteName(b.name);
     const today = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
@@ -547,7 +567,7 @@ export class BusinessSiteService {
     const asks = [
       ...(sh?.gaps || []).map((g) => [g.item, g.why]),
       ...(plan?.photoNeeds || []).map((x) => [x, '사진']),
-      ...((qa?.items || []) as any[]).filter((i) => i.level === 'warn' && ['연락처', '회사 정보', '사양'].includes(i.area)).map((i) => [i.msg, '자동 점검']),
+      ...((qa?.items || []) as any[]).filter((i) => i.level === 'warn' && ['연락처', '회사 정보', '사양', '가격', '영업시간'].includes(i.area)).map((i) => [i.msg, '자동 점검']),
     ];
     const review = pr.share?.token ? `${String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, '')}/site-review/${pr.share.token}/` : '';
     return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -565,7 +585,7 @@ td.ck{width:70px;text-align:center;color:#8a929b}a{color:#2d5b8c;word-break:brea
 <h1>${e(name)} 홈페이지 제작 — 자료 요청서</h1>
 <div class="meta">작성일 ${e(today)} · 도피아(Doppia)</div>
 ${plan ? `<h2>1. 사이트 방향 (기획안)</h2><div class="box"><b>컨셉</b> ${e(plan.concept)}<br><span class="meta">${e(plan.conceptWhy)}</span><br>
-<b>구성</b> 홈 · 회사 개요 · ${plan.pages.filter((p) => p.include).map((p) => e(PLAN_PAGES[p.key] || p.key)).join(' · ')}${plan.categories.length ? `<br><b>제품 분류</b> ${plan.categories.map((c) => e(c.name)).join(' · ')}` : ''}</div>` : ''}
+<b>구성</b> 홈 · ${e(prof.aboutPage)} · ${plan.pages.filter((p) => p.include).map((p) => e(PP[p.key] || p.key)).join(' · ')}${plan.categories.length ? `<br><b>${e(prof.items)} 분류</b> ${plan.categories.map((c) => e(c.name)).join(' · ')}` : ''}</div>` : ''}
 ${review ? `<p>검토용 사이트: <a href="${e(review)}">${e(review)}</a> (검색엔진에 노출되지 않는 주소입니다)</p>` : ''}
 <h2>${plan ? 2 : 1}. 사이트에 들어갈 사실 — 맞는지 확인해 주세요</h2>
 ${used.length ? `<table><tr><th>구분</th><th>내용</th><th>출처</th><th>확인</th></tr>${used.map((f) => `<tr><td>${e(f.topic)}</td><td>${e(f.text)}</td><td>${src(f)}</td><td class="ck">□ 맞음</td></tr>`).join('')}</table>` : '<p class="meta">아직 없습니다.</p>'}
@@ -659,19 +679,30 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
     };
     const productPhotoRefs = new Set((c.products || []).flatMap((p: any) => p.photos || []));
     const credits = [...new Map(list.filter((p) => p.credit).map((p) => [p.credit, { name: p.credit as string, uri: p.creditUri }])).values()];
+    const prof = this.profile(site);
+    const s: SiteSource = site.source || {};
+    // 후기 — Google 리뷰 4점 이상(작성자 표기), 블로그는 링크만. 의료기관·기획안에서 뺀 경우는 싣지 않는다
+    const showReviews = prof.reviews && !c.reviewsOff;
+    const reviews = showReviews ? (s.google?.reviews || []).filter((r) => (r.rating || 0) >= 4 && r.text).slice(0, 9)
+      .map((r) => ({ author: r.author, authorUri: r.authorUri, text: r.text, rating: r.rating, when: r.when })) : [];
+    const blogs = showReviews ? (s.naver?.blogs || []).slice(0, 8).map((x) => ({ title: x.title, link: x.link, blogger: x.blogger })) : [];
+    const aboutKinds = prof.store ? ['interior', 'exterior'] : ['factory'];
     return {
-      name: siteName(b.name), base, origin: String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, ''), preview,
+      name: siteName(b.name), profile: prof, base, origin: String(env.PUBLIC_URL || 'https://doppia.ai').replace(/\/$/, ''), preview,
       accent: /^#[0-9a-f]{6}$/i.test(c.accent || '') ? c.accent : '#2D5B8C',
-      headline: c.headline || '', sub: c.sub || '', ctaLabel: c.ctaLabel || '견적 문의',
+      headline: c.headline || '', sub: c.sub || '', ctaLabel: c.ctaLabel || prof.cta,
       stats: c.stats || [], highlights: c.highlights || [],
       aboutTitle: c.aboutTitle || '', about: c.about || '', ceo: c.ceo,
       history: c.history || [], certifications: c.certifications || [],
       categories: c.categories || [],
       products: (c.products || []).map((p: any) => ({ ...p, photos: (p.photos || []).map((r: string) => ph(r)).filter(Boolean) })),
       company: c.company || {},
-      facts: { address: f.roadAddress || f.address || '', phone: f.phone || '', lat: f.lat, lng: f.lng, kakaoUrl: f.kakaoUrl, googleUrl: f.googleUrl },
+      facts: { address: f.roadAddress || f.address || '', phone: f.phone || '', lat: f.lat, lng: f.lng, kakaoUrl: f.kakaoUrl, googleUrl: f.googleUrl,
+        ...(showReviews ? { rating: f.rating, ratingCount: f.ratingCount } : {}) },
+      hours: f.hours || [],
+      reviews, blogs,
       heroPhoto: ph(list[0]?.ref),
-      aboutPhoto: ph(c.aboutPhoto) || ph(list.find((p) => p.kind === 'factory' && !productPhotoRefs.has(p.ref))?.ref),
+      aboutPhoto: ph(c.aboutPhoto) || ph(list.find((p) => aboutKinds.includes(p.kind || '') && !productPhotoRefs.has(p.ref))?.ref),
       gallery: list.filter((p) => !productPhotoRefs.has(p.ref)).map((p) => ph(p.ref)).filter(Boolean) as CorpPhoto[],
       seoDescription: c.seoDescription || c.sub || '',
       credits,

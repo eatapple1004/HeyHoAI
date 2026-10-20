@@ -28,23 +28,46 @@ export interface PageOpts {
 
 export function aboutPages(m: CorpSite) {
   return [
-    { path: 'about', label: '회사 개요' },
+    { path: 'about', label: m.profile.aboutPage },
     m.history.length ? { path: 'about/history', label: '연혁' } : null,
     m.certifications.length ? { path: 'about/certifications', label: '인증·특허' } : null,
     { path: 'about/location', label: '오시는 길' },
   ].filter(Boolean) as { path: string; label: string }[];
 }
 
-function nav(m: CorpSite, active: string): string {
-  const top = active.split('/')[0];
+/** 제품마다 상세 페이지가 있는 제품들(매장형 메뉴는 목록 페이지만) */
+export const itemPages = (m: CorpSite) => (m.profile.itemDetail ? m.products : []);
+/** 후기 페이지가 있는가 */
+export const hasReviews = (m: CorpSite) => m.profile.reviews && (m.reviews.length > 0 || m.blogs.length > 0);
+
+/** 사이트의 모든 페이지(경로·이름) — 점검·사이트맵·관리자 목록·AI 시안이 같이 쓴다 */
+export function sitePages(m: CorpSite): { path: string; label: string }[] {
+  return [
+    { path: '', label: '홈' },
+    ...aboutPages(m),
+    ...(m.products.length ? [{ path: 'products', label: `${m.profile.items} 목록` }, ...itemPages(m).map((p) => ({ path: `products/${p.id}`, label: `└ ${p.name}` }))] : []),
+    ...(hasReviews(m) ? [{ path: 'reviews', label: '방문 후기' }] : []),
+    { path: 'contact', label: '문의' },
+    { path: 'privacy', label: '개인정보처리방침' },
+  ];
+}
+
+/** 머리말 메뉴 묶음 — 템플릿 사이트와 AI 시안이 같이 쓴다 */
+export function navGroups(m: CorpSite) {
   const productSub = m.categories.length > 1
     ? m.categories.map((c) => ({ path: `products?c=${c.id}`, label: c.name }))
-    : m.products.slice(0, 8).map((p) => ({ path: `products/${p.id}`, label: p.name }));
-  const groups = [
-    { key: 'about', label: '회사소개', path: 'about', sub: aboutPages(m) },
-    m.products.length ? { key: 'products', label: '제품', path: 'products', sub: [{ path: 'products', label: '전체 제품' }, ...productSub] } : null,
+    : itemPages(m).slice(0, 8).map((p) => ({ path: `products/${p.id}`, label: p.name }));
+  return [
+    { key: 'about', label: m.profile.aboutMenu, path: 'about', sub: aboutPages(m) },
+    m.products.length ? { key: 'products', label: m.profile.items, path: 'products', sub: productSub.length ? [{ path: 'products', label: m.profile.itemsAll }, ...productSub] : [] } : null,
+    hasReviews(m) ? { key: 'reviews', label: '후기', path: 'reviews', sub: [] } : null,
     { key: 'contact', label: '문의', path: 'contact', sub: [] },
   ].filter(Boolean) as { key: string; label: string; path: string; sub: { path: string; label: string }[] }[];
+}
+
+function nav(m: CorpSite, active: string): string {
+  const top = active.split('/')[0];
+  const groups = navGroups(m);
   const desk = groups.map((g) => `<li class="${g.key === top ? 'on' : ''}"><a href="${esc(href(m, g.path))}">${esc(g.label)}</a>${g.sub.length > 1
     ? `<ul>${g.sub.map((s) => `<li><a href="${esc(href(m, s.path))}">${esc(s.label)}</a></li>`).join('')}</ul>` : ''}</li>`).join('');
   const mob = groups.map((g) => `<li><a href="${esc(href(m, g.path))}">${esc(g.label)}</a>${g.sub.length > 1
@@ -53,8 +76,8 @@ function nav(m: CorpSite, active: string): string {
   <details class="mnav"><summary aria-label="메뉴 열기"><span></span><span></span><span></span></summary><ul>${mob}</ul></details>`;
 }
 
-const CSS = (accent: string) => `
-:root{--bg:#F3F4F5;--ink:#15191E;--steel:#5B6570;--line:#D6DADF;--white:#FFFFFF;--accent:${accent}}
+const CSS = (accent: string, t: CorpSite['profile']['theme']) => `
+:root{--bg:${t.bg};--ink:${t.ink};--steel:${t.steel};--line:${t.line};--dark:${t.dark};--white:#FFFFFF;--accent:${accent};--display:${t.display}}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.75 'Pretendard Variable',Pretendard,sans-serif}
@@ -63,13 +86,13 @@ a{color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
-.plex{font-family:'IBM Plex Sans KR',sans-serif}
+.plex{font-family:var(--display)}
 .pv{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:99;background:#222;color:#fff;font:600 12px/1 sans-serif;padding:8px 12px;border-radius:999px}
 
 /* 머리말 */
 .hd{position:sticky;top:0;z-index:30;background:var(--white);border-bottom:1px solid var(--line)}
 .hd .wrap{display:flex;align-items:center;gap:24px;height:76px}
-.hd .logo{font:700 20px/1 'IBM Plex Sans KR',sans-serif;text-decoration:none;margin-right:auto;letter-spacing:-.01em}
+.hd .logo{font:700 20px/1 var(--display);text-decoration:none;margin-right:auto;letter-spacing:-.01em}
 .home .hd{position:absolute;left:0;right:0;background:transparent;border-color:rgba(255,255,255,.18);color:#fff}
 .gnb>ul{display:flex;gap:4px;list-style:none;margin:0;padding:0}
 .gnb>ul>li{position:relative}
@@ -85,8 +108,8 @@ a{color:inherit}
 
 /* 서브 페이지 제목 띠 */
 .band{background:var(--ink);color:#fff;padding:72px 0 64px}
-.band .kicker{font:600 15px/1 'IBM Plex Sans KR',sans-serif;color:rgba(255,255,255,.66);margin:0 0 14px}
-.band h1{font:700 clamp(32px,4vw,52px)/1.2 'IBM Plex Sans KR',sans-serif;margin:0;letter-spacing:-.02em;word-break:keep-all}
+.band .kicker{font:600 15px/1 var(--display);color:rgba(255,255,255,.66);margin:0 0 14px}
+.band h1{font:700 clamp(32px,4vw,52px)/1.2 var(--display);margin:0;letter-spacing:-.02em;word-break:keep-all}
 .crumbs{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:20px 0 0;padding:0;font-size:14px;color:rgba(255,255,255,.66)}
 .crumbs li+li::before{content:'/';margin-right:8px;opacity:.5}
 .crumbs a{text-decoration:none}
@@ -98,9 +121,9 @@ a{color:inherit}
 
 /* 공통 블록 */
 section{padding:96px 0}
-.kicker{font:600 15px/1 'IBM Plex Sans KR',sans-serif;color:var(--accent);margin:0 0 14px}
-h2{font:700 clamp(28px,3.2vw,42px)/1.25 'IBM Plex Sans KR',sans-serif;margin:0 0 28px;letter-spacing:-.02em;word-break:keep-all}
-h3{font:700 22px/1.35 'IBM Plex Sans KR',sans-serif;margin:0 0 10px;word-break:keep-all}
+.kicker{font:600 15px/1 var(--display);color:var(--accent);margin:0 0 14px}
+h2{font:700 clamp(28px,3.2vw,42px)/1.25 var(--display);margin:0 0 28px;letter-spacing:-.02em;word-break:keep-all}
+h3{font:700 22px/1.35 var(--display);margin:0 0 10px;word-break:keep-all}
 p{word-break:keep-all}
 .lead{font-size:19px;color:var(--steel);max-width:36em}
 .btn{display:inline-block;text-decoration:none;font-weight:600;padding:15px 26px;border-radius:4px;background:var(--accent);color:#fff;margin:0 8px 8px 0;border:0;font-size:16px;cursor:pointer;font-family:inherit}
@@ -110,9 +133,9 @@ p{word-break:keep-all}
 .white{background:var(--white)}
 
 /* 꼬리말 */
-.ft{background:#0F1317;color:#9AA3AD;font-size:14px;padding:56px 0 96px}
+.ft{background:var(--dark);color:#9AA3AD;font-size:14px;padding:56px 0 96px}
 .ft .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px}
-.ft b{color:#fff;font:600 18px/1 'IBM Plex Sans KR',sans-serif;display:block;margin-bottom:16px}
+.ft b{color:#fff;font:600 18px/1 var(--display);display:block;margin-bottom:16px}
 .ft p{margin:4px 0}
 .ft ul{list-style:none;margin:0;padding:0}
 .ft li{margin:6px 0}
@@ -132,7 +155,7 @@ p{word-break:keep-all}
  .mnav summary span{display:block;height:2px;background:currentColor}
  .mnav>ul{position:fixed;left:0;right:0;top:76px;bottom:0;overflow:auto;background:var(--white);color:var(--ink);list-style:none;margin:0;padding:12px 24px 40px}
  .mnav>ul>li{border-bottom:1px solid var(--line);padding:14px 0}
- .mnav>ul>li>a{font:700 19px/1.4 'IBM Plex Sans KR',sans-serif;text-decoration:none}
+ .mnav>ul>li>a{font:700 19px/1.4 var(--display);text-decoration:none}
  .mnav ul ul{list-style:none;margin:8px 0 0;padding:0}
  .mnav ul ul a{display:block;padding:6px 0;text-decoration:none;color:var(--steel)}
  .band{padding:52px 0 44px}
@@ -150,7 +173,7 @@ export function layout(m: CorpSite, o: PageOpts): string {
   const phone = m.facts.phone || m.company.phone || '';
   const address = m.facts.address || m.company.address || '';
   const ld = o.home ? `<script type="application/ld+json">${JSON.stringify({
-    '@context': 'https://schema.org', '@type': 'Organization', name: m.name, url: `${m.origin}${href(m)}`,
+    '@context': 'https://schema.org', '@type': m.profile.ldType, name: m.name, url: `${m.origin}${href(m)}`,
     ...(address ? { address } : {}), ...(phone ? { telephone: phone } : {}), ...(m.company.founded ? { foundingDate: m.company.founded } : {}),
   }).replace(/</g, '\\u003c')}</script>` : '';
   const sub = o.band && o.path.startsWith('about') ? aboutPages(m) : null;
@@ -170,10 +193,10 @@ ${m.preview || o.noindex ? '<meta name="robots" content="noindex,nofollow">' : `
 ${og ? `<meta property="og:image" content="${esc(og)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="${esc(m.profile.theme.fontHref)}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 ${ld}
-<style>${CSS(m.accent)}</style>
+<style>${CSS(m.accent, m.profile.theme)}</style>
 </head>
 <body class="${o.home ? 'home' : ''}">
 ${m.preview ? '<div class="pv">미리보기 · 아직 공개 전입니다</div>' : ''}
@@ -202,13 +225,28 @@ ${o.body}
     </div>
     <div><ul>${aboutPages(m).map((s) => `<li><a href="${esc(href(m, s.path))}">${esc(s.label)}</a></li>`).join('')}</ul></div>
     <div><ul>
-      ${m.products.length ? `<li><a href="${esc(href(m, 'products'))}">제품</a></li>` : ''}
+      ${m.products.length ? `<li><a href="${esc(href(m, 'products'))}">${esc(m.profile.items)}</a></li>` : ''}
+      ${hasReviews(m) ? `<li><a href="${esc(href(m, 'reviews'))}">방문 후기</a></li>` : ''}
       <li><a href="${esc(href(m, 'contact'))}">문의하기</a></li>
       <li><a class="privacy" href="${esc(href(m, 'privacy'))}">개인정보처리방침</a></li>
     </ul></div>
   </div>
   <p class="copy">© ${new Date().getFullYear()} ${esc(m.name)}. All rights reserved.${m.credits.length ? ` · 일부 사진: ${m.credits.map((c) => (c.uri ? `<a href="${esc(c.uri)}" rel="nofollow noopener" target="_blank">${esc(c.name)}</a>` : esc(c.name))).join(', ')}` : ''}</p>
 </div></footer>
-${tel || m.facts.kakaoUrl ? `<nav class="abar" aria-label="바로가기">${tel ? `<a href="tel:${esc(tel)}">전화 문의</a>` : ''}<a href="${esc(href(m, 'contact'))}">견적 문의</a></nav>` : ''}
+${abar(m, tel)}
 </body></html>`;
+}
+
+/** 모바일 하단 고정 버튼 — 회사는 전화·견적 문의, 매장은 전화·길찾기(동네 가게 방문자가 제일 많이 누르는 두 가지) */
+function abar(m: CorpSite, tel: string): string {
+  const second = m.profile.store
+    ? (directions(m) ? `<a href="${esc(directions(m))}" target="_blank" rel="noopener">길찾기</a>` : '')
+    : `<a href="${esc(href(m, 'contact'))}">${esc(m.profile.cta)}</a>`;
+  if (!tel && !second) return '';
+  return `<nav class="abar" aria-label="바로가기">${tel ? `<a href="tel:${esc(tel)}">${m.profile.store ? '전화하기' : '전화 문의'}</a>` : ''}${second}</nav>`;
+}
+
+/** 길찾기 — 좌표가 있으면 카카오맵 길찾기, 없으면 장소 페이지 */
+export function directions(m: CorpSite): string {
+  return m.facts.lat && m.facts.lng ? `https://map.kakao.com/link/to/${encodeURIComponent(m.name)},${m.facts.lat},${m.facts.lng}` : m.facts.kakaoUrl || m.facts.googleUrl || '';
 }
