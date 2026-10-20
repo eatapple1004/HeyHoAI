@@ -194,6 +194,7 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
             )}
           </div>
           <div className="lg:col-span-2">
+            <NaverPlace nv={f.reputation.naverPlace} />
             <div className="grid gap-4 sm:grid-cols-2">
               <Themes title="좋게 말한 점" items={s.reviewThemes.good} tone="good" />
               <Themes title="아쉬운 점" items={s.reviewThemes.bad} tone="bad" />
@@ -307,6 +308,28 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
         {Object.keys(f.errors || {}).length > 0 && <p className="mt-1 text-xs text-amber-700">일부 출처 실패: {Object.keys(f.errors).join(', ')}</p>}
       </Section>
     </article>
+  );
+}
+
+/** 네이버 플레이스 — 외부 수집(ReefAPI). 공식 API가 아니라 출처를 따로 적는다 */
+function NaverPlace({ nv }: { nv: any }) {
+  if (!nv) return null;
+  if (nv.skipped || nv.matched === false) return (
+    <p className="mb-4 rounded-xl border border-dashed border-zinc-300 p-3 text-xs text-zinc-500">네이버 플레이스 리뷰: {nv.skipped || `주소가 맞는 장소를 찾지 못함 (후보: ${(nv.tried || []).join(' / ') || '없음'})`}</p>
+  );
+  return (
+    <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <b className="text-emerald-900">네이버 플레이스</b>
+        {nv.rating != null && <span className="text-sm">평점 <b className="tabular-nums">{nv.rating}</b></span>}
+        <span className="text-sm">방문자 리뷰 <b className="tabular-nums">{fmt(nv.visitorReviews)}</b>개</span>
+        {nv.blogReviews != null && <span className="text-sm">블로그 리뷰 <b className="tabular-nums">{fmt(nv.blogReviews)}</b>개</span>}
+        <a className="ml-auto text-xs text-emerald-800" href={nv.url} target="_blank" rel="noreferrer">네이버 지도에서 보기</a>
+      </div>
+      {nv.keywords?.length > 0 && <ul className="mt-2 flex flex-wrap gap-1.5">{nv.keywords.map((k: any) => <li key={k.label} className="rounded-full bg-white px-2.5 py-1 text-xs">{k.label}{k.count != null ? ` ${fmt(k.count)}` : ''}</li>)}</ul>}
+      {nv.recent?.length > 0 && <ul className="mt-3 space-y-1.5">{nv.recent.slice(0, 3).map((x: any, i: number) => <li key={i} className="text-sm text-zinc-700"><span className="text-xs text-zinc-500">{x.when}</span> {x.text.length > 120 ? `${x.text.slice(0, 120)}…` : x.text}</li>)}</ul>}
+      <p className="mt-2 text-[11px] text-zinc-500">외부 수집 서비스(ReefAPI) 기준 · 네이버 공식 API 아님 · {new Date(nv.fetchedAt).toLocaleDateString('ko-KR')}</p>
+    </div>
   );
 }
 
