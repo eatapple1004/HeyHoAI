@@ -454,7 +454,7 @@ function pageSpecs(m: CorpSite): PageSpec[] {
       [pf.store ? '매장사진' : '공장사진']: m.gallery.filter((g) => (pf.store ? ['interior', 'exterior'] : ['factory']).includes(g.kind || '')).slice(0, 6).map(ph) } },
   ];
   if (m.history.length) specs.push({ path: 'about/history', key: 'history', title: '연혁', data: { 연혁: m.history } });
-  if (m.certifications.length) specs.push({ path: 'about/certifications', key: 'certs', title: '인증·특허', data: { 목록: m.certifications } });
+  if (m.certifications.length) specs.push({ path: 'about/certifications', key: 'certs', title: m.profile.store ? '수상·인증' : '인증·특허', data: { 목록: m.certifications } });
   specs.push({ path: 'about/location', key: 'location', title: '오시는 길', data: { 주소: m.facts.address || m.company.address, 전화: phone, 팩스: m.company.fax, 카카오맵: m.facts.kakaoUrl, 구글지도: m.facts.googleUrl, ...(m.hours.length ? { 영업시간: m.hours, 영업시간_주의: '영업시간은 Google 지도 기준이며 달라질 수 있다는 한 줄을 붙인다' } : {}) }, placeholders: m.facts.lat ? ['<!--{{MAP}}--> (지도가 들어갈 자리, 가로 전체)'] : [] });
   if (m.products.length) {
     specs.push({ path: 'products', key: 'products', title: pf.itemsAll, data: { 분류: m.categories.map((c) => ({ ...c, 앵커: `c-${c.id}` })), [pf.items]: m.products.map(prodBrief),

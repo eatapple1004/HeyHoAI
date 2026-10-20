@@ -30,10 +30,13 @@ export function aboutPages(m: CorpSite) {
   return [
     { path: 'about', label: m.profile.aboutPage },
     m.history.length ? { path: 'about/history', label: '연혁' } : null,
-    m.certifications.length ? { path: 'about/certifications', label: '인증·특허' } : null,
+    m.certifications.length ? { path: 'about/certifications', label: certLabel(m) } : null,
     { path: 'about/location', label: '오시는 길' },
   ].filter(Boolean) as { path: string; label: string }[];
 }
+
+/** 인증 페이지 이름 — 가게는 표창·지정이 대부분이라 "수상·인증" */
+export const certLabel = (m: CorpSite) => (m.profile.store ? '수상·인증' : '인증·특허');
 
 /** 제품마다 상세 페이지가 있는 제품들(매장형 메뉴는 목록 페이지만) */
 export const itemPages = (m: CorpSite) => (m.profile.itemDetail ? m.products : []);
