@@ -113,6 +113,8 @@ const envSchema = z.object({
   // (2026-07-31~) 검색 API 신규 발급은 NAVER API HUB(네이버클라우드)로 이관 — 이 키가 있으면 우선 사용
   NAVER_HUB_KEY_ID: z.string().optional(),
   NAVER_HUB_KEY: z.string().optional(),
+  // (2026-10-21) 네이버 플레이스 리뷰 — 공식 API가 없어 외부 수집 서비스(ReefAPI)를 쓴다(사업자 결정: 방법 ⑤). 없으면 건너뛴다
+  REEF_API_KEY: z.string().optional(),
 
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { BizReportRepository } from './biz-report.repository';
 import { BizReportWriterService, ReportStory, normUrl } from './biz-report-writer.service';
 import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
+import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
 import { sources } from '../business-site/place-sources';
 import { numbers, loosely, norm } from '../business-site/site-qa';
 
@@ -150,6 +151,11 @@ export class BizReportService {
 
     const sns = await safe('sns', () => this.sns({ name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '' });
 
+    // 네이버 플레이스(외부 수집) — 키가 있을 때만, 카카오 장소와 주소·좌표가 맞는 곳만
+    const naver = naverPlaceAvailable() && k
+      ? await safe('naver-place', () => naverPlaceReviews({ name: siteName(k.name || b.name), roadAddress: k.roadAddress || '', address: k.address || '', lat: Number(k.y) || undefined, lng: Number(k.x) || undefined }), null)
+      : null;
+
     const reviews = (g?.reviews || []).map((r: any) => ({ author: r.author, rating: r.rating, when: r.when, text: String(r.text || '').slice(0, 600), lang: langOf(r.text) }));
     const sheet = site?.process?.research?.sheet;
     const posts = await this.repo.postStats(businessId);
@@ -160,7 +166,8 @@ export class BizReportService {
     return {
       at: new Date().toISOString(),
       business: { name: siteName(k?.name || b.name), industry: b.industry || leaf, category: k?.category || g?.type || '', address: k?.roadAddress || k?.address || g?.address || '', phone: k?.phone || g?.phone || '', website: g?.website || s.web?.url || '', hours: g?.hours || [], kakaoUrl: k?.url || '', googleUrl: g?.mapsUrl || '' },
-      reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: (s.naver?.blogs || []).length, naverAvailable: sources.available().naver },
+      reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: (s.naver?.blogs || []).length, naverAvailable: sources.available().naver,
+        naverPlace: naver ? naver : { skipped: naverPlaceAvailable() ? '카카오 장소가 없어 찾지 않음' : '외부 수집 키(REEF_API_KEY) 없음' } },
       nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
       competitors,
       sns,
@@ -187,12 +194,22 @@ export function score(f: any): Score[] {
   const out: Score[] = [];
   // 1) 평판: 평점(60) + 리뷰 양(25, 5,000개면 만점) + 최근 리뷰 표본의 낮은 별점 비율(15)
   {
-    const r = f.reputation.googleRating; const n = f.reputation.googleReviews || 0; const sample = f.reputation.sample || [];
-    if (r == null) out.push({ key: 'reputation', label: '평판', score: null, basis: ['Google 평점이 없습니다 — 지도 장소를 고르거나 리뷰를 모아야 합니다'] });
+    const gR = f.reputation.googleRating; const gN = f.reputation.googleReviews || 0; const sample = f.reputation.sample || [];
+    // 네이버 플레이스(외부 수집)가 있으면 리뷰 양에 더하고, 평점이 있으면 리뷰 수로 가중 평균
+    const nv = f.reputation.naverPlace?.matched ? f.reputation.naverPlace : null;
+    const nR = nv?.rating ?? null; const nN = nv?.visitorReviews || 0;
+    const r = gR != null && nR != null ? (gR * gN + nR * nN) / Math.max(1, gN + nN) : gR ?? nR;
+    const n = gN + nN;
+    if (r == null) out.push({ key: 'reputation', label: '평판', score: null, basis: ['평점이 없습니다 — 지도 장소를 고르거나 리뷰를 모아야 합니다'] });
     else {
       const neg = sample.length ? sample.filter((x: any) => (x.rating || 5) <= 2).length / sample.length : 0;
       const sc = Math.round(clamp((r - 3) / 2) * 60 + Math.min(1, Math.log10(n + 1) / Math.log10(5000)) * 25 + (1 - neg) * 15);
-      out.push({ key: 'reputation', label: '평판', score: sc, basis: [`Google 평점 ${r} (3.0=0점, 5.0=60점)`, `Google 리뷰 ${n.toLocaleString('ko-KR')}개 (5,000개 이상 25점)`, `최근 리뷰 표본 ${sample.length}개 중 2점 이하 ${Math.round(neg * sample.length)}개`] });
+      out.push({ key: 'reputation', label: '평판', score: sc, basis: [
+        nR != null && gR != null ? `평점 ${r.toFixed(2)} — Google ${gR}·네이버 ${nR} 리뷰 수 가중 평균 (3.0=0점, 5.0=60점)` : `${gR != null ? 'Google' : '네이버'} 평점 ${r} (3.0=0점, 5.0=60점)`,
+        `리뷰 ${n.toLocaleString('ko-KR')}개${nv ? ` (Google ${gN.toLocaleString('ko-KR')} + 네이버 방문자 ${nN.toLocaleString('ko-KR')})` : ''} (5,000개 이상 25점)`,
+        `최근 Google 리뷰 표본 ${sample.length}개 중 2점 이하 ${Math.round(neg * sample.length)}개`,
+        ...(nv ? ['네이버 수치는 외부 수집 서비스(ReefAPI) 기준'] : []),
+      ] });
     }
   }
   // 2) 온라인 노출: 지도·영업시간·홈페이지·인스타·최근 게시·블로그·전화번호 일치
