@@ -148,7 +148,7 @@ JSON:
   }
 
   /** 기획안 — 사이트에 쓰기로 한 사실만 본다 */
-  async plan(input: { profile?: SiteProfile; name: string; industry?: string | null; facts: ResearchFact[]; products: { name: string; note?: string }[]; gaps: { item: string }[]; photoCount: number; photoNotes: string[]; benchmarks: { name: string; why: string }[] }): Promise<SitePlan> {
+  async plan(input: { profile?: SiteProfile; reviewCount?: number; rating?: number; name: string; industry?: string | null; facts: ResearchFact[]; products: { name: string; note?: string }[]; gaps: { item: string }[]; photoCount: number; photoNotes: string[]; benchmarks: { name: string; why: string }[] }): Promise<SitePlan> {
     const pf = input.profile || PROFILES.corporate;
     const PP = planPages(pf);
     const it = pf.items;
@@ -164,7 +164,8 @@ ${input.products.map((p) => `- ${p.name}${p.note ? `: ${p.note}` : ''}`).join('\
 [아직 없는 자료]
 ${input.gaps.map((g) => `- ${g.item}`).join('\n') || '없음'}
 
-[가진 사진] ${input.photoCount}장${input.photoNotes.length ? `\n${input.photoNotes.map((n) => `- ${n}`).join('\n')}` : ''}
+${pf.reviews ? `[지도 리뷰] Google 리뷰 ${input.reviewCount || 0}개 확보${input.rating ? `(평점 ${input.rating})` : ''} — 후기 페이지는 이 리뷰 원문을 작성자 표기와 함께 그대로 싣는다
+` : ''}[가진 사진] ${input.photoCount}장${input.photoNotes.length ? `\n${input.photoNotes.map((n) => `- ${n}`).join('\n')}` : ''}
 
 [구성 참고 사이트]
 ${input.benchmarks.map((b) => `- ${b.name}: ${b.why}`).join('\n') || '없음'}

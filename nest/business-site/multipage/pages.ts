@@ -1,6 +1,6 @@
 import { esc, paras, mapEmbed, splitHours, stars, TODAY_SCRIPT } from '../templates/shared';
 import { CorpPhoto, CorpProduct, CorpSite } from './model';
-import { href, layout, hasReviews, directions } from './layout';
+import { href, layout, hasReviews, directions, certLabel } from './layout';
 
 /**
  * 기업 사이트 페이지들. 자료가 없는 블록·페이지는 그리지 않는다(라우터가 404로 돌린다).
@@ -119,7 +119,7 @@ ${m.history.length ? `<section><div class="wrap">
 </div></section>` : ''}
 
 ${m.certifications.length ? `<section class="white" style="padding:72px 0"><div class="wrap">
-  <div class="head-row"><div><p class="kicker">인증·특허</p><h2 style="font-size:28px">공인된 기술력</h2></div><a class="more-link" href="${esc(href(m, 'about/certifications'))}">인증 전체 보기</a></div>
+  <div class="head-row"><div><p class="kicker">${esc(certLabel(m))}</p><h2 style="font-size:28px">${m.profile.store ? '받은 상과 인증' : '공인된 기술력'}</h2></div><a class="more-link" href="${esc(href(m, 'about/certifications'))}">전체 보기</a></div>
   <ul class="certs-strip">${m.certifications.slice(0, 10).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
 </div></section>` : ''}
 ${homeReviews(m)}
@@ -254,11 +254,12 @@ export function certifications(m: CorpSite): string {
 @media (max-width:960px){.cgrid{grid-template-columns:1fr}}
 </style>
 <section><div class="wrap">
-  <p class="lead" style="margin:0 0 40px">${esc(m.name)}이(가) 보유한 인증·특허·지정 현황입니다.</p>
+  <p class="lead" style="margin:0 0 40px">${esc(m.name)}이(가) ${m.profile.store ? '받은 상과 인증·지정' : '보유한 인증·특허·지정'} 현황입니다.</p>
   <ul class="cgrid">${m.certifications.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
 </div></section>
 ${ctaBand(m)}`;
-  return layout(m, { path: 'about/certifications', title: '인증·특허', body, band: { kicker: m.profile.aboutMenu, title: '인증·특허', crumbs: [{ label: m.profile.aboutMenu, path: 'about' }, { label: '인증·특허' }] } });
+  const t = certLabel(m);
+  return layout(m, { path: 'about/certifications', title: t, body, band: { kicker: m.profile.aboutMenu, title: t, crumbs: [{ label: m.profile.aboutMenu, path: 'about' }, { label: t }] } });
 }
 
 export function location(m: CorpSite): string {

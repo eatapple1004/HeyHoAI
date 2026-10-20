@@ -450,7 +450,7 @@ export class BusinessSiteService {
       const sh: ResearchSheet = cur.process.research.sheet;
       const photos = (await this.photoList(cur)).filter((p) => !p.hidden);
       const plan = await this.procWriter.plan({
-        profile: this.profile(cur), name: siteName(b.name), industry: b.industry, facts: sh.facts.filter((x) => x.use), products: sh.products, gaps: sh.gaps,
+        profile: this.profile(cur), reviewCount: (cur.source?.google?.reviews || []).length, rating: cur.source?.google?.rating, name: siteName(b.name), industry: b.industry, facts: sh.facts.filter((x) => x.use), products: sh.products, gaps: sh.gaps,
         photoCount: photos.length, photoNotes: photos.map((p) => p.caption).filter(Boolean) as string[], benchmarks: sh.benchmarks,
       });
       await this.patchProcess(businessId, (p) => { p.plan = { ...plan, approvedAt: null, at: new Date().toISOString() }; });
