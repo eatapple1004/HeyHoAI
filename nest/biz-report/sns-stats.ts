@@ -10,7 +10,8 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  *   C 인스타(연결 안 된 계정): Business Discovery — Facebook 로그인 방식 토큰(META_DISCOVERY_*)이 있을 때만
  *   D 유튜브: YouTube Data API v3(YOUTUBE_API_KEY) — 구독자·영상 수·최근 영상 조회·좋아요·댓글
  *   네이버 블로그: 공식 RSS(rss.blog.naver.com) — 최근 글 날짜로 게시 주기
- *   틱톡·스레드·X·페이스북·카카오채널: 남의 계정을 볼 공식 API가 없다 → 검색 결과에 보인 수치만(sns.ts 쪽)
+ *   틱톡: 공식 조회 API가 없다 → 외부 수집(Apify, APIFY_TOKEN 있을 때만, 사업자 결정 2026-10-21). 화면에 "외부 수집" 표기
+ *   스레드·X·페이스북·카카오채널: 남의 계정을 볼 공식 API가 없다 → 검색 결과에 보인 수치만(sns.ts 쪽)
  */
 
 export interface Post { at: string; likes: number | null; comments: number | null; views?: number | null; type?: string; url?: string; caption?: string; reach?: number | null; saved?: number | null }
@@ -117,6 +118,33 @@ export async function youtubeChannel(handle: string): Promise<SnsStats> {
   const followers = ch.statistics?.hiddenSubscriberCount ? null : n(ch.statistics?.subscriberCount);
   return { source: 'YouTube Data API(공식)', followers, posts: n(ch.statistics?.videoCount), name: ch.snippet?.title, bio: String(ch.snippet?.description || '').slice(0, 200), recent,
     summary: { ...summarize(recent, followers), totalViews: n(ch.statistics?.viewCount) } as any, fetchedAt: new Date().toISOString() };
+}
+
+/** 틱톡 — 외부 수집(Apify clockworks/tiktok-profile-scraper). 최근 영상 20개, 영상·표지 내려받기는 끈다(비용) */
+export const tiktokAvailable = () => Boolean(env.APIFY_TOKEN);
+export async function tiktokExternal(handle: string): Promise<SnsStats> {
+  const h = String(handle).replace(/^@/, '').replace(/[^\w.]/g, '');
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 180000);
+  let items: any[] = [];
+  try {
+    const res = await fetch('https://api.apify.com/v2/acts/clockworks~tiktok-profile-scraper/run-sync-get-dataset-items?timeout=170', {
+      method: 'POST', signal: ctl.signal,
+      headers: { Authorization: `Bearer ${env.APIFY_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profiles: [h], resultsPerPage: 20, profileScrapeSections: ['videos'], profileSorting: 'latest', shouldDownloadVideos: false, shouldDownloadCovers: false, shouldDownloadSubtitles: false }),
+    });
+    if (!res.ok) throw new Error(`Apify ${res.status} ${(await res.text()).slice(0, 120)}`);
+    items = await res.json();
+  } finally { clearTimeout(t); }
+  const vids = (Array.isArray(items) ? items : []).filter((x) => x && (x.createTimeISO || x.webVideoUrl));
+  const a = vids[0]?.authorMeta || (Array.isArray(items) ? items[0]?.authorMeta : null) || {};
+  if (!vids.length && !a.name) throw new Error('계정을 찾지 못했거나 비공개 계정입니다');
+  const recent: Post[] = vids.map((v) => ({
+    at: iso(v.createTimeISO || ''), likes: n(v.diggCount), comments: n(v.commentCount), views: n(v.playCount),
+    type: v.isSlideshow ? '사진 슬라이드' : '영상', url: v.webVideoUrl, caption: String(v.text || '').slice(0, 120),
+  })).filter((p) => p.at);
+  const followers = n(a.fans);
+  return { source: 'Apify TikTok Profile Scraper(외부 수집 · 공식 API 아님)', followers, following: n(a.following), posts: n(a.video), name: a.nickName || a.name,
+    bio: String(a.signature || '').slice(0, 200), recent, summary: { ...summarize(recent, followers), totalHearts: n(a.heart) } as any, fetchedAt: new Date().toISOString() };
 }
 
 /** 네이버 블로그 — 공식 RSS(최근 글 50개 안팎). 좋아요·댓글 수는 RSS에 없다 */

@@ -373,7 +373,7 @@ function SnsStatsView({ accounts, setup }: { accounts: any[]; setup?: any }) {
           </div>
         </div>
       )}
-      {setup && <p className="text-[11px] text-zinc-500">공식 수치 연결 상태: 인스타(도피아 연결) {setup.connectedInstagram?.length ? setup.connectedInstagram.map((u: string) => '@' + u).join(', ') : '없음'} · 남의 인스타 조회 {setup.discovery ? '켜짐' : '꺼짐'} · 유튜브 API {setup.youtube ? '켜짐' : '꺼짐'} · 네이버 블로그 RSS 켜짐 · 틱톡·스레드·X·페이스북·카카오채널은 공식 조회 API 없음</p>}
+      {setup && <p className="text-[11px] text-zinc-500">공식 수치 연결 상태: 인스타(도피아 연결) {setup.connectedInstagram?.length ? setup.connectedInstagram.map((u: string) => '@' + u).join(', ') : '없음'} · 남의 인스타 조회 {setup.discovery ? '켜짐' : '꺼짐'} · 유튜브 API {setup.youtube ? '켜짐' : '꺼짐'} · 네이버 블로그 RSS 켜짐 · 틱톡(외부 수집) {setup.tiktok ? '켜짐' : '꺼짐'} · 스레드·X·페이스북·카카오채널은 공식 조회 API 없음</p>}
     </div>
   );
 }
