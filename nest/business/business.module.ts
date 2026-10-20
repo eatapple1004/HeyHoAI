@@ -13,6 +13,7 @@ import { AdminGuard } from '../auth/admin.guard';
 /** 사업체 인스타그램 관리(관리자 전용) — /api/admin/business */
 @Module({
   controllers: [BusinessController, BusinessPlanController],
-  providers: [BusinessService, BusinessRepository, BusinessCaptionService, BusinessPackService, BusinessPlanService, BusinessPlanRepository, BusinessPlanPackService, AdminGuard],
+  providers: [BusinessService, BusinessRepository, BusinessCaptionService, BusinessPackService, BusinessPlanService, BusinessPlanRepository, BusinessPlanPackService, AdminGuard],  // AI 마케팅 팀(MarketingModule)이 캡션·게시 큐를 그대로 쓴다
+  exports: [BusinessService],
 })
 export class BusinessModule {}
