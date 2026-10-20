@@ -251,7 +251,8 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
         </div>
       </Section>
 
-      <Section n="04" title="온라인 노출 · 운영" hint="지도 서비스·홈페이지·인스타 상태">
+      <Section n="04" title="온라인 노출 · 운영" hint="지도 서비스·홈페이지·SNS 상태">
+        <Sns sns={f.sns} />
         <div className="grid gap-4 sm:grid-cols-2">
           {['presence', 'content'].map((k) => { const x = scores.find((y) => y.key === k); return x ? (
             <div key={k} className="rounded-xl border border-zinc-200 p-4"><b>{x.label} <span className="tabular-nums text-violet-700">{x.score ?? '자료 없음'}</span></b>
@@ -306,6 +307,32 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
         {Object.keys(f.errors || {}).length > 0 && <p className="mt-1 text-xs text-amber-700">일부 출처 실패: {Object.keys(f.errors).join(', ')}</p>}
       </Section>
     </article>
+  );
+}
+
+/** SNS 계정 — 어디서 찾았는지·확인 수준·검색 결과에 보인 수치(날짜) */
+function Sns({ sns }: { sns: any }) {
+  if (!sns) return null;
+  const tone = (l: string) => (l === '확인' ? 'bg-emerald-100 text-emerald-800' : l === '검색 결과 확인' ? 'bg-violet-100 text-violet-800' : 'bg-zinc-100 text-zinc-500');
+  return (
+    <div className="mb-5">
+      <h4 className="mb-2 text-sm font-bold text-zinc-600">SNS 계정</h4>
+      {sns.accounts?.length ? (
+        <div className="overflow-x-auto"><table className="tbl w-full text-sm">
+          <thead><tr className="text-left text-xs text-zinc-500"><th className="py-2">채널</th><th>계정</th><th>찾은 곳</th><th>확인</th><th>팔로워·게시물(검색 결과 기준)</th></tr></thead>
+          <tbody>{sns.accounts.map((a: any) => (
+            <tr key={a.platform + a.handle} className={`border-t border-zinc-100 ${a.level === '출처 미확인' ? 'text-zinc-400' : ''}`}>
+              <td className="py-2 font-semibold">{a.label}{a.official === 'brand' ? <span className="ml-1 text-xs font-normal text-zinc-500">(본사)</span> : null}</td>
+              <td><a className="text-violet-700" href={a.url} target="_blank" rel="noreferrer">{a.platform === 'instagram' || a.platform === 'tiktok' || a.platform === 'threads' ? '@' : ''}{a.handle}</a></td>
+              <td className="text-xs">{a.found.join(' · ')}</td>
+              <td><span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${tone(a.level)}`}>{a.level}</span></td>
+              <td className="text-xs">{[a.followers, a.posts, a.lastActive && `최근 ${a.lastActive}`].filter(Boolean).join(' · ') || '–'}</td>
+            </tr>
+          ))}</tbody>
+        </table></div>
+      ) : <p className="text-sm text-red-600">공식 SNS 계정을 찾지 못했습니다.</p>}
+      <p className="mt-2 text-xs text-zinc-500">찾는 곳: 홈페이지에 걸린 링크 · Google 장소 웹사이트 칸 · 웹 검색{sns.naverAvailable ? ' · 네이버 웹 검색' : ' (네이버 검색은 키가 없어 제외)'}. 팔로워 수는 검색 결과에 보인 값이라 실제와 다를 수 있습니다{sns.checkedAt ? ` (확인 ${new Date(sns.checkedAt).toLocaleDateString('ko-KR')})` : ''}.</p>
+    </div>
   );
 }
 

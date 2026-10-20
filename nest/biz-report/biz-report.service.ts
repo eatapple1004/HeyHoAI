@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { BizReportRepository } from './biz-report.repository';
-import { BizReportWriterService, ReportStory } from './biz-report-writer.service';
+import { BizReportWriterService, ReportStory, normUrl } from './biz-report-writer.service';
+import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
 import { sources } from '../business-site/place-sources';
 import { numbers, loosely, norm } from '../business-site/site-qa';
 
@@ -64,6 +65,60 @@ export class BizReportService {
     await this.repo.patch(id, { status: 'done', step: null, data: { facts, scores, story, check: { unsourced } } });
   }
 
+  /**
+   * SNS 계정 찾기 — ① 홈페이지에 걸린 링크(·Google 장소 웹사이트 칸) ② 네이버 웹 검색(키 있을 때) ③ 웹 검색.
+   *   ①은 업체가 직접 건 링크라 "확인", ③은 검색 결과에 주소가 실제로 있을 때만 "검색 결과 확인"(없으면 "출처 미확인", 점수에 안 씀).
+   *   팔로워·게시물 수는 검색 결과에 보인 글자 그대로(날짜와 함께) — 인스타 공식 조회(Business Discovery)는 우리 연동 방식에서 막혀 있다(2026-10-21 실측).
+   */
+  private async sns(input: { name: string; address: string; category: string; website: string }) {
+    type Acc = SnsLink & { found: string[]; level: string; official?: string; followers?: string; posts?: string; lastActive?: string; evidence?: string };
+    const accs = new Map<string, Acc>();
+    const add = (l: SnsLink | null, how: string, extra: Partial<Acc> = {}) => {
+      if (!l) return;
+      const key = `${l.platform}:${l.handle.toLowerCase()}`;
+      const cur = accs.get(key);
+      if (cur) { if (!cur.found.includes(how)) cur.found.push(how); Object.assign(cur, Object.fromEntries(Object.entries(extra).filter(([k2, v]) => v && !(cur as any)[k2]))); }
+      else accs.set(key, { ...l, found: [how], level: extra.level || '확인', ...extra });
+    };
+    // ① 홈페이지 — 웹사이트 칸이 아예 SNS 주소인 가게도 많다
+    if (input.website) {
+      add(toSns(input.website), 'Google 장소 웹사이트');
+      if (!toSns(input.website) && /^https?:\/\/[^/]+\.[^/]+/i.test(input.website) && !/\/\/(localhost|[\d.]+)(:|\/|$)/i.test(input.website)) {
+        try {
+          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
+          const res = await fetch(input.website, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (DoppiaSiteBuilder)' } }).finally(() => clearTimeout(t));
+          if (res.ok) for (const l of snsFromHtml(await res.text())) add(l, '홈페이지 링크');
+        } catch { /* 홈페이지가 안 열리면 검색으로 */ }
+      }
+    }
+    // ② 네이버 웹 검색(키가 있을 때만)
+    const naverAvailable = sources.available().naver;
+    if (naverAvailable) {
+      for (const q of [`${input.name} 인스타그램`, `${input.name} 공식 블로그`]) {
+        try { for (const r of await sources.naverWeb(q)) add(toSns(r.link), '네이버 검색', { level: '검색 결과 확인', evidence: r.link }); } catch { /* 다음 검색어 */ }
+      }
+    }
+    // ③ 웹 검색
+    const found = await this.writer.findSns({ ...input, known: [...accs.values()].map((a) => a.url) });
+    for (const a of found.accounts) {
+      const l = toSns(String(a?.url || ''));
+      if (!l) continue;
+      const seen = found.urls.has(normUrl(l.url)) || (a.evidence && found.urls.has(normUrl(String(a.evidence))));
+      const clip = (v: unknown, n = 40) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+      add(l, '웹 검색', {
+        level: seen ? '검색 결과 확인' : '출처 미확인', official: clip(a.official, 10),
+        // 숫자는 출처가 확인된 계정에서만
+        ...(seen ? { followers: clip(a.followers), posts: clip(a.posts), lastActive: clip(a.lastActive) } : {}),
+        evidence: clip(a.evidence, 300),
+      });
+    }
+    const order: Record<string, number> = { 확인: 0, '검색 결과 확인': 1, '출처 미확인': 2 };
+    return {
+      accounts: [...accs.values()].map((a) => ({ ...a, label: SNS_LABEL[a.platform] })).sort((x, y) => order[x.level] - order[y.level]),
+      searches: found.searches.slice(0, 8), naverAvailable, checkedAt: new Date().toISOString(),
+    };
+  }
+
   /** 모으기 — 실패한 출처는 errors 에 적고 나머지로 진행 */
   private async gather(businessId: string) {
     const b = (await this.repo.business(businessId))!;
@@ -91,6 +146,8 @@ export class BizReportService {
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
       .sort((a, b2) => b2.reviews - a.reviews).slice(0, 10);
 
+    const sns = await safe('sns', () => this.sns({ name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', website: g?.website || s.web?.url || '' }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '' });
+
     const reviews = (g?.reviews || []).map((r: any) => ({ author: r.author, rating: r.rating, when: r.when, text: String(r.text || '').slice(0, 600), lang: langOf(r.text) }));
     const sheet = site?.process?.research?.sheet;
     const posts = await this.repo.postStats(businessId);
@@ -104,6 +161,7 @@ export class BizReportService {
       reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: (s.naver?.blogs || []).length, naverAvailable: sources.available().naver },
       nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
       competitors,
+      sns,
       presence: {
         kakaoPlace: Boolean(k), googlePlace: Boolean(g), hours: (g?.hours || []).length > 0, website: Boolean(g?.website || s.web?.url),
         doppiaSite: site?.content?.multipage ? (site.status === 'published' ? 'published' : 'draft') : (site && Object.keys(site.content || {}).length ? 'single' : 'none'),
@@ -138,11 +196,17 @@ export function score(f: any): Score[] {
   // 2) 온라인 노출: 지도·영업시간·홈페이지·인스타·최근 게시·블로그·전화번호 일치
   {
     const p = f.presence; const posts = f.operations.posts?.posted30 || 0; const blogs = f.reputation.blogMentions || 0;
+    // 점수에는 출처가 확인된 계정만(출처 미확인·다른 지점 계정 제외)
+    const okSns = (f.sns?.accounts || []).filter((a: any) => a.level !== '출처 미확인' && a.official !== 'brand');
+    const insta = okSns.filter((a: any) => a.platform === 'instagram');
+    const other = okSns.filter((a: any) => a.platform !== 'instagram');
     // null = 확인할 수 없음(출처 키 없음) — 점수 계산에서 빼고 남은 항목으로 100점 환산
     const items: [boolean | null, number, string][] = [
       [p.kakaoPlace, 10, '카카오맵 등록'], [p.googlePlace, 10, 'Google 지도 등록'], [p.hours, 10, '영업시간 등록(Google)'],
-      [p.website, 15, '홈페이지 있음'], [p.doppiaSite === 'published', 10, '도피아 홈페이지 공개'],
-      [p.instagram.length > 0, 15, '인스타 계정 연결'], [posts >= 4, 15, `최근 30일 인스타 게시 ${posts}건(4건 이상)`],
+      [p.website, 10, '홈페이지 있음'], [p.doppiaSite === 'published', 10, '도피아 홈페이지 공개'],
+      [insta.length > 0 || p.instagram.length > 0, 10, insta.length ? `공식 인스타 있음(@${insta[0].handle})` : '공식 인스타 — 찾지 못함'],
+      [p.instagram.length > 0, 5, '인스타를 도피아에 연결(게시 예약 가능)'], [posts >= 4, 15, `최근 30일 도피아로 인스타 게시 ${posts}건(4건 이상)`],
+      [other.length > 0, 5, other.length ? `다른 SNS ${other.map((a: any) => a.label).join('·')}` : '다른 SNS(유튜브·페이스북·블로그·카카오채널) — 찾지 못함'],
       [f.reputation.naverAvailable ? blogs >= 5 : null, 10, f.reputation.naverAvailable ? `네이버 블로그 언급 ${blogs}건(5건 이상)` : '네이버 블로그 언급 — 확인 불가(네이버 검색 키 없음)'],
       [p.phonesConsistent, 5, p.phonesConsistent ? '지도 서비스 전화번호 일치' : `지도 서비스 전화번호 불일치(${p.phones.join(' / ')})`],
     ];

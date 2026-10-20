@@ -43,6 +43,45 @@ export class BizReportWriterService {
     return this.client;
   }
 
+  /**
+   * SNS 계정 찾기 — 웹 검색(서버 도구). 계정 주소와 팔로워·게시물 수는 검색 결과에 실제로 보인 것만.
+   *   반환 accounts[].url 이 검색 결과 주소에 없고 evidence 도 결과에 없으면 서비스가 "출처 미확인"으로 둔다.
+   */
+  async findSns(input: { name: string; address: string; category: string; website?: string; known: string[] }): Promise<{ accounts: any[]; urls: Set<string>; searches: string[] }> {
+    const user = `업체: ${input.name}
+주소: ${input.address}
+업종: ${input.category}
+${input.website ? `홈페이지: ${input.website}` : ''}
+이미 찾은 계정(홈페이지 링크 등): ${input.known.join(', ') || '없음'}
+
+웹 검색 3~5번으로 이 업체(이 주소의 업체)의 공식 SNS 계정을 찾으세요 — 인스타그램, 페이스북, 유튜브, 네이버 블로그, 카카오톡 채널, 스레드, 틱톡, X.
+검색어 예: "${input.name} 인스타그램", "${input.name} 공식 계정", "${input.name} 유튜브".
+- 이름이 같은 다른 지점·다른 업체 계정은 넣지 않는다(프랜차이즈면 본사 계정은 official:"brand", 이 지점 계정은 "branch").
+- followers·posts: 검색 결과(제목·요약)에 숫자가 보일 때만 그 글자 그대로(예: "팔로워 1.2만명", "게시물 340"). 안 보이면 "".
+- lastActive: 최근 게시 날짜가 결과에 보일 때만.
+- evidence: 이 계정을 찾은 검색 결과 주소.
+JSON: {"accounts":[{"platform":"instagram|facebook|youtube|naverBlog|kakaoChannel|threads|tiktok|x","url":"","official":"branch|brand|unsure","followers":"","posts":"","lastActive":"","evidence":"","note":""}]}`;
+    const messages: any[] = [{ role: 'user', content: user }];
+    const urls = new Set<string>(); const searches: string[] = []; let last = '';
+    for (let turn = 0; turn < 4; turn++) {
+      const res: any = await this.anthropic().messages.create({ model: env.CLAUDE_MODEL, max_tokens: 3000, system: RULES, messages,
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'KR' } }] } as any);
+      let tail = '';
+      for (const b of res.content || []) {
+        if (b.type === 'server_tool_use' && b.input?.query) searches.push(String(b.input.query));
+        if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) { for (const r of b.content) if (r?.url) urls.add(normUrl(r.url)); tail = ''; }
+        if (b.type === 'text') tail += b.text;
+      }
+      last = tail || last;
+      if (res.stop_reason !== 'pause_turn') break;
+      messages.push({ role: 'assistant', content: res.content });
+    }
+    const a = last.indexOf('{'); const b = last.lastIndexOf('}');
+    let j: any = {};
+    if (a >= 0 && b > a) { try { j = JSON.parse(last.slice(a, b + 1)); } catch { j = {}; } }
+    return { accounts: Array.isArray(j.accounts) ? j.accounts.slice(0, 12) : [], urls, searches };
+  }
+
   async write(input: { facts: any; scores: any[] }): Promise<ReportStory> {
     const user = `[자료 — 공식 API·조사 시트·도피아 운영 기록]
 ${JSON.stringify(input.facts, null, 1).slice(0, 60000)}
@@ -89,4 +128,9 @@ JSON: {"summary":"","findings":[{"title":"","body":""}],"actions":[{"title":"","
       questions: arr(j.questions).map((q) => s(q, 200)).filter(Boolean).slice(0, 6),
     };
   }
+}
+
+/** 대조용 주소 — 프로토콜·www·끝 슬래시 차이는 같은 주소로 */
+export function normUrl(u: string): string {
+  try { const x = new URL(u); return (x.hostname.replace(/^(www|m)\./, '') + x.pathname.replace(/\/+$/, '') + (x.search || '')).toLowerCase(); } catch { return String(u || '').toLowerCase(); }
 }

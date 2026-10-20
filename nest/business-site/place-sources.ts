@@ -401,7 +401,7 @@ export const sources = {
    *   구 개발자센터: openapi.naver.com/v1/search/<kind>.json + X-Naver-Client-Id/Secret (2027-06-30 종료)
    *   요청 파라미터·응답 구조는 같다.
    */
-  naverRequest(kind: 'local' | 'blog', qs: string): [string, Record<string, string>] {
+  naverRequest(kind: 'local' | 'blog' | 'webkr', qs: string): [string, Record<string, string>] {
     if (env.NAVER_HUB_KEY_ID && env.NAVER_HUB_KEY) {
       return [`https://naverapihub.apigw.ntruss.com/search/v1/${kind}?${qs}`,
         { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_HUB_KEY_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_HUB_KEY }];
@@ -418,6 +418,14 @@ export const sources = {
       name: stripTags(i.title), category: i.category, phone: i.telephone,
       address: i.address, roadAddress: i.roadAddress, link: i.link,
     }));
+  },
+
+  /** 네이버 웹문서 검색 — SNS 계정 찾기용(제목·링크·요약). 키가 없으면 [] */
+  async naverWeb(query: string): Promise<{ title: string; link: string; snippet: string }[]> {
+    if (!this.available().naver) return [];
+    const [url, headers] = this.naverRequest('webkr', `display=10&query=${encodeURIComponent(query)}`);
+    const j = await getJson(url, { headers });
+    return (j.items || []).map((i: any) => ({ title: stripTags(i.title), link: i.link, snippet: stripTags(i.description) }));
   },
 
   async naverBlogs(query: string): Promise<NaverBlog[]> {
