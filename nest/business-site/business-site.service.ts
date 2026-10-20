@@ -663,7 +663,8 @@ ${sh?.homonyms?.length ? `<h2>참고: 이름이 같은 다른 업체</h2><p clas
   /** 자동 점검의 숫자 대조용 — 사이트에 쓸 수 있는 모든 원문 */
   sourceText(site: BusinessSiteRow): string {
     const f = this.facts(site.source || {});
-    return [this.material(site), f.address, f.roadAddress, f.phone, f.category].join('\n');
+    // 영업시간(Google)도 원문 — 문구에 "밤 11시까지" 같은 말이 들어간다
+    return [this.material(site), f.address, f.roadAddress, f.phone, f.category, ...(f.hours || [])].join('\n');
   }
 
   /** 렌더 모델 — content(문구) + facts(수집 자료) + 사진. base 는 링크 앞부분 */
