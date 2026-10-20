@@ -17,7 +17,8 @@ const RULES = `당신은 동네 가게·중소기업의 마케팅을 진단하�
 3. "주변 유입 요인"은 시설 수 기준이지 실제 방문자 수가 아님을 혼동하지 않는다.
 4. 리뷰는 표본(최근 몇 개)이다. 전체 경향처럼 단정하지 않는다.
 5. 할 일은 이 가게가 실제로 할 수 있는 구체적인 일로. 도피아가 해 줄 수 있는 일(홈페이지·인스타 게시물·리뷰 답글 초안·진단 재측정)은 담당을 "도피아"로.
-6. 설명 없이 JSON만.`;
+6. 사장님이 읽는 글이다 — 자료의 영어 이름(posted30, ownPhotos, naverAvailable, presence 등)이나 draft·published·ready 같은 상태 값을 쓰지 말고 우리말로(예: "최근 30일 인스타 게시", "직접 가진 사진", "공개 전", "승인 대기"). 전화번호는 자료에 적힌 표기 그대로.
+7. 설명 없이 JSON만.`;
 
 export interface ReportStory {
   summary: string;
@@ -59,12 +60,16 @@ ${JSON.stringify(input.scores, null, 1)}
 - missing: 진단에 더 필요한 자료(공개 API로 못 구하는 것: 매출·시간대별 방문·네이버 플레이스 리뷰 수·배달앱 등)와 왜 필요한지, 어떻게 받는지(how).
 - questions: 사장님께 여쭐 것 3~5개.
 JSON: {"summary":"","findings":[{"title":"","body":""}],"actions":[{"title":"","owner":"","when":"","why":""}],"reviewThemes":{"good":[""],"bad":[""]},"plan":[{"phase":"","period":"","tasks":[{"task":"","owner":"","metric":""}]}],"metrics":[{"name":"","now":"","target":"","note":""}],"missing":[{"item":"","why":"","how":""}],"questions":[""]}`;
-    const res: any = await this.anthropic().messages.create({ model: env.CLAUDE_MODEL, max_tokens: 8000, system: RULES, messages: [{ role: 'user', content: user }] } as any);
-    const text = (res.content || []).map((b: any) => (b.type === 'text' ? b.text : '')).join('');
-    const a = text.indexOf('{'); const b = text.lastIndexOf('}');
-    let j: any = null;
-    if (a >= 0 && b > a) { try { j = JSON.parse(text.slice(a, b + 1)); } catch { j = null; } }
-    if (!j) throw new InternalServerErrorException(res.stop_reason === 'max_tokens' ? 'AI 응답이 길이 한도에 걸려 잘렸습니다.' : 'AI 응답을 읽지 못했습니다.');
+    // 가끔 JSON 이 깨져 온다(실측 1/3) — 한 번 더 받는다
+    let j: any = null; let stop = '';
+    for (let attempt = 0; attempt < 2 && !j; attempt++) {
+      const res: any = await this.anthropic().messages.create({ model: env.CLAUDE_MODEL, max_tokens: 8000, system: RULES, messages: [{ role: 'user', content: user }] } as any);
+      const text = (res.content || []).map((b: any) => (b.type === 'text' ? b.text : '')).join('');
+      stop = res.stop_reason;
+      const a = text.indexOf('{'); const b = text.lastIndexOf('}');
+      if (a >= 0 && b > a) { try { j = JSON.parse(text.slice(a, b + 1)); } catch (e: any) { console.warn('[biz-report] JSON parse failed', attempt, e?.message, text.slice(-160)); } }
+    }
+    if (!j) throw new InternalServerErrorException(stop === 'max_tokens' ? 'AI 응답이 길이 한도에 걸려 잘렸습니다.' : 'AI 응답을 읽지 못했습니다.');
     const s = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
     const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
     return {

@@ -85,7 +85,7 @@ export class BizReportService {
     // 같은 업종(키워드) — 카카오 개수 + Google 평점 비교
     const sameKakao = x && y && leaf ? await safe('kakao:same', () => sources.kakaoNearby({ query: leaf, x, y, radius: NEAR }), { total: 0, places: [] }) : { total: 0, places: [] };
     const sameGoogle = x && y && leaf ? await safe('google:same', () => sources.googleNearby(leaf, Number(y), Number(x), 700), []) : [];
-    const selfName = String(k?.name || g?.name || b.name).replace(/\s+/g, '');
+    const selfName = String(k?.name || g?.name || b.name);
     const competitors = sameGoogle
       .filter((c) => c.id !== g?.id && c.rating)
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
@@ -95,7 +95,8 @@ export class BizReportService {
     const sheet = site?.process?.research?.sheet;
     const posts = await this.repo.postStats(businessId);
     const social = await this.repo.social(businessId);
-    const phones = [...new Set([k?.phone, g?.phone].filter(Boolean).map((p: string) => p.replace(/[^\d]/g, '')))];
+    // 번호는 원래 표기로 보여 주고, 같은지는 숫자만 비교
+    const phones = [...new Map([k?.phone, g?.phone].filter(Boolean).map((p: string) => [p.replace(/[^\d]/g, ''), p])).values()];
 
     return {
       at: new Date().toISOString(),
@@ -137,13 +138,19 @@ export function score(f: any): Score[] {
   // 2) 온라인 노출: 지도·영업시간·홈페이지·인스타·최근 게시·블로그·전화번호 일치
   {
     const p = f.presence; const posts = f.operations.posts?.posted30 || 0; const blogs = f.reputation.blogMentions || 0;
-    const items: [boolean, number, string][] = [
+    // null = 확인할 수 없음(출처 키 없음) — 점수 계산에서 빼고 남은 항목으로 100점 환산
+    const items: [boolean | null, number, string][] = [
       [p.kakaoPlace, 10, '카카오맵 등록'], [p.googlePlace, 10, 'Google 지도 등록'], [p.hours, 10, '영업시간 등록(Google)'],
       [p.website, 15, '홈페이지 있음'], [p.doppiaSite === 'published', 10, '도피아 홈페이지 공개'],
       [p.instagram.length > 0, 15, '인스타 계정 연결'], [posts >= 4, 15, `최근 30일 인스타 게시 ${posts}건(4건 이상)`],
-      [blogs >= 5, 10, `블로그 언급 ${blogs}건(5건 이상)`], [p.phonesConsistent, 5, p.phonesConsistent ? '지도 서비스 전화번호 일치' : `지도 서비스 전화번호 불일치(${p.phones.join(' / ')})`],
+      [f.reputation.naverAvailable ? blogs >= 5 : null, 10, f.reputation.naverAvailable ? `네이버 블로그 언급 ${blogs}건(5건 이상)` : '네이버 블로그 언급 — 확인 불가(네이버 검색 키 없음)'],
+      [p.phonesConsistent, 5, p.phonesConsistent ? '지도 서비스 전화번호 일치' : `지도 서비스 전화번호 불일치(${p.phones.join(' / ')})`],
     ];
-    out.push({ key: 'presence', label: '온라인 노출', score: items.reduce((s2, [ok, w]) => s2 + (ok ? w : 0), 0), basis: items.map(([ok, w, t]) => `${ok ? '✓' : '✗'} ${t} (${w}점)`) });
+    const known = items.filter(([ok]) => ok !== null);
+    const max = known.reduce((s2, [, w]) => s2 + w, 0);
+    const got = known.reduce((s2, [ok, w]) => s2 + (ok ? w : 0), 0);
+    out.push({ key: 'presence', label: '온라인 노출', score: max ? Math.round((got / max) * 100) : null,
+      basis: [...items.map(([ok, w, t]) => `${ok === null ? '–' : ok ? '✓' : '✗'} ${t}${ok === null ? '' : ` (${w}점)`}`), ...(max < 100 ? [`확인 가능한 ${max}점 만점을 100점으로 환산`] : [])] });
   }
   // 3) 콘텐츠·운영: 직접 가진 사진·메뉴 정보·가격·홈페이지·게시 준비
   {
@@ -191,7 +198,7 @@ function dist(lat1: number, lng1: number, lat2: number, lng2: number) {
   const a = Math.sin(((lat2 - lat1) * t) / 2) ** 2 + Math.cos(lat1 * t) * Math.cos(lat2 * t) * Math.sin(((lng2 - lng1) * t) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
-/** 같은 브랜드 판별용 — 지점명(…점·…본점)과 공백을 뗀 앞부분 */
-const brandOf = (n: string) => String(n || '').replace(/\s+/g, '').replace(/(본점|분점|신관|\d+호점|[가-힣A-Za-z0-9]*점)$/, '').slice(0, 6);
+/** 같은 브랜드 판별용 — 이름의 첫 단어(지점명은 보통 뒤에 붙는다: "명동교자 분점", "효담칼국수 명동본점") */
+const brandOf = (n: string) => String(n || '').trim().split(/[\s(/]+/)[0].replace(/(본점|분점|\d+호점)$/, '');
 const langOf = (t: string) => (/[぀-ヿ]/.test(t) ? 'ja' : /[가-힣]/.test(t) ? 'ko' : /[一-鿿]/.test(t) ? 'zh' : 'en');
 const siteName = (n: string) => String(n || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || n;
