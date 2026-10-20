@@ -115,6 +115,10 @@ const envSchema = z.object({
   NAVER_HUB_KEY: z.string().optional(),
   // (2026-10-21) 네이버 플레이스 리뷰 — 공식 API가 없어 외부 수집 서비스(ReefAPI)를 쓴다(사업자 결정: 방법 ⑤). 없으면 건너뛴다
   REEF_API_KEY: z.string().optional(),
+  // (2026-10-21) SNS 분석 — 전부 선택. 없으면 그 채널 수치는 비운다
+  YOUTUBE_API_KEY: z.string().optional(),            // YouTube Data API v3(채널·영상 통계). 기존 Google 키는 API 제한으로 막혀 있음
+  META_DISCOVERY_TOKEN: z.string().optional(),       // Facebook 로그인 방식 토큰(instagram_basic·pages_read_engagement) — 남의 인스타 비즈니스 계정 조회(Business Discovery)
+  META_DISCOVERY_IG_USER_ID: z.string().optional(),  // 그 토큰에 연결된 우리 인스타 비즈니스 계정 id
 
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
