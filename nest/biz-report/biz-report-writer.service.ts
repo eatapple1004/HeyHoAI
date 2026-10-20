@@ -73,7 +73,9 @@ JSON: {"summary":"","findings":[{"title":"","body":""}],"actions":[{"title":"","
     // 규칙을 줘도 가끔 자료의 영어 이름이 글에 섞인다 — 사장님이 읽는 말로 바꿔 둔다
     const TERMS: [RegExp, string][] = [[/\bpresence\b/g, '온라인 노출'], [/\breputation\b/g, '평판'], [/\blocality\b/g, '주변 유입 요인'], [/\bcompetition\b/g, '경쟁 위치'],
       [/\bposted30\b/g, '최근 30일 게시'], [/\bownPhotos\b/g, '직접 가진 사진'], [/\bnaverAvailable\b[=:]?\s*(false|true)?/g, '네이버 검색 연결'], [/\b(draft)\b/g, '공개 전'], [/\b(published)\b/g, '공개'], [/\bready\b/g, '승인 대기']];
-    const plain = (t: string) => TERMS.reduce((x, [re, to]) => x.replace(re, to), t);
+    // 남은 "(…phonesConsistent=false)" 같은 자료 표기 조각은 통째로 지운다
+    const plain = (t: string) => TERMS.reduce((x, [re, to]) => x.replace(re, to), t)
+      .replace(/\s*\(?[가-힣 ]*\.?\b[a-z]+[A-Z][A-Za-z.]*\s*[=:]\s*[\w.]+\)?/g, '').replace(/\s{2,}/g, ' ');
     const s = (v: unknown, n: number) => (typeof v === 'string' ? plain(v.trim()).slice(0, n) : '');
     const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
     return {
