@@ -218,7 +218,8 @@ export class MarketingService implements OnModuleInit {
       try {
         q = await this.business.enqueue(businessId, { imageMediaId: t.body.mediaId, imageCaption: t.body.caption, hashtags: t.body.hashtags, scheduledAt: at });
       } catch (e: any) {
-        throw new BadRequestException(`게시 큐에 넣지 못했습니다: ${e?.message || e}${/계정/.test(String(e?.message)) ? ' — 사업체 상세에서 인스타 계정을 먼저 연결하세요.' : ''}`);
+        const m = String(e?.message || e);
+        throw new BadRequestException(/계정/.test(m) ? '인스타 계정이 연결되지 않았습니다 — 사업체 상세에서 인스타 계정을 연결한 뒤 승인하세요.' : `게시 큐에 넣지 못했습니다: ${m}`);
       }
       await this.repo.updateTask(t.id, { status: 'done', body: { ...t.body, queueId: q.id, queuedAt: new Date().toISOString(), scheduledAt: at || null } });
     } else {
