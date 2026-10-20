@@ -70,7 +70,7 @@ export class BizReportService {
    *   ①은 업체가 직접 건 링크라 "확인", ③은 검색 결과에 주소가 실제로 있을 때만 "검색 결과 확인"(없으면 "출처 미확인", 점수에 안 씀).
    *   팔로워·게시물 수는 검색 결과에 보인 글자 그대로(날짜와 함께) — 인스타 공식 조회(Business Discovery)는 우리 연동 방식에서 막혀 있다(2026-10-21 실측).
    */
-  private async sns(input: { name: string; address: string; category: string; website: string }) {
+  private async sns(input: { name: string; address: string; category: string; websites: string[] }) {
     type Acc = SnsLink & { found: string[]; level: string; official?: string; followers?: string; posts?: string; lastActive?: string; evidence?: string };
     const accs = new Map<string, Acc>();
     const add = (l: SnsLink | null, how: string, extra: Partial<Acc> = {}) => {
@@ -80,16 +80,18 @@ export class BizReportService {
       if (cur) { if (!cur.found.includes(how)) cur.found.push(how); Object.assign(cur, Object.fromEntries(Object.entries(extra).filter(([k2, v]) => v && !(cur as any)[k2]))); }
       else accs.set(key, { ...l, found: [how], level: extra.level || '확인', ...extra });
     };
-    // ① 홈페이지 — 웹사이트 칸이 아예 SNS 주소인 가게도 많다
-    if (input.website) {
-      add(toSns(input.website), 'Google 장소 웹사이트');
-      if (!toSns(input.website) && /^https?:\/\/[^/]+\.[^/]+/i.test(input.website) && !/\/\/(localhost|[\d.]+)(:|\/|$)/i.test(input.website)) {
-        try {
-          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
-          const res = await fetch(input.website, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (DoppiaSiteBuilder)' } }).finally(() => clearTimeout(t));
-          if (res.ok) for (const l of snsFromHtml(await res.text())) add(l, '홈페이지 링크');
-        } catch { /* 홈페이지가 안 열리면 검색으로 */ }
-      }
+    // ① 홈페이지 — 웹사이트 칸이 아예 SNS 주소인 가게도 많다. Google 이 https 로 적었는데 사이트는 http 뿐인 경우(명동교자)가 있어
+    //   Google 주소 → 수집 때 연 주소 순으로 열리는 것 하나를 읽는다
+    const website = input.websites[0] || '';
+    for (const w of input.websites) add(toSns(w), 'Google 장소 웹사이트');
+    for (const w of input.websites.filter((x) => !toSns(x) && /^https?:\/\/[^/]+\.[^/]+/i.test(x) && !/\/\/(localhost|[\d.]+)(:|\/|$)/i.test(x))) {
+      try {
+        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
+        const res = await fetch(w, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (DoppiaSiteBuilder)' } }).finally(() => clearTimeout(t));
+        if (!res.ok) continue;
+        for (const l of snsFromHtml(await res.text())) add(l, '홈페이지 링크');
+        break;
+      } catch { /* 다음 주소 */ }
     }
     // ② 네이버 웹 검색(키가 있을 때만)
     const naverAvailable = sources.available().naver;
@@ -99,7 +101,7 @@ export class BizReportService {
       }
     }
     // ③ 웹 검색
-    const found = await this.writer.findSns({ ...input, known: [...accs.values()].map((a) => a.url) });
+    const found = await this.writer.findSns({ name: input.name, address: input.address, category: input.category, website, known: [...accs.values()].map((a) => a.url) });
     for (const a of found.accounts) {
       const l = toSns(String(a?.url || ''));
       if (!l) continue;
@@ -146,7 +148,7 @@ export class BizReportService {
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
       .sort((a, b2) => b2.reviews - a.reviews).slice(0, 10);
 
-    const sns = await safe('sns', () => this.sns({ name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', website: g?.website || s.web?.url || '' }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '' });
+    const sns = await safe('sns', () => this.sns({ name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '' });
 
     const reviews = (g?.reviews || []).map((r: any) => ({ author: r.author, rating: r.rating, when: r.when, text: String(r.text || '').slice(0, 600), lang: langOf(r.text) }));
     const sheet = site?.process?.research?.sheet;

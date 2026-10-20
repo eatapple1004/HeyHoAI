@@ -33,6 +33,8 @@ export function toSns(raw: string): SnsLink | null {
     return null;
   }
   if (host === 'blog.naver.com') {
+    // 글 하나 링크(PostView·logNo·/아이디/숫자)는 손님 후기일 때가 많다 — 계정으로 치지 않는다
+    if (/PostView|PostList/i.test(u.pathname) || u.searchParams.get('logNo') || /^\d{6,}$/.test(seg[1] || '')) return null;
     const id = u.searchParams.get('blogId') || first;
     return id && !/\.naver$|PostView|PostList/i.test(id) ? mk('naverBlog', id, `https://blog.naver.com/${id}`) : null;
   }
