@@ -76,8 +76,23 @@ function nav(m: CorpSite, active: string): string {
   <details class="mnav"><summary aria-label="메뉴 열기"><span></span><span></span><span></span></summary><ul>${mob}</ul></details>`;
 }
 
+/**
+ * 글자·버튼용 강조색 — 회사 색의 색상은 그대로 두고 밝기만 낮춰 흰 글씨·밝은 바탕 모두와 4.5:1 이상이 되게 한다.
+ *   밝은 브랜드색(예: 뚜레쥬르 초록 #008C45)은 흰 글씨 버튼에서 대비가 모자랐다(실측 4.0:1).
+ */
+export function readableAccent(accent: string, bg: string): string {
+  const rgb = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const lum = (c: number[]) => { const f = (v: number) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+  const ratio = (a: number[], b: number[]) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  if (!/^#[0-9a-f]{6}$/i.test(accent)) return accent;
+  const base = rgb(accent); const white = [255, 255, 255]; const paper = /^#[0-9a-f]{6}$/i.test(bg) ? rgb(bg) : white;
+  let c = base;
+  for (let t = 0; t <= 1.0001 && (ratio(c, white) < 4.6 || ratio(c, paper) < 4.6); t += 0.04) c = base.map((v) => v * (1 - t));
+  return '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
+
 const CSS = (accent: string, t: CorpSite['profile']['theme']) => `
-:root{--bg:${t.bg};--ink:${t.ink};--steel:${t.steel};--line:${t.line};--dark:${t.dark};--white:#FFFFFF;--accent:${accent};--display:${t.display}}
+:root{--bg:${t.bg};--ink:${t.ink};--steel:${t.steel};--line:${t.line};--dark:${t.dark};--white:#FFFFFF;--accent:${readableAccent(accent, t.bg)};--brand:${accent};--display:${t.display}}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.75 'Pretendard Variable',Pretendard,sans-serif}
