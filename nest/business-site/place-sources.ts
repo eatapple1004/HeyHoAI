@@ -118,7 +118,7 @@ function htmlToText(html: string): { title: string; text: string } {
 }
 
 /** 회사 사이트 안에서 회사소개·연혁·제품 쪽 링크를 먼저 고른다 */
-const PAGE_HINT = /(company|about|intro|summary|greeting|ceo|history|vision|business|product|service|certif|patent|contact|location|sub\/|회사|소개|연혁|인사|사업|제품|인증|오시는)/i;
+const PAGE_HINT = /(company|about|intro|summary|greeting|ceo|history|vision|business|product|service|certif|patent|contact|location|sub\/|회사|소개|연혁|인사|사업|제품|인증|오시는|story|menu|restaurant|store|shop|info|brand|매장|메뉴|이야기|브랜드)/i;
 
 /** SSRF 방지 — 공개 도메인만(IP 직접·내부 이름 차단). 관리자 전용 기능이지만 서버가 대신 요청하므로 막는다 */
 function publicHttpUrl(raw: string): URL | null {
@@ -266,19 +266,24 @@ export const sources = {
       u.hash = '';
       return u.href;
     };
-    const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)].map((m) => {
-      try { return clean(new URL(m[1].replace(/&amp;/g, '&'), homeUrl).href); } catch { return ''; }
-    }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?)$/i.test(h) && !/login|member|bkoff|admin/i.test(h));
+    const linksOf = (html: string, from: URL) => [...html.matchAll(/href=["']([^"'#]+)["']/gi)].map((m) => {
+      try { return clean(new URL(m[1].replace(/&amp;/g, '&'), from).href); } catch { return ''; }
+    }).filter((h) => h && new URL(h).hostname === base.hostname && !/\.(jpe?g|png|gif|pdf|zip|hwp|docx?|css|js)$/i.test(h) && !/login|member|bkoff|admin|\/(en|jp|cn|eng|jpn|chn)\//i.test(h));
+    const links = linksOf(home, homeUrl);
     // 회사소개·연혁·인증 페이지를 먼저, 같은 페이지의 쿼리 변형(제품 상세 ?it_id=…)은 경로당 2개까지만
     const score = (h: string) => (/(summary|about|intro|company|회사|소개)/i.test(h) ? 5 : 0) + (/(history|연혁)/i.test(h) ? 5 : 0)
       + (/(greeting|ceo|인사)/i.test(h) ? 4 : 0) + (/(certif|patent|인증|특허)/i.test(h) ? 4 : 0)
-      + (/(business|product|prod|사업|제품)/i.test(h) ? 2 : 0) + (/(contact|location|오시는)/i.test(h) ? 1 : 0) - (new URL(h).search ? 1 : 0);
+      + (/(business|product|prod|사업|제품)/i.test(h) ? 2 : 0) + (/(contact|location|오시는)/i.test(h) ? 1 : 0) - (new URL(h).search ? 1 : 0)
+      // 가게 사이트 — 메뉴판·매장 안내·가게 이야기(2026-10-20 명동교자: /menu/·/restaurant/·/story/ 를 못 읽었다)
+      + (/(menu|메뉴)/i.test(h) ? 4 : 0) + (/(story|brand|이야기|브랜드)/i.test(h) ? 4 : 0) + (/(restaurant|store|shop|매장|info)/i.test(h) ? 2 : 0)
+      - (/(recruit|career|채용|board|notice|공지)/i.test(h) ? 4 : 0);
     // 제품 목록은 분류(?ctg=…)마다 다른 제품이 있어 경로당 12개까지, 나머지는 2개
     const perPath = new Map<string, number>();
-    const picked = [...new Set(links)].filter((h) => h !== homeUrl.href && (PAGE_HINT.test(h) || /facility|gallery|설비|갤러리/i.test(h)))
+    const pick = (list: string[], seen: Set<string>, max: number) => [...new Set(list)].filter((h) => h !== homeUrl.href && !seen.has(h) && (PAGE_HINT.test(h) || /facility|gallery|설비|갤러리/i.test(h)))
       .sort((a, b) => score(b) - score(a))
       .filter((h) => { const k = new URL(h).pathname; const n = perPath.get(k) || 0; perPath.set(k, n + 1); return n < (/(product|prod|제품)/i.test(k) ? 12 : 2); })
-      .slice(0, 24);
+      .slice(0, max);
+    const picked = pick(links, new Set(), 24);
     const pages: WebPage[] = [{ url: homeUrl.href, ...htmlToText(home) }];
     const images = new Map<string, WebImage>();
     // 페이지당 10장까지 — 인증서 스캔 같은 한 페이지의 이미지 묶음이 제품 사진 자리를 다 먹지 않게
@@ -288,8 +293,10 @@ export const sources = {
         if (n >= 10) break;
         const src = /src=["']([^"']+)["']/i.exec(m[0])?.[1];
         if (!src || !/\.(jpe?g|png|gif|webp)(\?|$)/i.test(src)) continue;
-        // 메뉴·버튼·제목 글자·아이콘 이미지는 뺀다
-        if (/(menu|btn|button|title|icon|banner|bullet|arrow|blank|spacer|common|location|logo|top_|bg_|_bg|ctg_|quick|sns|footer|header)/i.test(src)) continue;
+        // 메뉴·버튼·제목 글자·아이콘 이미지는 뺀다. "menu"는 파일 이름에서만 본다 — 식당의 메뉴 사진 폴더(/menu/…)까지 빼지 않게
+        if (/(btn|button|title|icon|banner|bullet|arrow|blank|spacer|common|location|logo|top_|bg_|_bg|ctg_|quick|sns|footer|header)/i.test(src)) continue;
+        // 상단 메뉴 버튼 이미지(nav0101.gif 등)는 파일 이름으로 뺀다. 식당 메뉴 사진(menu01.jpg)은 남기고, 작은 버튼은 가져올 때 크기로 걸러진다
+        if (/^(gnb|lnb|nav)[\d_-]/i.test(src.split('/').pop() || '')) continue;
         try {
           const u = new URL(src, pageUrl);
           if (u.hostname !== base.hostname) continue;
@@ -306,7 +313,15 @@ export const sources = {
       }
     };
     takeImages(home, homeUrl.href);
+    // 첫 화면 링크만 따라가면 하위 메뉴(연혁·메뉴 상세)를 놓친다 — 읽은 페이지의 링크도 한 단계 더(전체 24쪽까지)
+    const fetched = new Set<string>([homeUrl.href]);
+    const deeper: string[] = [];
     for (const url of picked) {
+      const html = await get(url);
+      fetched.add(url);
+      if (html) { pages.push({ url, ...htmlToText(html) }); takeImages(html, url); deeper.push(...linksOf(html, new URL(url))); }
+    }
+    for (const url of pick(deeper, new Set([...fetched, ...picked]), 24 - pages.length + 1)) {
       const html = await get(url);
       if (html) { pages.push({ url, ...htmlToText(html) }); takeImages(html, url); }
     }
