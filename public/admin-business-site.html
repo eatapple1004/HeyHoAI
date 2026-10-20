@@ -135,10 +135,10 @@ button:disabled{opacity:.5;cursor:default}
 
       <!-- 2. 템플릿 + AI -->
       <div class="card">
-        <h2>4. 제작 <span class="hint">기업형은 승인된 기획안대로 여러 페이지를 만듭니다. 만들 때마다 버전이 남습니다</span></h2>
+        <h2>4. 제작 <span class="hint">업종에 맞는 여러 페이지 사이트를 만듭니다(회사: 제품 상세까지 · 가게: 메뉴·후기·영업시간). 기획안이 있으면 승인된 대로. 만들 때마다 버전이 남습니다</span></h2>
         <div class="row">
           <select id="tpl" style="flex:1"></select>
-          <button class="primary" id="genBtn" onclick="generate()">AI로 문구 만들기</button>
+          <button class="primary" id="genBtn" onclick="generate()">AI로 사이트 만들기</button>
         </div>
         <p class="prog" id="genProg" style="margin-top:8px"></p>
       </div>
@@ -335,17 +335,17 @@ async function collect() {
   await busy($('collectBtn'), '모으는 중…', async () => {
     STATE = await api(API + '/collect', { method: 'POST', body: JSON.stringify({ query: $('q').value.trim(), kakao, googlePlaceId: google && google.id, naver, manualText, website }) });
     $('cands').innerHTML = '';
-    render(); flash('ok', '자료를 모았습니다. 이제 AI로 문구를 만드세요.');
+    render(); flash('ok', '자료를 모았습니다. 이제 조사·기획안을 거쳐 사이트를 만드세요.');
   });
 }
 
 // ── 2. AI ──
 async function generate() {
-  $('genProg').textContent = 'AI가 자료를 읽고 문구를 쓰는 중입니다…';
+  $('genProg').textContent = 'AI가 자료를 읽고 사이트를 만드는 중입니다…';
   await busy($('genBtn'), '만드는 중…', async () => {
     STATE = await api(API + '/generate', { method: 'POST', body: JSON.stringify({ template: $('tpl').value || undefined }) });
     if (genState() === 'running') return pollGen();
-    render(); flash('ok', '문구를 만들었습니다. 미리보기를 확인하고 고칠 곳을 고치세요.');
+    render(); flash('ok', '만들었습니다. 미리보기를 확인하고 고칠 곳을 고치세요.');
   });
   if (genState() !== 'running') $('genProg').textContent = '';
 }
@@ -413,7 +413,7 @@ const FIELDS = [
   ['company', '회사 정보 (기업형) <small>항목: 값 — 대표, 설립, 팩스, 이메일, 사업자번호</small>', 'area', 4],
   ['accent', '강조색 (기업형) <small>#RRGGBB</small>', 'input'],
   ['ceo', '대표 인사말 (여러 페이지) <small>첫 줄: 제목, 둘째 줄부터 본문</small>', 'area', 6],
-  ['products', '제품 (여러 페이지, 고급) <small>JSON — id·name·category·summary·keySpec·body·features·specs·photos</small>', 'area', 12],
+  ['products', '제품·메뉴 (여러 페이지, 고급) <small>JSON — id·name·category·summary·price(가게)·keySpec·body·features·specs·photos</small>', 'area', 12],
 ];
 const COMPANY_KEYS = { ceo: '대표', founded: '설립', fax: '팩스', email: '이메일', bizNo: '사업자번호', address: '주소', phone: '전화' };
 function toText(key, v) {
@@ -475,13 +475,8 @@ let PREVIEW_PATH = '';
 function renderPages(site) {
   const c = site && site.content;
   if (!c || !c.multipage) { $('pagesCard').style.display = 'none'; return; }
-  const pages = [['', '홈'], ['about', '회사 개요']];
-  if ((c.history || []).length) pages.push(['about/history', '연혁']);
-  if ((c.certifications || []).length) pages.push(['about/certifications', '인증·특허']);
-  pages.push(['about/location', '오시는 길']);
-  if ((c.products || []).length) pages.push(['products', '제품 목록']);
-  (c.products || []).forEach((p) => pages.push(['products/' + p.id, '└ ' + p.name]));
-  pages.push(['contact', '문의'], ['privacy', '개인정보처리방침']);
+  // 서버가 사이트의 실제 페이지 목록을 준다(업종마다 다르다 — 가게는 메뉴 상세 대신 후기·영업시간)
+  const pages = (STATE.sitePages || []).map((x) => [x.path, x.label]);
   $('pagesCard').style.display = '';
   $('pages').innerHTML = pages.map(([p, l]) => `<button class="sm${p === PREVIEW_PATH ? ' primary' : ''}" onclick="openPage('${p}')">${esc(l)}</button>`).join('');
 }
@@ -493,13 +488,14 @@ async function loadInquiries() {
     $('inqs').innerHTML = list.length ? list.map((q) => `<div style="border-bottom:1px solid var(--border);padding:10px 0;font-size:.84rem">
       <b>${esc(q.name)}</b> ${q.company ? '· ' + esc(q.company) : ''} · <a href="tel:${esc(q.phone)}">${esc(q.phone)}</a> ${q.email ? '· ' + esc(q.email) : ''}
       <span class="prog" style="float:right">${new Date(q.created_at).toLocaleString('ko-KR')}</span>
-      ${q.product ? `<div class="prog">관심 제품: ${esc(q.product)}</div>` : ''}
+      ${q.product ? `<div class="prog">관심 항목: ${esc(q.product)}</div>` : ''}
       <div style="white-space:pre-wrap;color:var(--dim);margin-top:4px">${esc(q.message)}</div></div>`).join('') : '<div class="empty">아직 문의가 없습니다.</div>';
   } catch (e) { /* 문의 목록 실패는 화면 전체를 막지 않는다 */ }
 }
 
 // ── 제작 과정 ──
 const PR = () => (STATE.site && STATE.site.process) || {};
+const IT = () => (STATE.profile && STATE.profile.items) || '제품';
 const jobRunning = () => { const j = PR().job; return j && j.state === 'running'; };
 function renderProcess() {
   const site = STATE.site; const p = PR();
@@ -528,7 +524,7 @@ function renderProcess() {
   if (jobRunning() && !window._jobPolling) { window._jobPolling = true; pollJob().finally(() => { window._jobPolling = false; }); }
 
   // 조사 시트
-  if (!sheet) $('research').innerHTML = '<div class="empty">자료를 모은 뒤 조사를 시작하세요. 웹 검색으로 기업정보·협력사 목록·카탈로그를 찾아 사실마다 출처를 답니다.</div>';
+  if (!sheet) $('research').innerHTML = '<div class="empty">자료를 모은 뒤 조사를 시작하세요. 웹 검색으로 공개 정보(회사: 기업정보·카탈로그 · 가게: 메뉴·영업 정보·소개 기사)를 찾아 사실마다 출처를 답니다.</div>';
   else {
     const id = sheet.identity || {};
     const topics = [...new Set(sheet.facts.map((f) => f.topic))];
@@ -561,8 +557,8 @@ function renderProcess() {
       <div class="field"><label>강조색 <small>${esc(plan.accentWhy)}</small></label><div class="row"><input type="color" id="pl_accentPick" value="${esc(plan.accent)}" oninput="$('pl_accent').value=this.value" style="width:52px;padding:2px"><input id="pl_accent" value="${esc(plan.accent)}" style="width:110px"></div></div>
       <div class="field"><label>페이지 <small>자료가 없는 페이지는 빼 둡니다</small></label>${plan.pages.map((x) => `<label class="chk" title="${esc(x.reason)}"><input type="checkbox" data-page="${esc(x.key)}"${x.include ? ' checked' : ''}>${esc(pp[x.key] || x.key)}</label>`).join('')}
         <div class="prog">${plan.pages.filter((x) => x.reason).map((x) => `${esc(pp[x.key] || x.key)}: ${esc(x.reason)}`).join('<br>')}</div></div>
-      <div class="field"><label>제품 분류 <small>한 줄에 하나: id | 이름</small></label><textarea id="pl_cats" rows="3">${esc(plan.categories.map((c) => c.id + ' | ' + c.name).join('\n'))}</textarea></div>
-      <div class="field"><label>올릴 제품 <small>한 줄에 하나</small></label><textarea id="pl_products" rows="5">${esc(plan.products.join('\n'))}</textarea></div>
+      <div class="field"><label>${esc(IT())} 분류 <small>한 줄에 하나: id | 이름</small></label><textarea id="pl_cats" rows="3">${esc(plan.categories.map((c) => c.id + ' | ' + c.name).join('\n'))}</textarea></div>
+      <div class="field"><label>올릴 ${esc(IT())} <small>한 줄에 하나</small></label><textarea id="pl_products" rows="5">${esc(plan.products.join('\n'))}</textarea></div>
       ${plan.photoNeeds.length ? `<div class="field"><label>회사에 받을 사진</label><ul class="ul">${plan.photoNeeds.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
       ${plan.risks.length ? `<div class="field"><label>공개 전 고객 확인</label><ul class="ul">${plan.risks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
       <div class="row"><button onclick="savePlan()">기획안 저장</button>${plan.approvedAt

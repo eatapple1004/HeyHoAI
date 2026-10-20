@@ -3,7 +3,7 @@ import * as path from 'path';
 import { DbService } from '../../db/db.service';
 import { BusinessSiteRepository, BusinessSiteRow } from '../business-site.repository';
 import { BusinessSiteService } from '../business-site.service';
-import { CorpSite, CorpPhoto } from '../multipage';
+import { CorpSite, CorpPhoto, navGroups, sitePages } from '../multipage';
 import { privacy as privacyPage } from '../multipage/pages';
 import { esc, mapEmbed } from '../templates/shared';
 import { numbers, loosely, norm } from '../site-qa';
@@ -95,7 +95,7 @@ export class DesignService {
     const d = await this.row(site.id, n);
     if (!d || d.status !== 'done') throw new BadRequestException('완성된 시안만 점검할 수 있습니다.');
     const m = await this.sites.corpModel(site, '', false);
-    const qa = this.qa(m, d.pages, norm(this.sites.sourceText(site)), []);
+    const qa = this.qa(m, d.pages, norm(this.sites.sourceText(site) + shownText(m)), []);
     await this.patch(d.id, { qa: { ...qa, visual: { state: 'running' } } });
     this.visual(site, n, qa.at).catch(() => undefined);
     return this.list(businessId);
@@ -122,7 +122,7 @@ export class DesignService {
       plan ? `컨셉: ${plan.concept}\n읽는 사람: ${(plan.audience || []).join(', ')}\n문체: ${plan.tone}` : '',
       `헤드라인: ${m.headline}\n부제: ${m.sub}`,
       sheet?.summary ? `조사 요약: ${sheet.summary}` : '',
-      `제품: ${m.products.map((p) => p.name).join(', ')}`,
+      `${m.profile.items}: ${m.products.map((p) => p.name).join(', ')}`,
     ].filter(Boolean).join('\n');
     const nav = navOf(m);
     const company = Object.fromEntries(Object.entries({
@@ -132,7 +132,7 @@ export class DesignService {
     const photos = (site.photos as { ref: string; hidden?: boolean }[]).filter((p) => !p.hidden).slice(0, 6);
     const images = (await Promise.all(photos.map((p) => this.sites.loadPhoto(site, p.ref)))).filter(Boolean) as { data: string; mediaType: string }[];
 
-    const ds = await this.writer.system({ name: m.name, brief, direction: row.direction || '', accent: m.accent, nav, company, images });
+    const ds = await this.writer.system({ name: m.name, audience: m.profile.audience, brief, direction: row.direction || '', accent: m.accent, nav, company, images });
     const design = {
       note: ds.note.slice(0, 1200),
       fonts: FONT_CSS.test(ds.fonts) ? ds.fonts : '',
@@ -143,12 +143,12 @@ export class DesignService {
     await this.patch(row.id, { design, step: '페이지를 쓰는 중' });
 
     const specs = pageSpecs(m);
-    const source = norm(this.sites.sourceText(site));
+    const source = norm(this.sites.sourceText(site) + shownText(m));
     const unsourced = (html: string) => [...new Set(numbers(html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ')))].filter((n) => !source.includes(n) && !loosely(source, n));
     const pages: Record<string, string> = {};
     let done = 0;
     const queue = [...specs];
-    const links = [...nav.flatMap((g) => [{ label: g.label, href: g.href }, ...(g.sub || [])]), ...m.products.map((p) => ({ label: p.name, href: `/products/${p.id}` }))];
+    const links = [...nav.flatMap((g) => [{ label: g.label, href: g.href }, ...(g.sub || [])]), ...sitePages(m).filter((x) => x.path.startsWith('products/')).map((x) => ({ label: x.label.replace(/^└ /, ''), href: `/${x.path}` }))];
     const worker = async () => {
       for (let s = queue.shift(); s; s = queue.shift()) {
         if (s.key === 'privacy') { pages[s.path] = ''; done++; continue; } // 처리방침은 고정 문안(아래 render)
@@ -333,7 +333,7 @@ export class DesignService {
     const title = spec.key === 'home' && spec.path === '' ? `${m.name}${m.headline ? ` — ${m.headline}` : ''}` : `${spec.title} | ${m.name}`;
     const canonical = `${m.origin}${base}/${spec.path}`;
     const credits = m.credits.length ? `사진: ${m.credits.map((c) => esc(c.name)).join(', ')}` : '';
-    const ld = { '@context': 'https://schema.org', '@type': 'Organization', name: m.name, url: `${m.origin}${base}/`, telephone: m.facts.phone || undefined, address: m.facts.address || undefined };
+    const ld = { '@context': 'https://schema.org', '@type': m.profile.ldType, name: m.name, url: `${m.origin}${base}/`, telephone: m.facts.phone || undefined, address: m.facts.address || undefined };
     return `<!doctype html>
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -420,18 +420,16 @@ function photoUrls(m: CorpSite): Set<string> {
   return new Set(all.filter(Boolean).map((p) => (p as CorpPhoto).url));
 }
 
+/** 시안 메뉴 — 템플릿 사이트와 같은 묶음. 분류 링크(?c=)는 시안에선 목록 페이지의 앵커(#c-)로 */
 function navOf(m: CorpSite) {
-  const about = [
-    { label: '회사 개요', href: '/about' },
-    ...(m.history.length ? [{ label: '연혁', href: '/about/history' }] : []),
-    ...(m.certifications.length ? [{ label: '인증·특허', href: '/about/certifications' }] : []),
-    { label: '오시는 길', href: '/about/location' },
-  ];
-  return [
-    { label: '회사소개', href: '/about', sub: about },
-    ...(m.products.length ? [{ label: '제품', href: '/products', sub: [{ label: '전체 제품', href: '/products' }, ...m.products.slice(0, 10).map((p) => ({ label: p.name, href: `/products/${p.id}` }))] }] : []),
-    { label: '문의', href: '/contact' },
-  ];
+  const link = (path: string) => `/${path.replace(/^products\?c=/, 'products#c-')}`;
+  return navGroups(m).map((g) => ({ label: g.label, href: link(g.path), ...(g.sub.length ? { sub: g.sub.map((x) => ({ label: x.label, href: link(x.path) })) } : {}) }));
+}
+
+/** 숫자 대조에 더하는 "그대로 옮겨 보여 주는" 자료 — 영업시간·평점·후기 원문·블로그 제목(문구가 아니라 인용이라 출처가 곧 이것) */
+function shownText(m: CorpSite): string {
+  return ['', ...m.hours, String(m.facts.rating ?? ''), String(m.facts.ratingCount ?? ''), m.facts.ratingCount ? m.facts.ratingCount.toLocaleString('ko-KR') : '',
+    ...m.reviews.flatMap((r) => [r.text, r.when || '', String(r.rating ?? '')]), ...m.blogs.map((b) => b.title)].join('\n');
 }
 
 const ph = (p?: CorpPhoto) => (p ? { url: p.url, 설명: p.caption || '' } : null);
@@ -439,26 +437,38 @@ const ph = (p?: CorpPhoto) => (p ? { url: p.url, 설명: p.caption || '' } : nul
 /** 페이지마다 AI에 넘길 데이터 — 사이트에 이미 들어간(검증된) 내용만 */
 function pageSpecs(m: CorpSite): PageSpec[] {
   const phone = m.facts.phone || m.company.phone || '';
-  const prodBrief = (p: CorpSite['products'][number]) => ({ 이름: p.name, 링크: `/products/${p.id}`, 분류: m.categories.find((c) => c.id === p.category)?.name || '', 요약: p.summary, 대표사양: p.keySpec, 사진: p.photos.slice(0, 1).map(ph) });
+  const pf = m.profile;
+  const detail = pf.itemDetail;
+  const prodBrief = (p: CorpSite['products'][number]) => ({ 이름: p.name, ...(detail ? { 링크: `/products/${p.id}` } : {}), 분류: m.categories.find((c) => c.id === p.category)?.name || '', 요약: p.summary, ...(p.price ? { 가격: p.price } : { 대표사양: p.keySpec }), 사진: p.photos.slice(0, 1).map(ph) });
+  const reviews = m.reviews.map((r) => ({ 작성자: r.author, 작성자링크: r.authorUri, 별점: r.rating, 언제: r.when, 글: r.text }));
+  const visit = pf.store ? { 영업시간: m.hours, 주소: m.facts.address || m.company.address, 길찾기: m.facts.kakaoUrl || m.facts.googleUrl } : {};
   const specs: PageSpec[] = [
     { path: '', key: 'home', title: '홈', data: {
       헤드라인: m.headline, 부제: m.sub, 버튼: m.ctaLabel, 첫화면사진: ph(m.heroPhoto), 핵심수치: m.stats, 강점: m.highlights,
-      회사소개_요약: m.about.split(/\n\s*\n/)[0], 소개사진: ph(m.aboutPhoto), 제품분류: m.categories, 대표제품: m.products.slice(0, 8).map(prodBrief),
+      소개_요약: m.about.split(/\n\s*\n/)[0], 소개사진: ph(m.aboutPhoto), [`${pf.items}분류`]: m.categories, [`대표${pf.items}`]: m.products.slice(0, 8).map(prodBrief), [`${pf.items}목록링크`]: '/products',
       최근연혁: m.history.slice(-6), 인증_개수: m.certifications.length, 인증_예시: m.certifications.slice(0, 6), 전화: phone, 문의링크: '/contact',
+      ...(pf.store ? { 방문안내: visit, 오시는길링크: '/about/location' } : {}),
+      ...(m.reviews.length && sitePages(m).some((x) => x.path === 'reviews') ? { 후기_일부: reviews.slice(0, 3), 후기링크: '/reviews', 후기표기: '작성자 이름과 "Google 리뷰" 출처를 카드마다 적는다' } : {}),
     } },
-    { path: 'about', key: 'about', title: '회사 개요', data: { 제목: m.aboutTitle, 본문: m.about, 강점: m.highlights, 대표인사말: m.ceo || null, 기업정보: { ...m.company, 주소: m.facts.address || m.company.address }, 사진: ph(m.aboutPhoto), 공장사진: m.gallery.filter((g) => g.kind === 'factory').slice(0, 4).map(ph) } },
+    { path: 'about', key: 'about', title: pf.aboutPage, data: { 제목: m.aboutTitle, 본문: m.about, 강점: m.highlights, 인사말: m.ceo || null, 인사말_직함: pf.ceoTitle, [pf.infoTitle]: { ...m.company, 주소: m.facts.address || m.company.address }, 사진: ph(m.aboutPhoto),
+      [pf.store ? '매장사진' : '공장사진']: m.gallery.filter((g) => (pf.store ? ['interior', 'exterior'] : ['factory']).includes(g.kind || '')).slice(0, 6).map(ph) } },
   ];
   if (m.history.length) specs.push({ path: 'about/history', key: 'history', title: '연혁', data: { 연혁: m.history } });
   if (m.certifications.length) specs.push({ path: 'about/certifications', key: 'certs', title: '인증·특허', data: { 목록: m.certifications } });
-  specs.push({ path: 'about/location', key: 'location', title: '오시는 길', data: { 주소: m.facts.address || m.company.address, 전화: phone, 팩스: m.company.fax, 카카오맵: m.facts.kakaoUrl, 구글지도: m.facts.googleUrl }, placeholders: m.facts.lat ? ['<!--{{MAP}}--> (지도가 들어갈 자리, 가로 전체)'] : [] });
+  specs.push({ path: 'about/location', key: 'location', title: '오시는 길', data: { 주소: m.facts.address || m.company.address, 전화: phone, 팩스: m.company.fax, 카카오맵: m.facts.kakaoUrl, 구글지도: m.facts.googleUrl, ...(m.hours.length ? { 영업시간: m.hours, 영업시간_주의: '영업시간은 Google 지도 기준이며 달라질 수 있다는 한 줄을 붙인다' } : {}) }, placeholders: m.facts.lat ? ['<!--{{MAP}}--> (지도가 들어갈 자리, 가로 전체)'] : [] });
   if (m.products.length) {
-    specs.push({ path: 'products', key: 'products', title: '제품 소개', data: { 분류: m.categories.map((c) => ({ ...c, 앵커: `c-${c.id}` })), 제품: m.products.map(prodBrief), 안내: '분류마다 id="c-<분류id>" 섹션으로 묶는다' } });
-    m.products.forEach((p, i) => specs.push({ path: `products/${p.id}`, key: 'product', title: p.name, data: {
+    specs.push({ path: 'products', key: 'products', title: pf.itemsAll, data: { 분류: m.categories.map((c) => ({ ...c, 앵커: `c-${c.id}` })), [pf.items]: m.products.map(prodBrief),
+      안내: `분류마다 id="c-<분류id>" 섹션으로 묶는다.${detail ? '' : ` ${pf.items}마다 상세 페이지는 없다(카드에 링크를 걸지 않는다). 사진이 없는 항목은 사진 칸 없이 이름·설명·가격만.`}${m.products.some((p) => p.price) ? ' 가격은 바뀔 수 있다는 안내 한 줄.' : ''}` } });
+    if (detail) m.products.forEach((p, i) => specs.push({ path: `products/${p.id}`, key: 'product', title: p.name, data: {
       이름: p.name, 분류: m.categories.find((c) => c.id === p.category)?.name || '', 요약: p.summary, 대표사양: p.keySpec, 소개: p.body, 특징: p.features, 사양표: p.specs,
       사진: p.photos.slice(0, 8).map(ph), 이전제품: m.products[i - 1] ? { 이름: m.products[i - 1].name, 링크: `/products/${m.products[i - 1].id}` } : null,
       다음제품: m.products[i + 1] ? { 이름: m.products[i + 1].name, 링크: `/products/${m.products[i + 1].id}` } : null,
       견적문의링크: '/contact', 목록링크: '/products',
     } }));
+  }
+  if (sitePages(m).some((x) => x.path === 'reviews')) {
+    specs.push({ path: 'reviews', key: 'reviews', title: '방문 후기', data: { 평점: m.facts.rating, 리뷰수: m.facts.ratingCount, 평점출처: 'Google 지도', 후기: reviews, 블로그후기: m.blogs.map((b) => ({ 제목: b.title, 링크: b.link, 작성자: b.blogger })),
+      안내: '후기 글은 고치지 않고 그대로. 카드마다 작성자(작성자링크가 있으면 링크, rel="nofollow noopener")와 "Google 리뷰" 표기. 블로그는 제목 링크만(새 창). 맨 아래 "후기는 각 작성자의 글입니다" 한 줄.' } });
   }
   specs.push({ path: 'contact', key: 'contact', title: '문의하기', data: { 전화: phone, 팩스: m.company.fax, 이메일: m.company.email, 주소: m.facts.address || m.company.address }, placeholders: ['<!--{{CONTACT_FORM}}--> (문의 폼 자리)'] });
   specs.push({ path: 'privacy', key: 'privacy', title: '개인정보처리방침', data: {} });
@@ -466,7 +476,7 @@ function pageSpecs(m: CorpSite): PageSpec[] {
 }
 
 function snapshotSpec(p: string, html: string): PageSpec {
-  const key = p === '' ? 'home' : p.startsWith('products/') ? 'product' : p === 'products' ? 'products' : p === 'about/history' ? 'history'
+  const key = p === '' ? 'home' : p.startsWith('products/') ? 'product' : p === 'products' ? 'products' : p === 'reviews' ? 'reviews' : p === 'about/history' ? 'history'
     : p === 'about/certifications' ? 'certs' : p === 'about/location' ? 'location' : p === 'contact' ? 'contact' : p === 'privacy' ? 'privacy' : 'about';
   const h1 = (/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html)?.[1] || '').replace(/<[^>]+>/g, '').trim();
   return { path: p, key, title: h1 || p, data: {} };
@@ -475,14 +485,14 @@ function snapshotSpec(p: string, html: string): PageSpec {
 function contactForm(m: CorpSite, base: string, q: Record<string, string>): string {
   return `<form class="dp-form" method="post" action="${esc(base)}/contact">
   ${q.sent === '1' ? '<p class="dp-msg ok">문의가 접수됐습니다. 담당자가 확인 후 연락드리겠습니다.</p>' : ''}${q.error ? `<p class="dp-msg err">${esc(q.error)}</p>` : ''}
-  <div class="dp-row"><div><label for="f-name">이름 *</label><input id="f-name" name="name" required maxlength="40" autocomplete="name"></div>
-  <div><label for="f-co">회사명</label><input id="f-co" name="company" maxlength="60" autocomplete="organization"></div></div>
+  ${m.profile.companyField ? `<div class="dp-row"><div><label for="f-name">이름 *</label><input id="f-name" name="name" required maxlength="40" autocomplete="name"></div>
+  <div><label for="f-co">회사명</label><input id="f-co" name="company" maxlength="60" autocomplete="organization"></div></div>` : '<div><label for="f-name">이름 *</label><input id="f-name" name="name" required maxlength="40" autocomplete="name"></div>'}
   <div class="dp-row"><div><label for="f-tel">연락처 *</label><input id="f-tel" name="phone" required maxlength="30" inputmode="tel" autocomplete="tel"></div>
   <div><label for="f-mail">이메일</label><input id="f-mail" name="email" type="email" maxlength="80" autocomplete="email"></div></div>
-  ${m.products.length ? `<div><label for="f-prod">관심 제품</label><select id="f-prod" name="product"><option value="">선택 안 함</option>${m.products.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}
-  <div><label for="f-msg">문의 내용 *</label><textarea id="f-msg" name="message" required maxlength="3000" placeholder="용도, 수량, 희망 납기 등을 적어 주세요."></textarea></div>
+  ${m.products.length ? `<div><label for="f-prod">${esc(m.profile.interest)}</label><select id="f-prod" name="product"><option value="">선택 안 함</option>${m.products.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}
+  <div><label for="f-msg">문의 내용 *</label><textarea id="f-msg" name="message" required maxlength="3000" placeholder="${esc(m.profile.msgHint)}"></textarea></div>
   <div class="dp-hp" aria-hidden="true"><label>홈페이지<input name="website" tabindex="-1" autocomplete="off"></label></div>
-  <label class="dp-agree"><input type="checkbox" name="agree" value="1" required><span>개인정보 수집·이용에 동의합니다 *<small>수집 항목: 이름, 연락처, 회사명, 이메일 · 목적: 문의 응대 · 보관: 응대 완료 후 1년. <a href="${esc(base)}/privacy">개인정보처리방침</a></small></span></label>
+  <label class="dp-agree"><input type="checkbox" name="agree" value="1" required><span>개인정보 수집·이용에 동의합니다 *<small>수집 항목: 이름, 연락처, ${m.profile.companyField ? '회사명, ' : ''}이메일 · 목적: 문의 응대 · 보관: 응대 완료 후 1년. <a href="${esc(base)}/privacy">개인정보처리방침</a></small></span></label>
   <button type="submit">문의 보내기</button>
 </form>`;
 }
