@@ -1,0 +1,61 @@
+import { Injectable } from '@nestjs/common';
+import { DbService } from '../db/db.service';
+
+export interface ReportRow { id: string; business_id: string; status: string; step: string | null; error: string | null; data: any; created_at: string; updated_at: string }
+
+@Injectable()
+export class BizReportRepository {
+  constructor(private readonly db: DbService) {}
+
+  async business(id: string): Promise<{ id: string; name: string; industry: string | null; memo: string | null } | null> {
+    return (await this.db.query('SELECT id, name, industry, memo FROM businesses WHERE id = $1', [id])).rows[0] || null;
+  }
+
+  async site(businessId: string): Promise<any | null> {
+    return (await this.db.query('SELECT * FROM business_sites WHERE business_id = $1', [businessId])).rows[0] || null;
+  }
+
+  async list(businessId: string): Promise<ReportRow[]> {
+    return (await this.db.query<ReportRow>('SELECT * FROM business_reports WHERE business_id = $1 ORDER BY created_at DESC LIMIT 10', [businessId])).rows;
+  }
+
+  async add(businessId: string): Promise<ReportRow> {
+    return (await this.db.query<ReportRow>(`INSERT INTO business_reports (business_id, step) VALUES ($1, '자료를 모으는 중') RETURNING *`, [businessId])).rows[0];
+  }
+
+  async patch(id: string, p: { status?: string; step?: string | null; error?: string | null; data?: any }) {
+    await this.db.query(
+      `UPDATE business_reports SET status = COALESCE($2, status), step = $3, error = $4, data = COALESCE($5::jsonb, data), updated_at = now() WHERE id = $1`,
+      [id, p.status ?? null, p.step ?? null, p.error ?? null, p.data ? JSON.stringify(p.data) : null]);
+  }
+
+  /** 사업체가 직접 올린 사진 수 — 인스타·홈페이지에 쓸 수 있는 자산 */
+  async ownPhotos(businessId: string): Promise<number> {
+    const r = await this.db.query(
+      `SELECT COUNT(*)::int AS n FROM account_media m LEFT JOIN social_accounts sa ON sa.id = m.account_id
+        WHERE (m.business_id = $1 OR sa.business_id = $1) AND m.media_type = 'image'`, [businessId]);
+    return r.rows[0]?.n || 0;
+  }
+
+  async social(businessId: string): Promise<{ platform: string; username: string }[]> {
+    return (await this.db.query('SELECT platform, username FROM social_accounts WHERE business_id = $1', [businessId])).rows;
+  }
+
+  async postStats(businessId: string): Promise<{ posted30: number; failed30: number; scheduled: number; lastPosted: string | null }> {
+    const r = await this.db.query(
+      `SELECT COUNT(*) FILTER (WHERE q.status = 'posted' AND q.posted_at > now() - interval '30 days')::int AS "posted30",
+              COUNT(*) FILTER (WHERE q.status = 'failed' AND q.updated_at > now() - interval '30 days')::int AS "failed30",
+              COUNT(*) FILTER (WHERE q.status IN ('scheduled','confirmed'))::int AS scheduled,
+              MAX(q.posted_at) AS "lastPosted"
+         FROM post_queue q JOIN social_accounts sa ON sa.id = q.account_id WHERE sa.business_id = $1`, [businessId]);
+    return r.rows[0];
+  }
+
+  async marketingDrafts(businessId: string): Promise<{ ready: number; done: number }> {
+    try {
+      const r = await this.db.query(
+        `SELECT COUNT(*) FILTER (WHERE status = 'ready')::int AS ready, COUNT(*) FILTER (WHERE status = 'done')::int AS done FROM marketing_tasks WHERE business_id = $1`, [businessId]);
+      return r.rows[0];
+    } catch { return { ready: 0, done: 0 }; }
+  }
+}
