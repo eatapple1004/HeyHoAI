@@ -333,6 +333,51 @@ function NaverPlace({ nv }: { nv: any }) {
   );
 }
 
+/** 계정별 공식 수치 — 팔로워·게시 주기·반응, 게시물별 반응 차트 */
+function SnsStatsView({ accounts, setup }: { accounts: any[]; setup?: any }) {
+  const withStats = accounts.filter((a) => a.stats);
+  const top = withStats.find((a) => a.stats.recent?.some((p: any) => p.likes != null || p.views != null));
+  const metric = top?.stats.recent?.some((p: any) => p.views != null) ? 'views' : 'react';
+  const rows = top ? [...top.stats.recent].reverse().slice(-12).map((p: any) => ({
+    d: new Date(p.at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }),
+    v: metric === 'views' ? p.views || 0 : (p.likes || 0) + (p.comments || 0),
+  })) : [];
+  return (
+    <div className="mt-4 space-y-4">
+      {accounts.length > 0 && <div className="overflow-x-auto"><table className="tbl w-full text-sm">
+        <thead><tr className="text-left text-xs text-zinc-500"><th className="py-2">계정</th><th>팔로워</th><th>게시물</th><th>최근 30일</th><th>평균 간격</th><th>게시물당 반응</th><th>반응률</th><th>마지막 게시</th></tr></thead>
+        <tbody>{accounts.map((a) => { const st = a.stats; const sm = st?.summary || {}; return (
+          <tr key={a.platform + a.handle} className="border-t border-zinc-100 align-top">
+            <td className="py-2 pr-2"><b>{a.label}</b> <span className="text-xs text-zinc-500">{a.handle}</span>
+              <div className="text-[11px] text-zinc-500">{st ? st.source : a.statsNote}</div></td>
+            {st ? (<>
+              <td className="tabular-nums">{fmt(st.followers)}</td><td className="tabular-nums">{fmt(st.posts)}</td>
+              <td className="tabular-nums">{sm.last30 ?? '–'}건</td><td className="tabular-nums">{sm.avgGapDays != null ? `${sm.avgGapDays}일` : '–'}</td>
+              <td className="tabular-nums text-xs">{sm.avgViews != null ? `조회 ${fmt(sm.avgViews)} · ` : ''}{sm.avgLikes != null ? `좋아요 ${fmt(sm.avgLikes)} · 댓글 ${fmt(sm.avgComments)}` : '–'}</td>
+              <td className="tabular-nums">{sm.engagementPct != null ? `${sm.engagementPct}%` : '–'}</td>
+              <td className="tabular-nums text-xs">{sm.lastPostAt ? `${new Date(sm.lastPostAt).toLocaleDateString('ko-KR')} (${sm.daysSinceLast}일 전)` : '–'}</td>
+            </>) : <td colSpan={7} className="text-xs text-zinc-400">{a.followers || a.posts ? `검색 결과 기준: ${[a.followers, a.posts].filter(Boolean).join(' · ')}` : '수치 없음'}</td>}
+          </tr>); })}</tbody>
+      </table></div>}
+      {top && rows.length > 2 && (
+        <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <div><h4 className="mb-1 text-sm font-bold text-zinc-600">{top.label} 최근 게시물별 {metric === 'views' ? '조회수' : '반응(좋아요+댓글)'}</h4>
+            <BarChart aspectRatio="16 / 7" xDataKey="d" data={rows}><Grid horizontal /><Bar dataKey="v" fill="var(--chart-1)" lineCap="round" /><BarXAxis showAllLabels /><ChartTooltip showCrosshair={false} /></BarChart></div>
+          <div><h4 className="mb-1 text-sm font-bold text-zinc-600">반응이 좋았던 게시물</h4>
+            <ul className="space-y-2 text-sm">{(top.stats.summary.best || []).map((p: any, i: number) => (
+              <li key={i} className="rounded-lg border border-zinc-200 p-2"><a className="text-violet-700" href={p.url} target="_blank" rel="noreferrer">{p.caption || '게시물'}</a>
+                <div className="text-xs text-zinc-500">{new Date(p.at).toLocaleDateString('ko-KR')} · {p.type}{p.views != null ? ` · 조회 ${fmt(p.views)}` : ''}{p.likes != null ? ` · 좋아요 ${fmt(p.likes)}` : ''}{p.comments != null ? ` · 댓글 ${fmt(p.comments)}` : ''}{p.reach != null ? ` · 도달 ${fmt(p.reach)}` : ''}{p.saved != null ? ` · 저장 ${fmt(p.saved)}` : ''}</div></li>
+            ))}</ul>
+            {top.stats.insights && <p className="mt-2 text-xs text-zinc-600">최근 28일 인사이트: {Object.entries(top.stats.insights).map(([k, v]) => `${({ reach: '도달', accounts_engaged: '반응한 계정', total_interactions: '전체 반응', views: '조회', profile_views: '프로필 방문' } as any)[k] || k} ${fmt(v as number)}`).join(' · ')}</p>}
+            {top.stats.note && <p className="mt-2 text-xs text-amber-700">{top.stats.note}</p>}
+          </div>
+        </div>
+      )}
+      {setup && <p className="text-[11px] text-zinc-500">공식 수치 연결 상태: 인스타(도피아 연결) {setup.connectedInstagram?.length ? setup.connectedInstagram.map((u: string) => '@' + u).join(', ') : '없음'} · 남의 인스타 조회 {setup.discovery ? '켜짐' : '꺼짐'} · 유튜브 API {setup.youtube ? '켜짐' : '꺼짐'} · 네이버 블로그 RSS 켜짐 · 틱톡·스레드·X·페이스북·카카오채널은 공식 조회 API 없음</p>}
+    </div>
+  );
+}
+
 /** SNS 계정 — 어디서 찾았는지·확인 수준·검색 결과에 보인 수치(날짜) */
 function Sns({ sns }: { sns: any }) {
   if (!sns) return null;
@@ -354,6 +399,7 @@ function Sns({ sns }: { sns: any }) {
           ))}</tbody>
         </table></div>
       ) : <p className="text-sm text-red-600">공식 SNS 계정을 찾지 못했습니다.</p>}
+      <SnsStatsView accounts={sns.accounts || []} setup={sns.setup} />
       <p className="mt-2 text-xs text-zinc-500">찾는 곳: 홈페이지에 걸린 링크 · Google 장소 웹사이트 칸 · 웹 검색{sns.naverAvailable ? ' · 네이버 웹 검색' : ' (네이버 검색은 키가 없어 제외)'}. 팔로워 수는 검색 결과에 보인 값이라 실제와 다를 수 있습니다{sns.checkedAt ? ` (확인 ${new Date(sns.checkedAt).toLocaleDateString('ko-KR')})` : ''}.</p>
     </div>
   );

@@ -41,6 +41,17 @@ export class BizReportRepository {
     return (await this.db.query('SELECT platform, username FROM social_accounts WHERE business_id = $1', [businessId])).rows;
   }
 
+  /** 도피아에 연결된 인스타 계정과 토큰 — 토큰은 이 서버 안에서만 쓴다(응답·로그에 내보내지 않음) */
+  async connectedInstagram(businessId: string): Promise<{ username: string; igUserId: string; token: string; authMode: 'instagram' | 'facebook' }[]> {
+    try {
+      const r = await this.db.query(
+        `SELECT sa.username, sa.account_id AS "igUserId", t.access_token AS token, t.auth_mode AS "authMode"
+           FROM social_accounts sa JOIN meta_ig_tokens t ON t.account_id = sa.id
+          WHERE sa.business_id = $1 AND sa.account_id IS NOT NULL`, [businessId]);
+      return r.rows;
+    } catch { return []; }
+  }
+
   async postStats(businessId: string): Promise<{ posted30: number; failed30: number; scheduled: number; lastPosted: string | null }> {
     const r = await this.db.query(
       `SELECT COUNT(*) FILTER (WHERE q.status = 'posted' AND q.posted_at > now() - interval '30 days')::int AS "posted30",
