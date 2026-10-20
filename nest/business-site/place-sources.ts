@@ -120,6 +120,12 @@ function htmlToText(html: string): { title: string; text: string } {
 /** 회사 사이트 안에서 회사소개·연혁·제품 쪽 링크를 먼저 고른다 */
 const PAGE_HINT = /(company|about|intro|summary|greeting|ceo|history|vision|business|product|service|certif|patent|contact|location|sub\/|회사|소개|연혁|인사|사업|제품|인증|오시는|story|menu|restaurant|store|shop|info|brand|매장|메뉴|이야기|브랜드)/i;
 
+/** 좌표 중심 반경 r(m) 사각형 — Places searchText 의 locationRestriction 은 사각형만 받는다 */
+function box(lat: number, lng: number, r: number) {
+  const dLat = r / 111320; const dLng = r / (111320 * Math.cos((lat * Math.PI) / 180));
+  return { low: { latitude: lat - dLat, longitude: lng - dLng }, high: { latitude: lat + dLat, longitude: lng + dLng } };
+}
+
 /** SSRF 방지 — 공개 도메인만(IP 직접·내부 이름 차단). 관리자 전용 기능이지만 서버가 대신 요청하므로 막는다 */
 function publicHttpUrl(raw: string): URL | null {
   try {
@@ -149,6 +155,45 @@ export const sources = {
     return (j.documents || []).map((d: any) => ({
       id: d.id, name: d.place_name, category: d.category_name, phone: d.phone,
       address: d.address_name, roadAddress: d.road_address_name, x: d.x, y: d.y, url: d.place_url,
+    }));
+  },
+
+  /**
+   * 주변 장소 — 카테고리(FD6 음식점·CE7 카페·SW8 지하철·AT4 관광명소·AD5 숙박·PK6 주차장·AC5 학원·SC4 학교·HP8 병원·BK9 은행·CS2 편의점)
+   *   또는 키워드로, 좌표 반경 안. total = 카카오가 센 전체 개수(목록은 가까운 순 15개).
+   */
+  async kakaoNearby(opts: { code?: string; query?: string; x: string | number; y: string | number; radius: number }): Promise<{ total: number; places: (KakaoPlace & { distance: number })[] }> {
+    if (!env.KAKAO_REST_KEY) return { total: 0, places: [] };
+    const qs = new URLSearchParams({ x: String(opts.x), y: String(opts.y), radius: String(Math.min(20000, opts.radius)), sort: 'distance', size: '15' });
+    if (opts.code) qs.set('category_group_code', opts.code);
+    if (opts.query) qs.set('query', opts.query);
+    const kind = opts.query ? 'keyword' : 'category';
+    const j = await getJson(`https://dapi.kakao.com/v2/local/search/${kind}.json?${qs}`, { headers: { Authorization: `KakaoAK ${env.KAKAO_REST_KEY}` } });
+    return {
+      total: Number(j.meta?.total_count) || 0,
+      places: (j.documents || []).map((d: any) => ({
+        id: d.id, name: d.place_name, category: d.category_name, phone: d.phone, address: d.address_name,
+        roadAddress: d.road_address_name, x: d.x, y: d.y, url: d.place_url, distance: Number(d.distance) || 0,
+      })),
+    };
+  },
+
+  /** 주변 같은 업종 — Google 평점·리뷰 수 비교용(좌표 반경으로 제한) */
+  async googleNearby(query: string, lat: number, lng: number, radius: number): Promise<(GooglePlaceSummary & { lat?: number; lng?: number })[]> {
+    if (!env.GOOGLE_PLACES_API_KEY) return [];
+    const j = await getJson('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': env.GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location',
+      },
+      body: JSON.stringify({ textQuery: query, languageCode: 'ko', regionCode: 'KR', pageSize: 12,
+        locationRestriction: { rectangle: box(lat, lng, radius) } }),
+    });
+    return (j.places || []).map((p: any) => ({
+      id: p.id, name: p.displayName?.text || '', address: p.formattedAddress || '', rating: p.rating, ratingCount: p.userRatingCount,
+      lat: p.location?.latitude, lng: p.location?.longitude,
     }));
   },
 

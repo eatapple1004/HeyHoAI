@@ -738,6 +738,22 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_marketing_tasks_biz ON marketing_tasks(business_id, created_at DESC);
   `);
 
+  // 사업체 마케팅 진단 리포트(2026-10-20) — 공식 API·조사 자료로 모은 수치(data.facts) + 계산 점수(data.scores) + AI 해석(data.story).
+  //   만들 때마다 한 줄씩 쌓는다(이전 진단과 비교).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_reports (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        business_id  UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        status       VARCHAR(20) NOT NULL DEFAULT 'running',
+        step         TEXT,
+        error        TEXT,
+        data         JSONB NOT NULL DEFAULT '{}',
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_business_reports_biz ON business_reports(business_id, created_at DESC);
+  `);
+
   // ─── Ad Studio (URL to Ad) ───
   //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
   //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).
