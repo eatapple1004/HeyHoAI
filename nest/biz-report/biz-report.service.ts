@@ -192,8 +192,14 @@ export class BizReportService {
       return { code: c.code, label: c.label, count: r.total, nearest: r.places.slice(0, c.code === 'SW8' || c.code === 'AT4' || c.code === 'AD5' ? 5 : 0).map((p) => ({ name: p.name, distance: p.distance })) };
     })) : [];
     // 같은 업종(키워드) — 카카오 개수 + Google 평점 비교
-    const sameKakao = x && y && leaf ? await safe('kakao:same', () => sources.kakaoNearby({ query: leaf, x, y, radius: NEAR }), { total: 0, places: [] }) : { total: 0, places: [] };
-    const sameGoogle = x && y && leaf ? await safe('google:same', () => sources.googleNearby(leaf, Number(y), Number(x), 700), []) : [];
+    // 같은 업종 검색어 — 카카오 분류 끝칸("제과,베이커리")을 그대로 넣으면 결과가 거의 없다(삐에스몽테 실측: 구글 2곳 → "베이커리" 10곳).
+    //   쉼표로 나누고 같은 뜻의 말(빵집 등)을 더해 최대 3개 검색어로 찾은 뒤 합친다
+    const terms = sameTerms(leaf);
+    const kakaoRuns = x && y ? await Promise.all(terms.map((t) => safe(`kakao:same:${t}`, () => sources.kakaoNearby({ query: t, x, y, radius: NEAR }), { total: 0, places: [] as any[] }))) : [];
+    const kakaoPlaces = [...new Map(kakaoRuns.flatMap((r) => r.places).map((p: any) => [p.id, p])).values()].sort((a: any, b2: any) => Number(a.distance) - Number(b2.distance));
+    const sameKakao = { total: Math.max(kakaoPlaces.length, ...kakaoRuns.map((r) => r.total), 0), places: kakaoPlaces };
+    const googleRuns = x && y ? await Promise.all(terms.map((t) => safe(`google:same:${t}`, () => sources.googleNearby(t, Number(y), Number(x), 700), [] as any[]))) : [];
+    const sameGoogle = [...new Map(googleRuns.flat().map((c: any) => [c.id, c])).values()];
     const selfName = String(k?.name || g?.name || b.name);
     const competitors = sameGoogle
       .filter((c) => c.id !== g?.id && c.rating)
@@ -240,7 +246,7 @@ export class BizReportService {
         naver: { query: naverPk.query, at: naverPk.at, reviews: naverPk.blog.reviews.slice(0, 10).map((i) => ({ title: i.title.slice(0, 100), text: i.snippet.slice(0, 240), link: i.link, date: i.date, by: i.by })),
           blogTotal: naverPk.blog.total, news: { total: naverPk.news.total, items: naverPk.news.items.slice(0, 5) }, cafe: { total: naverPk.cafe.total, items: naverPk.cafe.items.slice(0, 5) } },
         naverPlace: naver ? naver : { skipped: naverPlaceAvailable() ? '카카오 장소가 없어 찾지 않음' : '외부 수집 키(REEF_API_KEY) 없음' } },
-      nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
+      nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: terms.join('·') || leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
       competitors,
       sns,
       presence: {
@@ -416,6 +422,18 @@ function forAi(facts: any) {
       accounts: (facts.sns.accounts || []).map((a: any) => (a.stats ? { ...a, stats: { ...a.stats, recent: (a.stats.recent || []).map(post), summary: a.stats.summary && { ...a.stats.summary, best: (a.stats.summary.best || []).map(post) } } } : a)),
     },
   };
+}
+
+/** 같은 업종 검색어 — "제과,베이커리" → [제과, 베이커리, 빵집]. 최대 3개 */
+const SAME_SYN: Record<string, string[]> = {
+  베이커리: ['빵집'], 제과: ['빵집', '베이커리'], 빵: ['빵집', '베이커리'], 도넛: ['베이커리'], 베이글: ['베이커리'],
+  카페: ['커피'], 커피전문점: ['카페'], 디저트카페: ['카페', '디저트'], 떡: ['떡집'], 국수: ['칼국수'], 칼국수: ['국수'],
+};
+function sameTerms(leaf: string): string[] {
+  const base = String(leaf || '').split(/[,·/]/).map((t) => t.trim()).filter(Boolean);
+  const all = [...base, ...base.flatMap((t) => SAME_SYN[t] || [])];
+  // 한 글자짜리("빵")·너무 넓은 말은 단독 검색어로 쓰지 않는다
+  return [...new Set(all)].filter((t) => t.length >= 2).sort((a, b) => Number(!!SAME_SYN[b]) - Number(!!SAME_SYN[a])).slice(0, 3);
 }
 
 const baseName = (n: string) => splitName(n).brand;
