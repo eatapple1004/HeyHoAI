@@ -59,16 +59,16 @@ JSON: {"summary":"","actions":[{"title":"","why":"","kind":"post","brief":""}]}`
   }
 
   /** 동향 보고 — 웹 검색(서버 도구)을 켠다. 검색이 막힌 키면 자료만으로 */
-  async trends(input: { name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; notes: string; stats: Record<string, unknown>; focus?: string; diagnosis?: string }): Promise<TrendReport> {
+  async trends(input: { name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; notes: string; stats: Record<string, unknown>; focus?: string; diagnosis?: string; naver?: string }): Promise<TrendReport> {
     const user = `업체: ${input.name}${input.industry ? ` (${input.industry})` : ''}
 ${input.memo ? `관리자 메모: ${input.memo}` : ''}
 [지도 정보] ${JSON.stringify(input.place)}
 [최근 30일 인스타 게시 현황] ${JSON.stringify(input.stats)}
-${input.diagnosis ? `[최근 마케팅 진단 — 약점을 메우는 쪽으로 할 일을 고른다]\n${input.diagnosis}\n` : ''}[브랜드 노트 — 지킬 것]
+${input.naver ? `[네이버 검색 결과 — 필수 참고(NAVER 검색 API). 블로그·카페 후기, 뉴스에서 이번 주 소재를 찾는다. 출처 url 은 이 주소 그대로]\n${input.naver}\n` : ''}${input.diagnosis ? `[최근 마케팅 진단 — 약점을 메우는 쪽으로 할 일을 고른다]\n${input.diagnosis}\n` : ''}[브랜드 노트 — 지킬 것]
 ${input.notes || '없음'}
 ${input.focus ? `\n[이번에 특히 볼 것 — 관리자 지시]\n${input.focus}\n` : ''}
 할 일:
-1. 웹 검색 3~6번으로 이 업체 주변·업종의 최근 동향을 본다 — 같은 동네 같은 업종 가게들의 소식, 계절·시즌 이슈, 지역 행사, 업종 트렌드, 이 업체에 대한 최근 글.
+1. 위 네이버 검색 결과를 먼저 보고, 웹 검색 3~6번으로 이 업체 주변·업종의 최근 동향을 본다 — 같은 동네 같은 업종 가게들의 소식, 계절·시즌 이슈, 지역 행사, 업종 트렌드, 이 업체에 대한 최근 글.
 2. findings: 이 업체에 의미 있는 발견 3~6개(한 줄씩, 검색 결과 출처 url).
 3. actions: 이번 주 할 일 3~5개. kind: post(인스타 게시물 — brief에 무엇을 보여 주고 무엇을 말할지), site(홈페이지 고칠 것), review(리뷰 대응), other.
    업체 자료로 할 수 있는 일만. 할인·이벤트처럼 사장님 결정이 필요한 건 "제안"으로 쓴다.
@@ -81,6 +81,8 @@ JSON: {"summary":"","findings":[{"text":"","source":{"title":"","url":""}}],"act
       if (!/web_search|tool/i.test(String(e?.message || ''))) throw e;
       res = await this.run(user + '\n\n(웹 검색을 쓸 수 없습니다. 위 자료만으로 하세요.)', 6000, false);
     }
+    // 네이버 검색 결과 주소도 실제로 본 출처로 친다
+    for (const m of (input.naver || '').matchAll(/\((https?:\/\/[^\s)]+)\)/g)) res.urls.add(normUrl(m[1]));
     const j = parseJson(res.text);
     return {
       summary: clip(j.summary, 600),

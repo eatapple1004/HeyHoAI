@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { SiteProfile, PROFILES, planPages } from './multipage/profile';
+import { NaverPack, naverText, naverLinks } from './naver-pack';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
@@ -35,6 +36,8 @@ export interface ResearchSheet {
   gaps: { item: string; why: string }[];
   benchmarks: { name: string; url: string; why: string }[];
   searches: string[];
+  /** 네이버 묶음 검색 요약(필수 단계, 2026-10-22~) */
+  naver?: { at: string; query: string; placeFound: boolean; blogTotal: number; blogSample: number; reviews: number; news: number; cafe: number };
 }
 
 export interface SitePlan {
@@ -75,7 +78,7 @@ export class ProcessWriterService {
    * 조사 — 웹 검색(Anthropic 서버 도구)을 켜고 부른다. 검색 도구가 막혀 있으면(조직 설정) 수집 자료만으로 다시 한다.
    *   웹 출처 URL은 실제 검색 결과에 나온 주소인지 대조한다 — 없는 주소면 'unverified'.
    */
-  async research(input: { profile?: SiteProfile; name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; homonyms: string[]; material: string; reviews: string[] }): Promise<ResearchSheet> {
+  async research(input: { profile?: SiteProfile; name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; homonyms: string[]; material: string; reviews: string[]; naver: NaverPack }): Promise<ResearchSheet> {
     const pf = input.profile || PROFILES.corporate;
     const store = pf.store;
     const user = `조사 대상: ${input.name}
@@ -94,11 +97,15 @@ ${input.material.slice(0, 30000) || '없음'}
 [방문자 리뷰]
 ${input.reviews.slice(0, 5).join('\n') || '없음'}
 
+[네이버 검색 결과 — 필수 참고 자료(NAVER 검색 API). 여기서 쓴 사실은 source.kind "web", url 은 아래 주소 그대로]
+${naverText(input.naver)}
+
 할 일:
 ${store ? `1. 웹 검색으로 이 가게(위 주소의 지점)의 공개 정보를 찾는다 — 가게 홈페이지·인스타그램, 지도 서비스 정보(영업시간·주차·좌석), 메뉴·가격, 언론·매거진 소개.
    프랜차이즈 지점이면 브랜드(본사) 정보와 이 지점 정보를 구분한다 — 브랜드 사실은 topic "브랜드"로, 지점 사실(위치·공간·운영)은 따로.
    검색어는 가게명+동네, 가게명+메뉴, 가게명+주차 처럼 바꿔 가며 4~8번.` : `1. 웹 검색으로 이 회사(위 주소의 회사)의 공개 정보를 찾는다 — 공식 홈페이지, 기업정보(대표·설립·업종), 제조사 협력사 목록, 납품·인증·특허, 뉴스, 제품 카탈로그.
    검색어는 회사명+지역, 회사명+제품, 회사명+대표자 처럼 바꿔 가며 4~8번.`}
+   네이버 검색 결과(위)를 반드시 함께 본다 — 블로그·카페 후기는 reference, 네이버 지도 등록 정보는 place.
 2. 사실을 한 줄씩 정리하고 출처를 단다. source.kind: company(회사 자료), site(기존 홈페이지), place(지도 서비스), web(검색 결과 — url 필수).
    level: confirmed(공식 출처·회사 자료·두 곳 이상 일치) / reference(한 곳뿐이거나 2차 출처, 리뷰·블로그).
    topic: ${store ? `매장 / 브랜드 / ${pf.items} / 가격 / 영업 / 연락처 중 하나. 리뷰·블로그에서 본 가격·영업시간은 바뀌었을 수 있어 reference.` : '회사 / 연혁 / 제품 / 고객·납품 / 인증 / 설비·규모 / 연락처 중 하나.'}
@@ -119,6 +126,8 @@ JSON:
       console.warn('[process-writer] web search unavailable, research without it:', e?.message);
       res = await this.run(user + '\n\n(웹 검색을 쓸 수 없습니다. 위 자료만으로 정리하세요.)', 12000, false);
     }
+    // 네이버 검색 결과 주소도 "실제로 본 출처"로 친다
+    for (const u of naverLinks(input.naver)) res.urls.add(normUrl(u));
     const j = parseJson(res.text);
     const s = clip;
     const facts: ResearchFact[] = arr(j.facts).slice(0, 80).map((f: any, i: number) => {
@@ -143,7 +152,9 @@ JSON:
       gaps: arr(j.gaps).slice(0, 20).map((g: any) => ({ item: s(g?.item, 80), why: s(g?.why, 200) })).filter((g) => g.item),
       benchmarks: arr(j.benchmarks).slice(0, 6).map((b: any) => ({ name: s(b?.name, 60), url: s(b?.url, 300), why: s(b?.why, 200) }))
         .filter((b) => b.name && /^https?:\/\//.test(b.url) && res.urls.has(normUrl(b.url))),
-      searches: res.searches.slice(0, 12),
+      searches: [`네이버: ${input.naver.query}`, ...res.searches].slice(0, 12),
+      naver: { at: input.naver.at, query: input.naver.query, placeFound: input.naver.local.some((l) => l.match), blogTotal: input.naver.blog.total,
+        blogSample: input.naver.blog.items.length, reviews: input.naver.blog.reviews.length, news: input.naver.news.total, cafe: input.naver.cafe.total },
     };
   }
 

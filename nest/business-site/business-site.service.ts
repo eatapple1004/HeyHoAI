@@ -13,6 +13,7 @@ const sharp = require('sharp');
 import { CorpSite, CorpPhoto, routeCorp, RouteResult, profileOf, planPages, sitePages } from './multipage';
 import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage, WebImage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
+import { naverPack } from './naver-pack';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
@@ -426,11 +427,16 @@ export class BusinessSiteService {
         homonyms = (await sources.kakaoSearch(name)).filter((k) => k.id !== s.kakao?.id && k.address !== s.kakao?.address)
           .map((k) => `${k.name} — ${k.roadAddress || k.address} (${k.category})`).slice(0, 8);
       } catch { /* 카카오 실패는 조사를 막지 않는다 */ }
+      // 네이버 검색은 필수 — 키가 없거나 실패하면 조사를 멈추고 이유를 보여 준다
+      await this.patchProcess(businessId, (p) => { p.job.step = '네이버 검색(지역·블로그·웹문서·뉴스·카페) 중'; });
+      const naver = await naverPack(s.kakao?.name || name, f.roadAddress || f.address || '');
+      await this.patchProcess(businessId, (p) => { p.job.step = '웹 검색과 자료로 회사 사실을 모으는 중'; });
       const sheet = await this.procWriter.research({
         profile: this.profile(site), name, industry: b.industry, memo: b.memo,
         place: { 이름: s.kakao?.name || s.google?.name, 주소: f.roadAddress || f.address, 전화: f.phone, 분류: f.category, 웹사이트: f.website, 구글평점: f.rating },
         homonyms, material: this.material(site, false),
         reviews: (s.google?.reviews || []).map((r) => `${r.rating}점: ${r.text}`),
+        naver,
       });
       await this.patchProcess(businessId, (p) => {
         p.research = { sheet, at: new Date().toISOString() };
