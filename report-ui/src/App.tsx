@@ -366,7 +366,7 @@ function SnsStatsView({ accounts, setup }: { accounts: any[]; setup?: any }) {
             <BarChart aspectRatio="16 / 7" xDataKey="d" data={rows}><Grid horizontal /><Bar dataKey="v" fill="var(--chart-1)" lineCap="round" /><BarXAxis showAllLabels /><ChartTooltip showCrosshair={false} /></BarChart></div>
           <div><h4 className="mb-1 text-sm font-bold text-zinc-600">반응이 좋았던 게시물</h4>
             <ul className="space-y-2 text-sm">{(top.stats.summary.best || []).map((p: any, i: number) => (
-              <li key={i} className="rounded-lg border border-zinc-200 p-2"><a className="text-violet-700" href={p.url} target="_blank" rel="noreferrer">{p.caption || '게시물'}</a>
+              <li key={i} className="rounded-lg border border-zinc-200 p-2"><a className="line-clamp-2 text-violet-700" href={p.url} target="_blank" rel="noreferrer" title={p.caption || ''}>{p.caption || '게시물'}</a>
                 <div className="text-xs text-zinc-500">{new Date(p.at).toLocaleDateString('ko-KR')} · {p.type}{p.views != null ? ` · 조회 ${fmt(p.views)}` : ''}{p.likes != null ? ` · 좋아요 ${fmt(p.likes)}` : ''}{p.comments != null ? ` · 댓글 ${fmt(p.comments)}` : ''}{p.reach != null ? ` · 도달 ${fmt(p.reach)}` : ''}{p.saved != null ? ` · 저장 ${fmt(p.saved)}` : ''}</div></li>
             ))}</ul>
             {top.stats.insights && <p className="mt-2 text-xs text-zinc-600">최근 28일 인사이트: {Object.entries(top.stats.insights).map(([k, v]) => `${({ reach: '도달', accounts_engaged: '반응한 계정', total_interactions: '전체 반응', views: '조회', profile_views: '프로필 방문' } as any)[k] || k} ${fmt(v as number)}`).join(' · ')}</p>}

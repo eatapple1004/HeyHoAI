@@ -40,6 +40,8 @@ async function getJson(url: string): Promise<any> {
 const iso = (v: string) => { const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : ''; };
 /** ISO 8601 길이(PT1M5S) → 초 */
 const secs = (d?: string) => { const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(d || ''); return m ? (+(m[1] || 0)) * 3600 + (+(m[2] || 0)) * 60 + (+(m[3] || 0)) : Infinity; };
+/** 캡션은 전부 저장한다(인스타 최대 2,200자) — AI 해석에 보낼 때만 줄인다(biz-report.service forAi) */
+const fullCaption = (v: unknown) => String(v ?? '').slice(0, 2200);
 const n = (v: unknown) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
 
 /** 게시 주기·반응 요약 — 최근 게시물 목록으로 */
@@ -65,7 +67,7 @@ export function summarize(posts: Post[], followers: number | null) {
 }
 
 const IG_MEDIA_FIELDS = 'id,caption,media_type,timestamp,like_count,comments_count,permalink';
-const toPost = (m: any): Post => ({ at: m.timestamp, likes: n(m.like_count), comments: n(m.comments_count), type: ({ IMAGE: '사진', VIDEO: '영상', CAROUSEL_ALBUM: '여러 장', REELS: '릴스' } as any)[m.media_type] || m.media_type, url: m.permalink, caption: String(m.caption || '').slice(0, 120) });
+const toPost = (m: any): Post => ({ at: m.timestamp, likes: n(m.like_count), comments: n(m.comments_count), type: ({ IMAGE: '사진', VIDEO: '영상', CAROUSEL_ALBUM: '여러 장', REELS: '릴스' } as any)[m.media_type] || m.media_type, url: m.permalink, caption: fullCaption(String(m.caption || '')) });
 
 /** A + B — 도피아에 연결된 계정(토큰 보유) */
 export async function instagramConnected(acc: { igUserId: string; token: string; authMode: 'instagram' | 'facebook' }): Promise<SnsStats> {
@@ -154,7 +156,7 @@ export async function youtubePublic(handle: string): Promise<SnsStats> {
     const labels = mi < 0 ? [] : [...seg.slice(mi, mi + 3000).matchAll(/"accessibilityLabel":"([^"]{1,40})"/g)].map((m) => m[1]);
     const views = labels.find((l) => /^조회수/.test(l)); const when = labels.find((l) => /전$/.test(l));
     if (!id || !title || !when || recent.some((p) => p.url?.endsWith(id))) continue;
-    recent.push({ at: agoIso(when), likes: null, comments: null, views: views ? koNum(views.replace(/조회수\s*/, '')) : null, type: '영상', url: `https://www.youtube.com/watch?v=${id}`, caption: unent(title).slice(0, 120) });
+    recent.push({ at: agoIso(when), likes: null, comments: null, views: views ? koNum(views.replace(/조회수\s*/, '')) : null, type: '영상', url: `https://www.youtube.com/watch?v=${id}`, caption: fullCaption(unent(title)) });
     if (recent.length >= 15) break;
   }
   const followers = subs ? koNum(subs) : null;
@@ -193,7 +195,7 @@ export async function instagramPublic(handle: string): Promise<SnsStats> {
       at: p.taken_at_timestamp ? new Date(p.taken_at_timestamp * 1000).toISOString() : '',
       likes: n(p.edge_liked_by?.count ?? p.edge_media_preview_like?.count), comments: n(p.edge_media_to_comment?.count),
       views: p.is_video ? n(p.video_view_count) : null, type: p.is_video ? '영상' : p.__typename === 'GraphSidecar' ? '여러 장' : '사진',
-      url: p.shortcode ? `https://www.instagram.com/p/${p.shortcode}/` : undefined, caption: String(p.edge_media_to_caption?.edges?.[0]?.node?.text || '').slice(0, 120),
+      url: p.shortcode ? `https://www.instagram.com/p/${p.shortcode}/` : undefined, caption: fullCaption(String(p.edge_media_to_caption?.edges?.[0]?.node?.text || '')),
     })).filter((p: Post) => p.at);
     const followers = n(u.edge_followed_by?.count);
     return { source: '인스타 웹 공개 조회(공개 페이지 수집 · 공식 API 아님)', followers, following: n(u.edge_follow?.count), posts: n(u.edge_owner_to_timeline_media?.count),
@@ -230,7 +232,7 @@ export async function instagramExternal(handle: string): Promise<SnsStats> {
   if (!a || a.error || (!a.username && !a.followersCount)) throw new Error('계정을 찾지 못했거나 비공개 계정입니다');
   const recent: Post[] = (a.latestPosts || []).map((p: any) => ({
     at: iso(p.timestamp || ''), likes: n(p.likesCount), comments: n(p.commentsCount), views: n(p.videoViewCount),
-    type: p.type === 'Video' ? '영상' : p.type === 'Sidecar' ? '여러 장' : '사진', url: p.url, caption: String(p.caption || '').slice(0, 120),
+    type: p.type === 'Video' ? '영상' : p.type === 'Sidecar' ? '여러 장' : '사진', url: p.url, caption: fullCaption(String(p.caption || '')),
   })).filter((p: Post) => p.at);
   const followers = n(a.followersCount);
   return { source: 'Apify Instagram Profile Scraper(외부 수집 · 공식 API 아님)', followers, following: n(a.followsCount), posts: n(a.postsCount), name: a.fullName || a.username,
@@ -249,7 +251,7 @@ export async function youtubeChannel(handle: string): Promise<SnsStats> {
   const ids = items.map((i: any) => i.contentDetails?.videoId).filter(Boolean).join(',');
   const vids = ids ? (await getJson(`https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${ids}&key=${key}`)).items || [] : [];
   const recent: Post[] = vids.map((v: any) => ({ at: v.snippet?.publishedAt, likes: n(v.statistics?.likeCount), comments: n(v.statistics?.commentCount), views: n(v.statistics?.viewCount),
-    type: secs(v.contentDetails?.duration) <= 60 ? '쇼츠(1분 이하)' : '영상', url: `https://www.youtube.com/watch?v=${v.id}`, caption: String(v.snippet?.title || '').slice(0, 120) }));
+    type: secs(v.contentDetails?.duration) <= 60 ? '쇼츠(1분 이하)' : '영상', url: `https://www.youtube.com/watch?v=${v.id}`, caption: fullCaption(String(v.snippet?.title || '')) }));
   const followers = ch.statistics?.hiddenSubscriberCount ? null : n(ch.statistics?.subscriberCount);
   return { source: 'YouTube Data API(공식)', followers, posts: n(ch.statistics?.videoCount), name: ch.snippet?.title, bio: String(ch.snippet?.description || '').slice(0, 200), recent,
     summary: { ...summarize(recent, followers), totalViews: n(ch.statistics?.viewCount) } as any, fetchedAt: new Date().toISOString() };
@@ -275,7 +277,7 @@ export async function tiktokExternal(handle: string): Promise<SnsStats> {
   if (!vids.length && !a.name) throw new Error('계정을 찾지 못했거나 비공개 계정입니다');
   const recent: Post[] = vids.map((v) => ({
     at: iso(v.createTimeISO || ''), likes: n(v.diggCount), comments: n(v.commentCount), views: n(v.playCount),
-    type: v.isSlideshow ? '사진 슬라이드' : '영상', url: v.webVideoUrl, caption: String(v.text || '').slice(0, 120),
+    type: v.isSlideshow ? '사진 슬라이드' : '영상', url: v.webVideoUrl, caption: fullCaption(String(v.text || '')),
   })).filter((p) => p.at);
   const followers = n(a.fans);
   return { source: 'Apify TikTok Profile Scraper(외부 수집 · 공식 API 아님)', followers, following: n(a.following), posts: n(a.video), name: a.nickName || a.name,
@@ -296,7 +298,7 @@ export async function naverBlogRss(id: string): Promise<SnsStats> {
   const recent: Post[] = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => ({
     at: iso(cdata((/<pubDate>([\s\S]*?)<\/pubDate>/.exec(m[1]) || [])[1] || '')),
     likes: null, comments: null, type: '글', url: cdata((/<link>([\s\S]*?)<\/link>/.exec(m[1]) || [])[1] || '').replace(/\?fromRss.*$/, ''),
-    caption: cdata((/<title>([\s\S]*?)<\/title>/.exec(m[1]) || [])[1] || '').slice(0, 120),
+    caption: fullCaption(cdata((/<title>([\s\S]*?)<\/title>/.exec(m[1]) || [])[1] || '')),
   })).filter((p) => p.at);
   return { source: '네이버 블로그 RSS(공식)', followers: null, posts: null, name: title, recent, summary: summarize(recent, null), fetchedAt: new Date().toISOString() };
 }

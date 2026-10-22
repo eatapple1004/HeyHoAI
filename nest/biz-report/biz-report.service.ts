@@ -60,7 +60,7 @@ export class BizReportService {
     await this.repo.patch(id, { step: '점수를 계산하는 중', data: { facts } });
     const scores = score(facts);
     await this.repo.patch(id, { step: 'AI가 해석을 쓰는 중', data: { facts, scores } });
-    const story: ReportStory = await this.writer.write({ facts, scores });
+    const story: ReportStory = await this.writer.write({ facts: forAi(facts), scores });
     // 글 속 숫자 대조 — 모은 자료(facts) 어디에도 없는 숫자는 표시(목표치처럼 제안한 숫자는 metrics.target 에만 허용)
     // "365K"를 "36.5만"처럼 단위만 바꿔 쓴 수치도 출처 있는 숫자로 본다
     const src0 = JSON.stringify(facts) + JSON.stringify(scores);
@@ -160,8 +160,7 @@ export class BizReportService {
     const list = [...accs.values()].slice(0, 6);
     const withStats = await Promise.all(list.map(async (a) => {
       const r = await stats(a);
-      // 저장 크기를 줄인다 — 최근 게시물 15개, 글은 짧게
-      if (r.stats) r.stats.recent = r.stats.recent.slice(0, 15);
+      // 받아온 최근 게시물(최대 25개)과 캡션 전체를 저장한다 — AI 해석에 보낼 때만 줄인다(forAi)
       return { ...a, ...r };
     }));
     for (const a of [...accs.values()].slice(6)) withStats.push({ ...a, statsNote: '계정이 많아 수치는 앞 6개만 받음' });
@@ -404,6 +403,19 @@ function unitVariants(text: string): string[] {
     for (const u of [1e3, 1e4, 1e6, 1e8]) { const x = v / u; if (x >= 0.1 && x < 100000) { out.add(fmt(x)); if (x >= 1) out.add(String(Math.round(x * 10) / 10)); } }
   }
   return [...out];
+}
+
+/** AI 해석 요청용 자료 — 게시물 캡션만 앞 120자로(글자 단위라 이모지가 반으로 잘리지 않음). 저장본은 전체 그대로 */
+function forAi(facts: any) {
+  const clip = (t: unknown) => { const a = Array.from(String(t ?? '')); return a.length > 120 ? `${a.slice(0, 120).join('')}…` : a.join(''); };
+  const post = (p: any) => (p && typeof p === 'object' ? { ...p, caption: clip(p.caption) } : p);
+  return {
+    ...facts,
+    sns: facts.sns && {
+      ...facts.sns,
+      accounts: (facts.sns.accounts || []).map((a: any) => (a.stats ? { ...a, stats: { ...a.stats, recent: (a.stats.recent || []).map(post), summary: a.stats.summary && { ...a.stats.summary, best: (a.stats.summary.best || []).map(post) } } } : a)),
+    },
+  };
 }
 
 const baseName = (n: string) => splitName(n).brand;
