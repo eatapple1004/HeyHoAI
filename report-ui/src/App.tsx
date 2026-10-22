@@ -346,18 +346,18 @@ function SnsStatsView({ accounts, setup }: { accounts: any[]; setup?: any }) {
   return (
     <div className="mt-4 space-y-4">
       {accounts.length > 0 && <div className="overflow-x-auto"><table className="tbl w-full text-sm">
-        <thead><tr className="text-left text-xs text-zinc-500"><th className="py-2">계정</th><th>팔로워</th><th>게시물</th><th>최근 30일</th><th>평균 간격</th><th>게시물당 반응</th><th>반응률</th><th>마지막 게시</th></tr></thead>
+        <thead><tr className="text-left text-xs text-zinc-500"><th className="py-2">계정</th><th>팔로워</th><th>팔로잉</th><th>게시물</th><th>최근 30일</th><th>평균 간격</th><th>게시물당 반응</th><th>반응률</th><th>마지막 게시</th></tr></thead>
         <tbody>{accounts.map((a) => { const st = a.stats; const sm = st?.summary || {}; return (
           <tr key={a.platform + a.handle} className="border-t border-zinc-100 align-top">
             <td className="py-2 pr-2"><b>{a.label}</b> <span className="text-xs text-zinc-500">{a.handle}</span>
               <div className="text-[11px] text-zinc-500">{st ? st.source : a.statsNote}</div></td>
             {st ? (<>
-              <td className="tabular-nums">{fmt(st.followers)}</td><td className="tabular-nums">{fmt(st.posts)}</td>
+              <td className="tabular-nums">{fmt(st.followers)}</td><td className="tabular-nums">{fmt(st.following)}</td><td className="tabular-nums">{fmt(st.posts)}</td>
               <td className="tabular-nums">{sm.last30 ?? '–'}건</td><td className="tabular-nums">{sm.avgGapDays != null ? `${sm.avgGapDays}일` : '–'}</td>
               <td className="tabular-nums text-xs">{sm.avgViews != null ? `조회 ${fmt(sm.avgViews)} · ` : ''}{sm.avgLikes != null ? `좋아요 ${fmt(sm.avgLikes)} · 댓글 ${fmt(sm.avgComments)}` : '–'}</td>
               <td className="tabular-nums">{sm.engagementPct != null ? `${sm.engagementPct}%` : '–'}</td>
               <td className="tabular-nums text-xs">{sm.lastPostAt ? `${new Date(sm.lastPostAt).toLocaleDateString('ko-KR')} (${sm.daysSinceLast}일 전)` : '–'}</td>
-            </>) : <td colSpan={7} className="text-xs text-zinc-400">{a.followers || a.posts ? `검색 결과 기준: ${[a.followers, a.posts].filter(Boolean).join(' · ')}` : '수치 없음'}</td>}
+            </>) : <td colSpan={8} className="text-xs text-zinc-400">{a.followers || a.posts ? `검색 결과 기준: ${[a.followers, a.posts].filter(Boolean).join(' · ')}` : '수치 없음'}</td>}
           </tr>); })}</tbody>
       </table></div>}
       {top && rows.length > 2 && (
