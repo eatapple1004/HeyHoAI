@@ -204,7 +204,7 @@ export class BizReportService {
     const competitors = sameGoogle
       .filter((c) => c.id !== g?.id && c.rating)
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
-      .sort((a, b2) => b2.reviews - a.reviews).slice(0, 10);
+      .sort((a, b2) => b2.reviews - a.reviews).slice(0, 15);
 
     const sns = await safe('sns', () => this.sns(businessId, { name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '', setup: { youtube: false, discovery: false, tiktok: false, connectedInstagram: [] as string[] } });
 
@@ -424,7 +424,7 @@ function forAi(facts: any) {
   };
 }
 
-/** 같은 업종 검색어 — "제과,베이커리" → [제과, 베이커리, 빵집]. 최대 3개 */
+/** 같은 업종 검색어 — "제과,베이커리" → [제과, 베이커리, 빵집] + 빵집·디저트면 카페. 최대 4개 */
 const SAME_SYN: Record<string, string[]> = {
   베이커리: ['빵집'], 제과: ['빵집', '베이커리'], 빵: ['빵집', '베이커리'], 도넛: ['베이커리'], 베이글: ['베이커리'],
   카페: ['커피'], 커피전문점: ['카페'], 디저트카페: ['카페', '디저트'], 떡: ['떡집'], 국수: ['칼국수'], 칼국수: ['국수'],
@@ -433,7 +433,10 @@ function sameTerms(leaf: string): string[] {
   const base = String(leaf || '').split(/[,·/]/).map((t) => t.trim()).filter(Boolean);
   const all = [...base, ...base.flatMap((t) => SAME_SYN[t] || [])];
   // 한 글자짜리("빵")·너무 넓은 말은 단독 검색어로 쓰지 않는다
-  return [...new Set(all)].filter((t) => t.length >= 2).sort((a, b) => Number(!!SAME_SYN[b]) - Number(!!SAME_SYN[a])).slice(0, 3);
+  const same = [...new Set(all)].filter((t) => t.length >= 2).sort((a, b) => Number(!!SAME_SYN[b]) - Number(!!SAME_SYN[a])).slice(0, 3);
+  // 빵집·디저트는 손님이 주변 카페와 견준다 — 카페도 비교 대상에 넣는다(2026-10-22 사용자 요청)
+  if (base.some((t) => /제과|베이커리|빵|도넛|베이글|디저트|케이크/.test(t)) && !same.includes('카페')) same.push('카페');
+  return same;
 }
 
 const baseName = (n: string) => splitName(n).brand;
