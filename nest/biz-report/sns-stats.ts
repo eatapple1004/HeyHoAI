@@ -147,7 +147,9 @@ export async function youtubePublic(handle: string): Promise<SnsStats> {
   for (const seg of html.split('"lockupViewModel":{').slice(1)) {
     const id = (/"contentId":"([\w-]{11})"/.exec(seg) || [])[1];
     const title = (/"lockupMetadataViewModel":\{"title":\{"content":"((?:[^"\\]|\\.)*)"/.exec(seg) || [])[1];
-    const labels = [...seg.slice(0, 4000).matchAll(/"accessibilityLabel":"([^"]{1,40})"/g)].map((m) => m[1]);
+    // 조회수·올린 시기는 제목 뒤 metadataRows 에 있다(카드 앞부분은 썸네일 정보가 길다)
+    const mi = seg.indexOf('"lockupMetadataViewModel"');
+    const labels = mi < 0 ? [] : [...seg.slice(mi, mi + 3000).matchAll(/"accessibilityLabel":"([^"]{1,40})"/g)].map((m) => m[1]);
     const views = labels.find((l) => /^조회수/.test(l)); const when = labels.find((l) => /전$/.test(l));
     if (!id || !title || !when || recent.some((p) => p.url?.endsWith(id))) continue;
     recent.push({ at: agoIso(when), likes: null, comments: null, views: views ? koNum(views.replace(/조회수\s*/, '')) : null, type: '영상', url: `https://www.youtube.com/watch?v=${id}`, caption: unent(title).slice(0, 120) });
