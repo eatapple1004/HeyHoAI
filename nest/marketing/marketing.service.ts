@@ -10,6 +10,7 @@ import { toPublicUrl } from '../business/business.repository';
  *   동향 담당: 웹 검색 동향 보고 + 이번 주 할 일 제안 → 할 일을 누르면 게시물 초안·할 일로 이어진다
  *   리뷰 담당: Google 리뷰(홈페이지 제작에서 모은 것) 답글 초안 → 복사해서 단다(답글 API 없음)
  *   지시: 관리자가 한 줄로 시키면 할 일로 나눈다
+ *   진단: 마케팅 진단(/admin-business/:id/report)의 약점·할 일을 이어받아 할 일로(같은 진단은 한 번만)
  * 실행은 항상 승인 뒤에만. 거절 사유는 브랜드 노트에 쌓여 다음 초안부터 지킨다.
  */
 
@@ -63,6 +64,7 @@ export class MarketingService implements OnModuleInit {
         photos: (await this.repo.freshImages(businessId, 50)).length,
         reviews: (site?.source?.google?.reviews || []).length,
         place: Boolean(site?.source?.kakao || site?.source?.google),
+        report: await this.reportStatus(businessId, tasks),
       },
     };
   }
@@ -97,6 +99,8 @@ export class MarketingService implements OnModuleInit {
     const s = settingsOf((await this.repo.team(businessId)).settings);
     const on = (a: Agent) => (only ? only === a : s.agents![a]);
     const jobs: Promise<unknown>[] = [];
+    // 새 진단이 있으면 같이 이어받는다(이미 가져온 진단이면 건너뜀)
+    if (!only || only === 'trends') jobs.push(this.importReport(businessId).catch(() => undefined));
     if (on('trends')) jobs.push(this.trends(businessId));
     if (on('instagram')) jobs.push(this.posts(businessId, s.postsPerRun || 3));
     if (on('reviews')) jobs.push(this.reviews(businessId));
@@ -121,8 +125,53 @@ export class MarketingService implements OnModuleInit {
     const src = (await this.repo.siteSource(businessId))?.source || {};
     const place = { 이름: src.kakao?.name || src.google?.name, 주소: src.kakao?.roadAddress || src.kakao?.address || src.google?.address, 분류: src.kakao?.category || src.google?.type, 웹사이트: src.google?.website };
     await this.work(businessId, 'trends', 'report', '이번 주 동향 보고 작성 중', async () => {
-      const r = await this.writer.trends({ name: siteName(b.name), industry: b.industry, memo: b.memo, place, notes: team.notes, stats: await this.repo.postStats(businessId), focus });
+      const r = await this.writer.trends({ name: siteName(b.name), industry: b.industry, memo: b.memo, place, notes: team.notes, stats: await this.repo.postStats(businessId), focus, diagnosis: diagnosisBrief((await this.repo.latestReport(businessId))?.data) });
       return { title: `이번 주 동향 보고 — 할 일 ${r.actions.length}개`, body: r };
+    });
+  }
+
+  // ── 진단 이어받기 ──
+  /** 화면 표시용 — 최근 진단과 그걸 이미 가져왔는지 */
+  private async reportStatus(businessId: string, tasks?: TaskRow[]) {
+    const r = await this.repo.latestReport(businessId);
+    if (!r) return null;
+    const list = tasks || await this.repo.tasks(businessId, 200);
+    // 가져오는 중(running, 아직 body 없음)도 가져온 것으로 본다 — 버튼과 팀 실행이 겹쳐 두 번 만드는 것 방지
+    return { id: r.id, at: r.created_at, imported: list.some((t) => t.kind === 'diagnosis' && ((t.body?.reportId === r.id && t.status !== 'error') || (t.status === 'running' && Date.now() - Date.parse(t.updated_at) < STALE_MS))) };
+  }
+
+  /** 버튼 — 최근 진단을 지금 가져온다 */
+  async fromReport(businessId: string) {
+    await this.biz(businessId);
+    const r = await this.repo.latestReport(businessId);
+    if (!r) throw new BadRequestException('아직 끝난 마케팅 진단이 없습니다. 사업체 상세의 📊 마케팅 진단에서 먼저 만드세요.');
+    const st = await this.reportStatus(businessId);
+    if (st?.imported) throw new ConflictException('이 진단은 이미 가져왔습니다. 진단을 새로 만든 뒤 다시 가져오세요.');
+    this.importReport(businessId).catch((e) => console.warn('[marketing] report import failed', e?.message));
+    await new Promise((res) => setTimeout(res, 400));
+    return this.get(businessId);
+  }
+
+  private async importReport(businessId: string) {
+    const r = await this.repo.latestReport(businessId);
+    if (!r || (await this.reportStatus(businessId))?.imported) return;
+    const story = r.data?.story || {};
+    const scores = (Array.isArray(r.data?.scores) ? r.data.scores : []).map((s: any) => ({ label: s.label, score: s.score ?? null }));
+    const b = await this.biz(businessId);
+    const notes = (await this.repo.team(businessId)).notes;
+    await this.work(businessId, 'diagnosis', 'diagnosis', '마케팅 진단 이어받는 중', async () => {
+      const out = await this.writer.fromReport({
+        name: siteName(b.name), industry: b.industry, notes,
+        diagnosis: { 요약: story.summary, 점수: (r.data?.scores || []).map((s: any) => ({ 영역: s.label, 점수: s.score, 근거: s.basis })), 발견: story.findings, 진단의_할일: story.actions, 계획: story.plan, 빈칸: story.missing, 리뷰_불만: story.reviewThemes?.bad },
+      });
+      return {
+        title: `진단 이어받기 — 할 일 ${out.actions.length}개`,
+        body: {
+          reportId: r.id, reportAt: r.created_at, summary: out.summary || story.summary || '', scores,
+          findings: (story.findings || []).slice(0, 6).map((f: any) => ({ text: `${f.title} — ${f.body}`.slice(0, 300) })),
+          actions: out.actions,
+        },
+      };
     });
   }
 
@@ -263,6 +312,13 @@ function slot(d: number, hhmm: string): string {
   const kst = new Date(Date.now() + 9 * 3600 * 1000);
   const t = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() + d, h - 9, m);
   return new Date(t).toISOString();
+}
+
+/** 동향 담당에게 줄 진단 한 묶음 — 점수와 요약만 짧게 */
+function diagnosisBrief(data: any): string {
+  if (!data?.story) return '';
+  const sc = (Array.isArray(data.scores) ? data.scores : []).map((s: any) => `${s.label} ${s.score ?? '확인 불가'}점`).join(' · ');
+  return `${sc}\n${String(data.story.summary || '').slice(0, 500)}`;
 }
 
 const pickReview = (r: any) => ({ key: r.key, author: r.author, authorUri: r.authorUri, rating: r.rating, when: r.when, text: r.text });

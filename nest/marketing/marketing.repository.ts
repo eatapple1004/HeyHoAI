@@ -115,6 +115,13 @@ export class MarketingRepository {
     return r.rows[0] || null;
   }
 
+  /** 가장 최근에 끝난 마케팅 진단(biz-report) — 마케팅 팀이 할 일로 이어받는다 */
+  async latestReport(businessId: string): Promise<{ id: string; data: any; created_at: string } | null> {
+    const r = await this.db.query(
+      `SELECT id, data, created_at FROM business_reports WHERE business_id = $1 AND status = 'done' ORDER BY created_at DESC LIMIT 1`, [businessId]);
+    return r.rows[0] || null;
+  }
+
   /** 최근 30일 게시 현황 — 동향 담당이 "다음 할 일"을 정할 때 본다 */
   async postStats(businessId: string): Promise<{ posted: number; failed: number; scheduled: number; lastPosted: string | null }> {
     const r = await this.db.query(

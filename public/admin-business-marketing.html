@@ -100,6 +100,12 @@ button:disabled{opacity:.5;cursor:default}
       </div>
 
       <div class="card">
+        <h2>📊 마케팅 진단 <span class="hint">진단의 약점·할 일을 팀이 이어받습니다</span></h2>
+        <p class="prog" id="reportInfo"></p>
+        <div class="row" style="margin-top:8px"><button id="reportBtn" onclick="fromReport()">진단 가져오기</button><a id="reportLink" class="prog" style="margin-left:auto">진단 보기 →</a></div>
+      </div>
+
+      <div class="card">
         <h2>지시하기 <span class="hint">팀에게 한 줄로 일을 시키세요</span></h2>
         <textarea id="direct" rows="3" placeholder="예: 다음 주 화이트데이에 맞춰 케이크 게시물 2개 준비해줘"></textarea>
         <div class="row" style="margin-top:8px"><button id="directBtn" onclick="direct()">보내기</button></div>
@@ -133,11 +139,12 @@ const AGENTS = [
   ['trends', '🔎 동향 담당', '웹 검색으로 동네·업종 동향을 보고 이번 주 할 일을 제안합니다. 할 일의 "실행"을 누르면 다른 담당이 이어받습니다.'],
   ['reviews', '💬 리뷰 담당', 'Google 리뷰에 사장님 답글 초안을 씁니다(답글은 복사해서 다세요).'],
 ];
-const AG_LABEL = { instagram: '인스타', trends: '동향', reviews: '리뷰', direct: '지시' };
+const AG_LABEL = { instagram: '인스타', trends: '동향', reviews: '리뷰', direct: '지시', diagnosis: '진단' };
 const ST = { running: ['b-run', '일하는 중'], ready: ['b-wait', '승인 대기'], done: ['b-on', '완료'], rejected: ['b-off', '거절'], error: ['b-err', '실패'] };
 const KIND = { post: '게시물', site: '홈페이지', review: '리뷰', other: '기타' };
 
 $('backLink').href = '/admin-business/' + BIZ_ID;
+$('reportLink').href = '/admin-business/' + BIZ_ID + '/report';
 
 async function api(url, opts = {}) {
   const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
@@ -170,6 +177,10 @@ function render() {
   $('agents').innerHTML = AGENTS.map(([k, l, d]) => `<div class="agent"><div class="t"><label><input type="checkbox" data-agent="${k}"${a[k] ? ' checked' : ''} onchange="saveTeam()">${l}</label><button class="sm" onclick="run('${k}', this)">지금 실행</button></div><p>${d}</p>
     ${k === 'instagram' ? `<div class="row" style="margin-top:8px"><span class="prog">한 번에</span><select id="ppr" onchange="saveTeam()">${[1, 2, 3, 4, 5, 7].map((n) => `<option${n === team.settings.postsPerRun ? ' selected' : ''}>${n}</option>`).join('')}</select><span class="prog">개 · 게시 시각</span><input id="ptime" type="time" value="${esc(team.settings.postTime)}" style="width:120px" onchange="saveTeam()"></div>` : ''}</div>`).join('');
   $('auto').checked = !!team.auto;
+  const rp = status.report;
+  $('reportInfo').textContent = !rp ? '아직 끝난 진단이 없습니다. 진단을 먼저 만드세요.'
+    : `최근 진단 ${new Date(rp.at).toLocaleString('ko-KR')} · ${rp.imported ? '이미 가져옴' : '아직 안 가져옴 — 팀을 실행해도 같이 가져옵니다'}`;
+  $('reportBtn').disabled = !rp || rp.imported;
   $('lastRun').textContent = team.last_run_at ? '마지막 실행 ' + new Date(team.last_run_at).toLocaleString('ko-KR') + (team.auto ? ' · 7일마다 자동' : '') : '아직 실행한 적 없습니다';
   if (document.activeElement !== $('notes')) $('notes').value = team.notes || '';
 
@@ -207,8 +218,9 @@ function card(t) {
         ${b.queueId ? `<div class="prog" style="margin-top:6px">게시 큐에 넣음 · ${b.scheduledAt ? new Date(b.scheduledAt).toLocaleString('ko-KR') + ' 예약' : '다음 발행 차례'}</div>` : ''}`}
       ${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">승인 — 게시 큐에 예약</button><button onclick="savePost('${t.id}', this)">수정 저장</button><button onclick="reject('${t.id}')">거절</button></div>` : ''}
     </div></div>`;
-  } else if (t.kind === 'report' || t.kind === 'direct') {
+  } else if (t.kind === 'report' || t.kind === 'direct' || t.kind === 'diagnosis') {
     inner = `${b.instruction ? `<div class="review">지시: ${esc(b.instruction)}</div>` : ''}
+      ${(b.scores || []).length ? `<div class="chips" style="margin-bottom:8px">${b.scores.map((x) => `<span class="chip${x.score != null && x.score < 50 ? ' bad' : ''}">${esc(x.label)} <b>${x.score == null ? '확인 불가' : x.score + '점'}</b></span>`).join('')}<a class="prog" href="/admin-business/${BIZ_ID}/report" target="_blank" rel="noopener" style="align-self:center">진단 보기 →</a></div>` : ''}
       <div class="text">${esc(b.summary || b.reply || '')}</div>
       ${(b.findings || []).length ? `<ul class="ul" style="margin-top:8px">${b.findings.map((f) => `<li>${esc(f.text)}${f.source ? ` — <a href="${esc(f.source.url)}" target="_blank" rel="noopener">${esc(f.source.title)}</a>` : ''}</li>`).join('')}</ul>` : ''}
       ${(b.actions || []).map((a, i) => `<div class="todo"><div><span class="kind">${esc(KIND[a.kind] || a.kind)}</span><b>${esc(a.title)}</b><small>${esc(a.why)}</small>${a.brief ? `<small>${esc(a.brief)}</small>` : ''}</div>
@@ -236,6 +248,12 @@ async function run(agent, btn) {
   await busy(btn || $('runAll'), '시작 중…', async () => {
     STATE = await api(API + '/run', { method: 'POST', body: JSON.stringify(agent ? { agent } : {}) });
     TAB = 'running'; render(); flash('ok', '일을 시작했습니다. 끝나면 "승인 대기"에 올라옵니다(1~3분).');
+  });
+}
+async function fromReport() {
+  await busy($('reportBtn'), '가져오는 중…', async () => {
+    STATE = await api(API + '/from-report', { method: 'POST' });
+    TAB = 'running'; render(); flash('ok', '진단을 이어받는 중입니다. 끝나면 "승인 대기"에 올라옵니다(30초~1분).');
   });
 }
 async function direct() {

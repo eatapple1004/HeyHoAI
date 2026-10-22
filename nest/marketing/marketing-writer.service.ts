@@ -10,6 +10,7 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  *   동향 담당: 웹 검색으로 동네·업종·경쟁 동향을 보고 "다음 할 일"을 제안(NoimosAI Advisor 에 해당)
  *   리뷰 담당: Google 리뷰에 사장님 답글 초안
  *   지시: 관리자가 한 줄로 시킨 일을 할 일 목록으로 나눈다
+ *   진단 이어받기: 마케팅 진단(biz-report)의 약점·할 일을 팀의 할 일로 바꾼다
  * 인스타 게시물 캡션은 기존 사업체 캡션 서비스(BusinessCaptionService)를 그대로 쓴다.
  */
 
@@ -37,13 +38,33 @@ export class MarketingWriterService {
     return this.client;
   }
 
+  /** 진단 이어받기 — 진단 글(점수·발견·할 일·계획·빈칸)을 이 팀이 할 수 있는 일로 나눈다(웹 검색 없이, 진단에 있는 사실만) */
+  async fromReport(input: { name: string; industry?: string | null; notes: string; diagnosis: Record<string, unknown> }): Promise<{ summary: string; actions: Action[] }> {
+    const user = `업체: ${input.name}${input.industry ? ` (${input.industry})` : ''}
+[브랜드 노트] ${input.notes || '없음'}
+
+[마케팅 진단 결과]
+${JSON.stringify(input.diagnosis).slice(0, 12000)}
+
+이 진단을 마케팅 팀의 이번 할 일 3~6개로 바꾸세요.
+- 진단의 약점(점수가 낮은 영역)과 진단이 제안한 할 일을 먼저.
+- kind: post(인스타 게시물 — brief에 어떤 사진으로 무엇을 보여 주고 무엇을 말할지), site(홈페이지에 고칠·더할 것), review(리뷰 대응), other(사장님이 직접 할 일·결정할 일 — title 앞에 "[사장님]").
+- 사실은 진단에 있는 것만. 진단에 없는 메뉴·가격·이벤트·수치를 만들지 않는다. 할인·이벤트는 "제안"으로.
+- why: 진단의 어떤 결과 때문인지 한 문장(점수·근거를 그대로 인용).
+- summary: 진단에서 팀이 이어받는 핵심 2문장.
+JSON: {"summary":"","actions":[{"title":"","why":"","kind":"post","brief":""}]}`;
+    let j: any;
+    try { j = parseJson((await this.run(user, 3000, false)).text); } catch { j = parseJson((await this.run(user, 3000, false)).text); }
+    return { summary: clip(j.summary, 400), actions: actions(j.actions) };
+  }
+
   /** 동향 보고 — 웹 검색(서버 도구)을 켠다. 검색이 막힌 키면 자료만으로 */
-  async trends(input: { name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; notes: string; stats: Record<string, unknown>; focus?: string }): Promise<TrendReport> {
+  async trends(input: { name: string; industry?: string | null; memo?: string | null; place: Record<string, unknown>; notes: string; stats: Record<string, unknown>; focus?: string; diagnosis?: string }): Promise<TrendReport> {
     const user = `업체: ${input.name}${input.industry ? ` (${input.industry})` : ''}
 ${input.memo ? `관리자 메모: ${input.memo}` : ''}
 [지도 정보] ${JSON.stringify(input.place)}
 [최근 30일 인스타 게시 현황] ${JSON.stringify(input.stats)}
-[브랜드 노트 — 지킬 것]
+${input.diagnosis ? `[최근 마케팅 진단 — 약점을 메우는 쪽으로 할 일을 고른다]\n${input.diagnosis}\n` : ''}[브랜드 노트 — 지킬 것]
 ${input.notes || '없음'}
 ${input.focus ? `\n[이번에 특히 볼 것 — 관리자 지시]\n${input.focus}\n` : ''}
 할 일:
