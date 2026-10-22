@@ -3,7 +3,8 @@ import { BizReportRepository } from './biz-report.repository';
 import { BizReportWriterService, ReportStory, normUrl } from './biz-report-writer.service';
 import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
 import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
-import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats } from './sns-stats';
+import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats,
+  youtubePublic, facebookPublic, instagramExternal, instagramExternalAvailable } from './sns-stats';
 import { sources } from '../business-site/place-sources';
 import { naverPack, splitName, squash } from '../business-site/naver-pack';
 import { numbers, loosely, norm } from '../business-site/site-qa';
@@ -136,9 +137,12 @@ export class BizReportService {
           const c = connected.find((x) => x.username.toLowerCase() === a.handle.toLowerCase());
           if (c) return { stats: await instagramConnected(c) };
           if (discoveryAvailable()) return { stats: await instagramDiscovery(a.handle) };
-          return { statsNote: '연결 안 된 인스타 — 남의 계정 조회(Business Discovery) 설정이 필요합니다' };
+          if (instagramExternalAvailable()) return { stats: await instagramExternal(a.handle) };
+          return { statsNote: '인스타는 서버에서 공개 페이지가 열리지 않습니다 — Business Discovery 토큰(META_DISCOVERY_*) 또는 외부 수집 키(APIFY_TOKEN)가 필요합니다' };
         }
-        if (a.platform === 'youtube') return youtubeAvailable() ? { stats: await youtubeChannel(a.handle) } : { statsNote: '유튜브 API 키(YOUTUBE_API_KEY)가 필요합니다' };
+        // 유튜브: 공식 API 키가 있으면 API, 없으면 공개 채널 페이지
+        if (a.platform === 'youtube') return { stats: youtubeAvailable() ? await youtubeChannel(a.handle) : await youtubePublic(a.handle) };
+        if (a.platform === 'facebook') return { stats: await facebookPublic(a.handle) };
         if (a.platform === 'naverBlog') return { stats: await naverBlogRss(a.handle) };
         if (a.platform === 'tiktok') return tiktokAvailable() ? { stats: await tiktokExternal(a.handle) } : { statsNote: '틱톡은 외부 수집 키(APIFY_TOKEN)가 필요합니다' };
         return { statsNote: '공식 조회 API가 없는 채널 — 검색 결과에 보인 수치만' };
@@ -301,6 +305,31 @@ export function score(f: any): Score[] {
     const got = known.reduce((s2, [ok, w]) => s2 + (ok ? w : 0), 0);
     out.push({ key: 'presence', label: '온라인 노출', score: max ? Math.round((got / max) * 100) : null,
       basis: [...items.map(([ok, w, t]) => `${ok === null ? '–' : ok ? '✓' : '✗'} ${t}${ok === null ? '' : ` (${w}점)`}`), ...(max < 100 ? [`확인 가능한 ${max}점 만점을 100점으로 환산`] : [])] });
+  }
+  // 2-1) SNS 활동 — 이 가게(지점) 계정의 실제 수치(공식 API·공개 페이지·외부 수집). 본사 계정은 참고로만 적고 점수에는 안 넣는다
+  {
+    const all = (f.sns?.accounts || []).filter((a: any) => a.level !== '출처 미확인');
+    const own = all.filter((a: any) => a.official !== 'brand');
+    const brand = all.filter((a: any) => a.official === 'brand');
+    const st = own.filter((a: any) => a.stats);
+    const last30 = st.filter((a: any) => a.stats.recent?.length).map((a: any) => a.stats.summary?.last30 ?? 0);
+    const since = st.map((a: any) => a.stats.summary?.daysSinceLast).filter((x: any) => typeof x === 'number');
+    const fol = st.map((a: any) => a.stats.followers).filter((x: any) => typeof x === 'number');
+    const eng = st.map((a: any) => a.stats.summary?.engagementPct).filter((x: any) => typeof x === 'number');
+    const items: [boolean | null, number, string][] = [
+      [own.length > 0, 25, own.length ? `이 가게 계정 ${own.map((a: any) => `${a.label} ${a.handle}`).join(', ')}` : `이 가게 계정 — 찾지 못함${brand.length ? `(본사 계정 ${brand.map((a: any) => `${a.label} ${a.handle}`).join(', ')}만 있음 — 점수 제외)` : ''}`],
+      [last30.length ? Math.max(...last30) >= 4 : own.length ? null : false, 30, last30.length ? `최근 30일 게시 ${Math.max(...last30)}건(4건 이상)` : '최근 30일 게시 — 수치 없음'],
+      [since.length ? Math.min(...since) <= 14 : own.length ? null : false, 15, since.length ? `마지막 게시 ${Math.min(...since)}일 전(14일 이내)` : '마지막 게시 — 수치 없음'],
+      [fol.length ? Math.max(...fol) >= 300 : own.length ? null : false, 15, fol.length ? `팔로워(구독자) ${Math.max(...fol).toLocaleString('ko-KR')}명(300명 이상)` : '팔로워 — 수치 없음'],
+      [eng.length ? Math.max(...eng) >= 1 : null, 15, eng.length ? `반응률 ${Math.max(...eng)}%(게시물당 좋아요+댓글 ÷ 팔로워, 1% 이상)` : '반응률 — 수치 없음'],
+    ];
+    const known = items.filter(([ok]) => ok !== null);
+    const max = known.reduce((s2, [, w]) => s2 + w, 0);
+    const got = known.reduce((s2, [ok, w]) => s2 + (ok ? w : 0), 0);
+    const srcs = [...new Set(st.map((a: any) => a.stats.source))];
+    out.push({ key: 'sns', label: 'SNS 활동', score: max ? Math.round((got / max) * 100) : null,
+      basis: [...items.map(([ok, w, t]) => `${ok === null ? '–' : ok ? '✓' : '✗'} ${t}${ok === null ? '' : ` (${w}점)`}`),
+        ...(max && max < 100 ? [`확인 가능한 ${max}점 만점을 100점으로 환산`] : []), ...(srcs.length ? [`수치 출처: ${srcs.join(' / ')}`] : [])] });
   }
   // 3) 콘텐츠·운영: 직접 가진 사진·메뉴 정보·가격·홈페이지·게시 준비
   {

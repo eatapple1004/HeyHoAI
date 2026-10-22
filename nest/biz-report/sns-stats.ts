@@ -12,6 +12,10 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  *   네이버 블로그: 공식 RSS(rss.blog.naver.com) — 최근 글 날짜로 게시 주기
  *   틱톡: 공식 조회 API가 없다 → 외부 수집(Apify, APIFY_TOKEN 있을 때만, 사업자 결정 2026-10-21). 화면에 "외부 수집" 표기
  *   스레드·X·페이스북·카카오채널: 남의 계정을 볼 공식 API가 없다 → 검색 결과에 보인 수치만(sns.ts 쪽)
+ * 공식 API가 없을 때(2026-10-22 사업자 결정: API 없어도 SNS 분석) — 화면에 "공개 페이지 수집 · 공식 API 아님" 표기
+ *   유튜브: 채널 공개 페이지(구독자·영상 수 + 동영상 탭의 최근 영상 조회수·올린 시기)
+ *   페이스북: 공개 페이지 미리보기 정보(팔로워 수)
+ *   인스타: 서버에서 열면 로그인 화면만 나와 공개 페이지로는 못 읽는다 → 외부 수집(Apify Instagram Profile Scraper, APIFY_TOKEN)
  */
 
 export interface Post { at: string; likes: number | null; comments: number | null; views?: number | null; type?: string; url?: string; caption?: string; reach?: number | null; saved?: number | null }
@@ -100,6 +104,90 @@ export async function instagramDiscovery(username: string): Promise<SnsStats> {
   const recent: Post[] = (d.media?.data || []).map(toPost);
   const followers = n(d.followers_count);
   return { source: 'Instagram Business Discovery(공식)', followers, following: n(d.follows_count), posts: n(d.media_count), name: d.name || d.username, bio: String(d.biography || '').slice(0, 200), recent, summary: summarize(recent, followers), fetchedAt: new Date().toISOString() };
+}
+
+// ── 공개 페이지 수집(공식 API 아님) ──
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+async function getText(url: string, ua = BROWSER_UA): Promise<string> {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), TIMEOUT);
+  try {
+    const res = await fetch(url, { signal: ctl.signal, redirect: 'follow', headers: { 'User-Agent': ua, 'Accept-Language': 'ko-KR,ko;q=0.9' } });
+    if (!res.ok) throw new Error(`페이지 ${res.status}`);
+    return await res.text();
+  } finally { clearTimeout(t); }
+}
+const unent = (x: string) => x.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+  .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+/** "17.3만" "1.2천" "3,456" "1.2K" → 숫자 */
+export function koNum(v: string): number | null {
+  const m = /([\d.,]+)\s*(만|천|억|K|M)?/i.exec(String(v || '')); if (!m) return null;
+  const x = Number(m[1].replace(/,/g, '')); if (!Number.isFinite(x)) return null;
+  const mul = { 만: 1e4, 천: 1e3, 억: 1e8, k: 1e3, m: 1e6 }[(m[2] || '').toLowerCase() as '만'] || 1;
+  return Math.round(x * mul);
+}
+/** "3일 전" "2주 전" "1개월 전" "5시간 전" → 대략 날짜(ISO) */
+function agoIso(t: string): string {
+  const m = /(\d+)\s*(초|분|시간|일|주|개월|년)/.exec(t || ''); if (!m) return '';
+  const d = { 초: 1 / 86400, 분: 1 / 1440, 시간: 1 / 24, 일: 1, 주: 7, 개월: 30, 년: 365 }[m[2] as '일'] * Number(m[1]);
+  return new Date(Date.now() - d * 86400000).toISOString();
+}
+
+/** 유튜브 — 공개 채널 페이지(API 키 없을 때). 올린 시기는 "2주 전"처럼 대략값 */
+export async function youtubePublic(handle: string): Promise<SnsStats> {
+  const h = String(handle).replace(/^@/, '');
+  const base = /^UC[\w-]{20,}$/.test(h) ? `https://www.youtube.com/channel/${h}` : `https://www.youtube.com/@${encodeURIComponent(h)}`;
+  const html = await getText(`${base}/videos`);
+  const subs = (/구독자\s*([\d.,]+\s*[만천억]?)명/.exec(html) || [])[1];
+  const vids = (/동영상\s*([\d.,]+\s*[만천억]?)개/.exec(html) || [])[1];
+  const name = unent((/<meta property="og:title" content="([^"]*)"/.exec(html) || [])[1] || '');
+  if (!subs && !name) throw new Error('채널을 찾지 못했습니다');
+  const recent: Post[] = [];
+  for (const m of html.matchAll(/"videoId":"([\w-]{11})"[\s\S]{0,2500}?"title":\{"runs":\[\{"text":"([^"]{1,200})"[\s\S]{0,2500}?"publishedTimeText":\{"simpleText":"([^"]+)"\}[\s\S]{0,800}?"viewCountText":\{"simpleText":"([^"]+)"/g)) {
+    if (recent.some((p) => p.url?.endsWith(m[1]))) continue;
+    recent.push({ at: agoIso(m[3]), likes: null, comments: null, views: koNum(m[4].replace(/조회수\s*/, '')), type: '영상', url: `https://www.youtube.com/watch?v=${m[1]}`, caption: unent(m[2]).slice(0, 120) });
+    if (recent.length >= 15) break;
+  }
+  const followers = subs ? koNum(subs) : null;
+  return { source: '유튜브 공개 채널 페이지(공개 페이지 수집 · 공식 API 아님, 올린 시기는 대략)', followers, posts: vids ? koNum(vids) : null, name,
+    recent: recent.filter((p) => p.at), summary: summarize(recent.filter((p) => p.at), followers), fetchedAt: new Date().toISOString() };
+}
+
+/** 페이스북 — 공개 페이지 미리보기 정보(팔로워 수만). 게시물은 못 읽는다 */
+export async function facebookPublic(handle: string): Promise<SnsStats> {
+  const html = await getText(`https://www.facebook.com/${encodeURIComponent(String(handle))}`, 'facebookexternalhit/1.1');
+  const desc = unent((/<meta (?:property="og:description"|name="description") content="([^"]*)"/.exec(html) || [])[1] || '');
+  const title = unent((/<meta property="og:title" content="([^"]*)"/.exec(html) || [])[1] || '');
+  const f = /팔로워\s*([\d.,]+\s*[만천억]?)\s*명/.exec(desc) || /([\d.,]+[KM]?)\s*followers/i.exec(desc);
+  if (!f && !title) throw new Error('공개 페이지를 읽지 못했습니다');
+  const followers = f ? koNum(f[1]) : null;
+  return { source: '페이스북 공개 페이지 정보(공개 페이지 수집 · 공식 API 아님)', followers, posts: null, name: title.replace(/\s*\|.*$/, ''), bio: desc.slice(0, 200),
+    recent: [], summary: summarize([], followers), note: '게시물 수·최근 게시는 공개 정보로 볼 수 없습니다', fetchedAt: new Date().toISOString() };
+}
+
+/** 인스타(연결 안 된 계정) — 외부 수집(Apify). Business Discovery 토큰이 없을 때 */
+export const instagramExternalAvailable = () => Boolean(env.APIFY_TOKEN);
+export async function instagramExternal(handle: string): Promise<SnsStats> {
+  const h = String(handle).replace(/^@/, '').replace(/[^\w.]/g, '');
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 180000);
+  let items: any[] = [];
+  try {
+    const res = await fetch('https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=170', {
+      method: 'POST', signal: ctl.signal,
+      headers: { Authorization: `Bearer ${env.APIFY_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usernames: [h] }),
+    });
+    if (!res.ok) throw new Error(`Apify ${res.status} ${(await res.text()).slice(0, 120)}`);
+    items = await res.json();
+  } finally { clearTimeout(t); }
+  const a = (Array.isArray(items) ? items : [])[0];
+  if (!a || a.error || (!a.username && !a.followersCount)) throw new Error('계정을 찾지 못했거나 비공개 계정입니다');
+  const recent: Post[] = (a.latestPosts || []).map((p: any) => ({
+    at: iso(p.timestamp || ''), likes: n(p.likesCount), comments: n(p.commentsCount), views: n(p.videoViewCount),
+    type: p.type === 'Video' ? '영상' : p.type === 'Sidecar' ? '여러 장' : '사진', url: p.url, caption: String(p.caption || '').slice(0, 120),
+  })).filter((p: Post) => p.at);
+  const followers = n(a.followersCount);
+  return { source: 'Apify Instagram Profile Scraper(외부 수집 · 공식 API 아님)', followers, following: n(a.followsCount), posts: n(a.postsCount), name: a.fullName || a.username,
+    bio: String(a.biography || '').slice(0, 200), recent, summary: summarize(recent, followers), fetchedAt: new Date().toISOString() };
 }
 
 /** D — 유튜브 채널(@핸들 또는 채널 id) */
