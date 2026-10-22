@@ -33,6 +33,12 @@ const JSONB = new Set(['source', 'content', 'photos', 'process']);
 export class BusinessSiteRepository {
   constructor(private readonly db: DbService) {}
 
+  /** 업종 칸이 비어 있을 때만 채운다(관리자가 적은 값은 건드리지 않는다) */
+  async fillIndustry(id: string, industry: string): Promise<void> {
+    if (!industry) return;
+    await this.db.query(`UPDATE businesses SET industry = $2, updated_at = now() WHERE id = $1 AND COALESCE(industry, '') = ''`, [id, industry.slice(0, 60)]);
+  }
+
   async business(id: string): Promise<{ id: string; name: string; industry: string | null; memo: string | null } | null> {
     const r = await this.db.query('SELECT id, name, industry, memo FROM businesses WHERE id = $1', [id]);
     return r.rows[0] || null;

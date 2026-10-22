@@ -6,7 +6,7 @@ import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
 import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats,
   youtubePublic, facebookPublic, instagramExternal, instagramExternalAvailable, instagramPublic } from './sns-stats';
 import { sources } from '../business-site/place-sources';
-import { naverPack, splitName, squash } from '../business-site/naver-pack';
+import { naverPack, splitName, squash, categoryType } from '../business-site/naver-pack';
 import { numbers, loosely, norm } from '../business-site/site-qa';
 
 /**
@@ -196,7 +196,8 @@ export class BizReportService implements OnModuleInit {
     const k = s.kakao || null; const g = s.google || null;
     const x = k?.x || g?.lng; const y = k?.y || g?.lat;
     const errors: Record<string, string> = {};
-    const leaf = String(k?.category || '').split('>').map((t: string) => t.trim()).filter(Boolean).pop() || b.industry || '';
+    // 업종 — 지도 분류(브랜드 칸은 건너뜀, 뚜레쥬르 사례) → 없으면 사업체 업종 칸
+    const leaf = categoryType(k?.category || '', k?.name || b.name) || b.industry || '';
     const safe = async <T>(key: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
       try { return await fn(); } catch (e: any) { errors[key] = String(e?.message || e).slice(0, 160); return fallback; }
     };
@@ -209,7 +210,8 @@ export class BizReportService implements OnModuleInit {
     // 같은 업종(키워드) — 카카오 개수 + Google 평점 비교
     // 같은 업종 검색어 — 카카오 분류 끝칸("제과,베이커리")을 그대로 넣으면 결과가 거의 없다(삐에스몽테 실측: 구글 2곳 → "베이커리" 10곳).
     //   쉼표로 나누고 같은 뜻의 말(빵집 등)을 더해 최대 3개 검색어로 찾은 뒤 합친다
-    const terms = sameTerms(leaf);
+    // 지도 분류 + 사업체 업종 칸("빵집, 카페") + Google 장소 종류("제과점")를 함께 쓴다
+    const terms = sameTerms([leaf, b.industry || '', g?.type || ''].join(','));
     const kakaoRuns = x && y ? await Promise.all(terms.map((t) => safe(`kakao:same:${t}`, () => sources.kakaoNearby({ query: t, x, y, radius: NEAR }), { total: 0, places: [] as any[] }))) : [];
     const kakaoPlaces = [...new Map(kakaoRuns.flatMap((r) => r.places).map((p: any) => [p.id, p])).values()].sort((a: any, b2: any) => Number(a.distance) - Number(b2.distance));
     const sameKakao = { total: Math.max(kakaoPlaces.length, ...kakaoRuns.map((r) => r.total), 0), places: kakaoPlaces };
@@ -452,12 +454,12 @@ const SAME_SYN: Record<string, string[]> = {
   카페: ['커피'], 커피전문점: ['카페'], 디저트카페: ['카페', '디저트'], 떡: ['떡집'], 국수: ['칼국수'], 칼국수: ['국수'],
 };
 function sameTerms(leaf: string): string[] {
-  const base = String(leaf || '').split(/[,·/]/).map((t) => t.trim()).filter(Boolean);
+  const base = [...new Set(String(leaf || '').split(/[,·/]/).map((t) => t.trim().replace(/\s+/g, '')).filter(Boolean))];
   const all = [...base, ...base.flatMap((t) => SAME_SYN[t] || [])];
   // 한 글자짜리("빵")·너무 넓은 말은 단독 검색어로 쓰지 않는다
   const same = [...new Set(all)].filter((t) => t.length >= 2).sort((a, b) => Number(!!SAME_SYN[b]) - Number(!!SAME_SYN[a])).slice(0, 3);
   // 빵집·디저트는 손님이 주변 카페와 견준다 — 카페도 비교 대상에 넣는다(2026-10-22 사용자 요청)
-  if (base.some((t) => /제과|베이커리|빵|도넛|베이글|디저트|케이크/.test(t)) && !same.includes('카페')) same.push('카페');
+  if (base.some((t) => /제과|베이커리|빵|도넛|베이글|디저트|케이크/.test(t)) && !same.includes('카페')) same.splice(3, same.length, '카페');
   return same;
 }
 
