@@ -138,17 +138,23 @@ export async function youtubePublic(handle: string): Promise<SnsStats> {
   const base = /^UC[\w-]{20,}$/.test(h) ? `https://www.youtube.com/channel/${h}` : `https://www.youtube.com/@${encodeURIComponent(h)}`;
   const html = await getText(`${base}/videos`);
   const subs = (/구독자\s*([\d.,]+\s*[만천억]?)명/.exec(html) || [])[1];
-  const vids = (/동영상\s*([\d.,]+\s*[만천억]?)개/.exec(html) || [])[1];
+  // "동영상 1개를 삭제하시겠어요?" 같은 화면 문구에도 걸려서 가장 큰 값을 쓴다
+  const vidCounts = [...html.matchAll(/동영상\s*([\d.,]+\s*[만천억]?)개/g)].map((m) => koNum(m[1]) || 0);
   const name = unent((/<meta property="og:title" content="([^"]*)"/.exec(html) || [])[1] || '');
   if (!subs && !name) throw new Error('채널을 찾지 못했습니다');
+  // 동영상 탭 카드(lockupViewModel) — 영상 id·제목·"조회수 6.8천회"·"13일 전"
   const recent: Post[] = [];
-  for (const m of html.matchAll(/"videoId":"([\w-]{11})"[\s\S]{0,2500}?"title":\{"runs":\[\{"text":"([^"]{1,200})"[\s\S]{0,2500}?"publishedTimeText":\{"simpleText":"([^"]+)"\}[\s\S]{0,800}?"viewCountText":\{"simpleText":"([^"]+)"/g)) {
-    if (recent.some((p) => p.url?.endsWith(m[1]))) continue;
-    recent.push({ at: agoIso(m[3]), likes: null, comments: null, views: koNum(m[4].replace(/조회수\s*/, '')), type: '영상', url: `https://www.youtube.com/watch?v=${m[1]}`, caption: unent(m[2]).slice(0, 120) });
+  for (const seg of html.split('"lockupViewModel":{').slice(1)) {
+    const id = (/"contentId":"([\w-]{11})"/.exec(seg) || [])[1];
+    const title = (/"lockupMetadataViewModel":\{"title":\{"content":"((?:[^"\\]|\\.)*)"/.exec(seg) || [])[1];
+    const labels = [...seg.slice(0, 4000).matchAll(/"accessibilityLabel":"([^"]{1,40})"/g)].map((m) => m[1]);
+    const views = labels.find((l) => /^조회수/.test(l)); const when = labels.find((l) => /전$/.test(l));
+    if (!id || !title || !when || recent.some((p) => p.url?.endsWith(id))) continue;
+    recent.push({ at: agoIso(when), likes: null, comments: null, views: views ? koNum(views.replace(/조회수\s*/, '')) : null, type: '영상', url: `https://www.youtube.com/watch?v=${id}`, caption: unent(title).slice(0, 120) });
     if (recent.length >= 15) break;
   }
   const followers = subs ? koNum(subs) : null;
-  return { source: '유튜브 공개 채널 페이지(공개 페이지 수집 · 공식 API 아님, 올린 시기는 대략)', followers, posts: vids ? koNum(vids) : null, name,
+  return { source: '유튜브 공개 채널 페이지(공개 페이지 수집 · 공식 API 아님, 올린 시기는 대략)', followers, posts: vidCounts.length ? Math.max(...vidCounts) : null, name,
     recent: recent.filter((p) => p.at), summary: summarize(recent.filter((p) => p.at), followers), fetchedAt: new Date().toISOString() };
 }
 
