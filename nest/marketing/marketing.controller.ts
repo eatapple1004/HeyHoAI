@@ -20,6 +20,9 @@ export class MarketingAdminController {
   @Post('run')
   async run(@Param('id') id: string, @Body() body: any) { return { success: true, data: await this.mk.run(id, body?.agent || undefined) }; }
 
+  @Post('from-report')
+  async fromReport(@Param('id') id: string) { return { success: true, data: await this.mk.fromReport(id) }; }
+
   @Post('direct')
   async direct(@Param('id') id: string, @Body() body: any) { return { success: true, data: await this.mk.direct(id, body?.text) }; }
 
