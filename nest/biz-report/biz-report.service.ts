@@ -95,11 +95,18 @@ export class BizReportService {
         break;
       } catch { /* 다음 주소 */ }
     }
-    // ② 네이버 웹 검색(키가 있을 때만)
+    // ② 네이버 웹 검색(키가 있을 때만) — 결과에는 그 가게를 언급한 남의 계정도 섞여 나온다(명동교자 검색에 무관한 인스타 7개, 2026-10-22 실측).
+    //   계정 이름(제목)에 가게 이름이 들어 있을 때만 받는다
     const naverAvailable = sources.available().naver;
     if (naverAvailable) {
+      const nameKey = squash(input.name);
       for (const q of [`${input.name} 인스타그램`, `${input.name} 공식 블로그`]) {
-        try { for (const r of await sources.naverWeb(q)) add(toSns(r.link), '네이버 검색', { level: '검색 결과 확인', evidence: r.link }); } catch { /* 다음 검색어 */ }
+        try {
+          for (const r of await sources.naverWeb(q)) {
+            if (nameKey.length < 2 || !squash(r.title.replace(/\s+[-|:]\s+(Instagram|YouTube|Facebook|TikTok|네이버 블로그).*$/i, '')).includes(nameKey)) continue;
+            add(toSns(r.link), '네이버 검색', { level: '검색 결과 확인', evidence: `${r.title} — ${r.link}` });
+          }
+        } catch { /* 다음 검색어 */ }
       }
     }
     // ③ 웹 검색
@@ -189,6 +196,21 @@ export class BizReportService {
       ? await safe('naver-place', () => naverPlaceReviews({ name: siteName(k.name || b.name), roadAddress: k.roadAddress || '', address: k.address || '', lat: Number(k.y) || undefined, lng: Number(k.x) || undefined }), null)
       : null;
 
+    // 네이버 블로그 언급 — 진단 때마다 새로 찾는다(자료 수집 때 저장분은 키가 없던 때 것일 수 있다).
+    //   최신순 100개 중 제목·요약에 가게 이름이 있는 글만 세고, 그중 최근 30일 건수를 점수에 쓴다
+    const blog = sources.available().naver
+      ? await safe('naver-blog', async () => {
+          const name = baseName(siteName(k?.name || b.name)); const key = squash(name);
+          const r = await sources.naverBlogRecent(`"${name}"`);
+          const hit = r.items.filter((i) => squash(`${i.title} ${i.snippet}`).includes(key));
+          const cut = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+          const recent = hit.filter((i) => String(i.date || '') >= cut);
+          const oldest = r.items[r.items.length - 1]?.date || '';
+          return { query: name, total: r.total, recent30: recent.length, capped: r.items.length >= 100 && oldest >= cut,
+            sample: recent.slice(0, 5).map((i) => ({ title: i.title.slice(0, 80), link: i.link, date: i.date, blogger: i.blogger })) };
+        }, null)
+      : null;
+
     const reviews = (g?.reviews || []).map((r: any) => ({ author: r.author, rating: r.rating, when: r.when, text: String(r.text || '').slice(0, 600), lang: langOf(r.text) }));
     const sheet = site?.process?.research?.sheet;
     const posts = await this.repo.postStats(businessId);
@@ -199,7 +221,7 @@ export class BizReportService {
     return {
       at: new Date().toISOString(),
       business: { name: siteName(k?.name || b.name), industry: b.industry || leaf, category: k?.category || g?.type || '', address: k?.roadAddress || k?.address || g?.address || '', phone: k?.phone || g?.phone || '', website: g?.website || s.web?.url || '', hours: g?.hours || [], kakaoUrl: k?.url || '', googleUrl: g?.mapsUrl || '' },
-      reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: (s.naver?.blogs || []).length, naverAvailable: sources.available().naver,
+      reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: blog ? blog.recent30 : null, blog, naverAvailable: sources.available().naver,
         naverPlace: naver ? naver : { skipped: naverPlaceAvailable() ? '카카오 장소가 없어 찾지 않음' : '외부 수집 키(REEF_API_KEY) 없음' } },
       nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
       competitors,
@@ -261,7 +283,9 @@ export function score(f: any): Score[] {
       [insta.length > 0 || p.instagram.length > 0, 10, insta.length ? `공식 인스타 있음(@${insta[0].handle})` : '공식 인스타 — 찾지 못함'],
       [p.instagram.length > 0, 5, '인스타를 도피아에 연결(게시 예약 가능)'], [Math.max(posts, igLast30) >= 4, 15, insta.some((a: any) => a.stats) ? `최근 30일 인스타 게시 ${Math.max(posts, igLast30)}건(4건 이상, 인스타 공식 수치)` : `최근 30일 도피아로 인스타 게시 ${posts}건(4건 이상)`],
       [other.length > 0, 5, other.length ? `다른 SNS ${other.map((a: any) => a.label).join('·')}` : '다른 SNS(유튜브·페이스북·블로그·카카오채널) — 찾지 못함'],
-      [f.reputation.naverAvailable ? blogs >= 5 : null, 10, f.reputation.naverAvailable ? `네이버 블로그 언급 ${blogs}건(5건 이상)` : '네이버 블로그 언급 — 확인 불가(네이버 검색 키 없음)'],
+      [f.reputation.blogMentions == null ? null : blogs >= 5, 10, f.reputation.blogMentions == null
+        ? `네이버 블로그 언급 — 확인 불가(${f.reputation.naverAvailable ? '검색 실패' : '네이버 검색 키 없음'})`
+        : `네이버 블로그 최근 30일 언급 ${blogs}건${f.reputation.blog?.capped ? ' 이상' : ''}(5건 이상)`],
       [p.phonesConsistent, 5, p.phonesConsistent ? '지도 서비스 전화번호 일치' : `지도 서비스 전화번호 불일치(${p.phones.join(' / ')})`],
     ];
     const known = items.filter(([ok]) => ok !== null);
@@ -320,3 +344,6 @@ function dist(lat1: number, lng1: number, lat2: number, lng2: number) {
 const brandOf = (n: string) => String(n || '').trim().split(/[\s(/]+/)[0].replace(/(본점|분점|\d+호점)$/, '');
 const langOf = (t: string) => (/[぀-ヿ]/.test(t) ? 'ja' : /[가-힣]/.test(t) ? 'ko' : /[一-鿿]/.test(t) ? 'zh' : 'en');
 const siteName = (n: string) => String(n || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || n;
+/** 이름 비교용 — 띄어쓰기·기호 없이 소문자. 지점 꼬리("명동교자 본점", "뚜레쥬르 명동점")는 뗀다 */
+const baseName = (n: string) => String(n || '').replace(/\s+\S*(본점|분점|지점|호점|점)$/, '').trim();
+const squash = (n: string) => baseName(n).toLowerCase().replace(/[^0-9a-z가-힣]/g, '');

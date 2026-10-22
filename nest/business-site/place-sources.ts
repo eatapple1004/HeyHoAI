@@ -437,4 +437,15 @@ export const sources = {
       blogger: i.bloggername, date: i.postdate,
     }));
   },
+
+  /** 네이버 블로그 최신순 — 전체 건수(total)와 최근 글(최대 100개). 진단의 "최근 언급" 세기용 */
+  async naverBlogRecent(query: string): Promise<{ total: number; items: NaverBlog[] }> {
+    if (!this.available().naver) return { total: 0, items: [] };
+    const [url, headers] = this.naverRequest('blog', `display=100&sort=date&query=${encodeURIComponent(query)}`);
+    const j = await getJson(url, { headers });
+    return {
+      total: Number(j.total) || 0,
+      items: (j.items || []).map((i: any) => ({ title: stripTags(i.title), snippet: stripTags(i.description), link: i.link, blogger: i.bloggername, date: i.postdate })),
+    };
+  },
 };
