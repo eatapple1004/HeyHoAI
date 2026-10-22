@@ -62,7 +62,9 @@ export class BizReportService {
     await this.repo.patch(id, { step: 'AI가 해석을 쓰는 중', data: { facts, scores } });
     const story: ReportStory = await this.writer.write({ facts, scores });
     // 글 속 숫자 대조 — 모은 자료(facts) 어디에도 없는 숫자는 표시(목표치처럼 제안한 숫자는 metrics.target 에만 허용)
-    const src = norm(JSON.stringify(facts) + JSON.stringify(scores));
+    // "365K"를 "36.5만"처럼 단위만 바꿔 쓴 수치도 출처 있는 숫자로 본다
+    const src0 = JSON.stringify(facts) + JSON.stringify(scores);
+    const src = norm(src0) + ' ' + unitVariants(src0).join(' ');
     const texts = [story.summary, ...story.findings.map((f) => `${f.title} ${f.body}`), ...story.actions.map((a) => `${a.title} ${a.why}`),
       ...story.metrics.map((m) => `${m.name} ${m.now}`)];
     const unsourced = [...new Set(texts.flatMap((t) => numbers(t)))].filter((n) => !src.includes(n) && !loosely(src, n) && !/^(30|60|90|100|1|2|3)$/.test(n));
@@ -382,4 +384,18 @@ const brandOf = (n: string) => String(n || '').trim().split(/[\s(/]+/)[0].replac
 const langOf = (t: string) => (/[぀-ヿ]/.test(t) ? 'ja' : /[가-힣]/.test(t) ? 'ko' : /[一-鿿]/.test(t) ? 'zh' : 'en');
 const siteName = (n: string) => String(n || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || n;
 /** 이름 비교용 — 띄어쓰기·기호 없이 소문자. 지점 꼬리("명동교자 본점", "뚜레쥬르 명동점")는 뗀다 */
+/** 자료 속 "365K"·"1.2M"·"17.3만"·"6.8천" → 같은 값을 다른 단위로 쓴 표기들(36.5만, 365000, 0.37M …) */
+function unitVariants(text: string): string[] {
+  const mul: Record<string, number> = { k: 1e3, m: 1e6, 천: 1e3, 만: 1e4, 억: 1e8 };
+  const out = new Set<string>();
+  const fmt = (v: number) => String(Math.round(v * 100) / 100);
+  for (const m of text.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*([KkMm천만억])/g)) {
+    const v = Number(m[1].replace(/,/g, '')) * mul[m[2].toLowerCase()];
+    if (!Number.isFinite(v)) continue;
+    out.add(String(Math.round(v)));
+    for (const u of [1e3, 1e4, 1e6, 1e8]) { const x = v / u; if (x >= 0.1 && x < 100000) { out.add(fmt(x)); if (x >= 1) out.add(String(Math.round(x * 10) / 10)); } }
+  }
+  return [...out];
+}
+
 const baseName = (n: string) => splitName(n).brand;
