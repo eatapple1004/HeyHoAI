@@ -23,6 +23,12 @@ export class BizReportRepository {
     return (await this.db.query<ReportRow>(`INSERT INTO business_reports (business_id, step) VALUES ($1, '자료를 모으는 중') RETURNING *`, [businessId])).rows[0];
   }
 
+  /** 진행 중(running)으로 남은 진단을 실패로 — 서버 시작 때 */
+  async failRunning(reason: string): Promise<number> {
+    const r = await this.db.query(`UPDATE business_reports SET status = 'error', step = NULL, error = $1, updated_at = now() WHERE status NOT IN ('done', 'error')`, [reason]);
+    return r.rowCount || 0;
+  }
+
   async patch(id: string, p: { status?: string; step?: string | null; error?: string | null; data?: any }) {
     await this.db.query(
       `UPDATE business_reports SET status = COALESCE($2, status), step = $3, error = $4, data = COALESCE($5::jsonb, data), updated_at = now() WHERE id = $1`,
