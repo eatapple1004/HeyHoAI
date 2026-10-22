@@ -26,7 +26,7 @@ export class BizReportRepository {
   async patch(id: string, p: { status?: string; step?: string | null; error?: string | null; data?: any }) {
     await this.db.query(
       `UPDATE business_reports SET status = COALESCE($2, status), step = $3, error = $4, data = COALESCE($5::jsonb, data), updated_at = now() WHERE id = $1`,
-      [id, p.status ?? null, p.step ?? null, p.error ?? null, p.data ? JSON.stringify(p.data) : null]);
+      [id, p.status ?? null, p.step ?? null, p.error ?? null, p.data ? safeJson(p.data) : null]);
   }
 
   /** 사업체가 직접 올린 사진 수 — 인스타·홈페이지에 쓸 수 있는 자산 */
@@ -69,4 +69,14 @@ export class BizReportRepository {
       return r.rows[0];
     } catch { return { ready: 0, done: 0 }; }
   }
+}
+
+/**
+ * jsonb 에 넣을 JSON — 글을 글자 수로 자르다 이모지(서로게이트 쌍)가 반으로 잘린 문자와 NUL 을 지운다.
+ *   Postgres 는 짝 없는 서로게이트(\ud83c)·\u0000 이 든 JSON 을 거부한다(인스타 캡션 120자 자르기에서 실측, 2026-10-22)
+ */
+function safeJson(v: unknown): string {
+  return JSON.stringify(v, (_k, x) => (typeof x === 'string'
+    ? x.replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]|\u0000/g, '')
+    : x));
 }
