@@ -4,7 +4,7 @@ import { BizReportWriterService, ReportStory, normUrl } from './biz-report-write
 import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
 import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
 import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats,
-  youtubePublic, facebookPublic, instagramExternal, instagramExternalAvailable } from './sns-stats';
+  youtubePublic, facebookPublic, instagramExternal, instagramExternalAvailable, instagramPublic } from './sns-stats';
 import { sources } from '../business-site/place-sources';
 import { naverPack, splitName, squash } from '../business-site/naver-pack';
 import { numbers, loosely, norm } from '../business-site/site-qa';
@@ -138,9 +138,14 @@ export class BizReportService {
         if (a.platform === 'instagram') {
           const c = connected.find((x) => x.username.toLowerCase() === a.handle.toLowerCase());
           if (c) return { stats: await instagramConnected(c) };
-          if (discoveryAvailable()) return { stats: await instagramDiscovery(a.handle) };
-          if (instagramExternalAvailable()) return { stats: await instagramExternal(a.handle) };
-          return { statsNote: '인스타는 서버에서 공개 페이지가 열리지 않습니다 — Business Discovery 토큰(META_DISCOVERY_*) 또는 외부 수집 키(APIFY_TOKEN)가 필요합니다' };
+          // 공식(Business Discovery) → 키 없는 공개 조회 → 외부 수집(Apify) 순서. 공개 조회가 미리보기 수치뿐이면 Apify로 최근 게시물까지 보강
+          if (discoveryAvailable()) { try { return { stats: await instagramDiscovery(a.handle) }; } catch { /* 다음 방법 */ } }
+          let pub: SnsStats | null = null; let why = '';
+          try { pub = await instagramPublic(a.handle); } catch (e: any) { why = String(e?.message || e); }
+          if (pub?.recent.length) return { stats: pub };
+          if (instagramExternalAvailable()) { try { return { stats: await instagramExternal(a.handle) }; } catch (e: any) { why = String(e?.message || e); } }
+          if (pub) return { stats: pub };
+          return { statsNote: `인스타 수치를 읽지 못했습니다(${why.slice(0, 80)}) — Business Discovery 토큰 또는 외부 수집 키(APIFY_TOKEN)를 넣으면 보강됩니다` };
         }
         // 유튜브: 공식 API 키가 있으면 API, 없으면 공개 채널 페이지
         if (a.platform === 'youtube') return { stats: youtubeAvailable() ? await youtubeChannel(a.handle) : await youtubePublic(a.handle) };

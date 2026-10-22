@@ -15,7 +15,9 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  * 공식 API가 없을 때(2026-10-22 사업자 결정: API 없어도 SNS 분석) — 화면에 "공개 페이지 수집 · 공식 API 아님" 표기
  *   유튜브: 채널 공개 페이지(구독자·영상 수 + 동영상 탭의 최근 영상 조회수·올린 시기)
  *   페이스북: 공개 페이지 미리보기 정보(팔로워 수)
- *   인스타: 서버에서 열면 로그인 화면만 나와 공개 페이지로는 못 읽는다 → 외부 수집(Apify Instagram Profile Scraper, APIFY_TOKEN)
+ *   인스타(2026-10-22 실측, 서버 IP 기준): ① 웹 공개 조회(web_profile_info) — 정확한 팔로워·팔로잉·게시물 수 + 최근 게시물 12개(일부 비즈니스 계정은 인스타 쪽 오류로 실패)
+ *     ② 링크 미리보기 정보(Twitterbot UA의 og:description) — "361K Followers, 5 Following, 1,686 Posts"(팔로워는 반올림값)
+ *     ③ 둘 다 안 되면 외부 수집(Apify Instagram Profile Scraper, APIFY_TOKEN)
  */
 
 export interface Post { at: string; likes: number | null; comments: number | null; views?: number | null; type?: string; url?: string; caption?: string; reach?: number | null; saved?: number | null }
@@ -120,9 +122,9 @@ const unent = (x: string) => x.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fro
   .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 /** "17.3만" "1.2천" "3,456" "1.2K" → 숫자 */
 export function koNum(v: string): number | null {
-  const m = /([\d.,]+)\s*(만|천|억|K|M)?/i.exec(String(v || '')); if (!m) return null;
+  const m = /([\d.,]+)\s*(만|천|억|K|M|B)?/i.exec(String(v || '')); if (!m) return null;
   const x = Number(m[1].replace(/,/g, '')); if (!Number.isFinite(x)) return null;
-  const mul = { 만: 1e4, 천: 1e3, 억: 1e8, k: 1e3, m: 1e6 }[(m[2] || '').toLowerCase() as '만'] || 1;
+  const mul = { 만: 1e4, 천: 1e3, 억: 1e8, k: 1e3, m: 1e6, b: 1e9 }[(m[2] || '').toLowerCase() as '만'] || 1;
   return Math.round(x * mul);
 }
 /** "3일 전" "2주 전" "1개월 전" "5시간 전" → 대략 날짜(ISO) */
@@ -170,6 +172,43 @@ export async function facebookPublic(handle: string): Promise<SnsStats> {
   const followers = f ? koNum(f[1]) : null;
   return { source: '페이스북 공개 페이지 정보(공개 페이지 수집 · 공식 API 아님)', followers, posts: null, name: title.replace(/\s*\|.*$/, ''), bio: desc.slice(0, 200),
     recent: [], summary: summarize([], followers), note: '게시물 수·최근 게시는 공개 정보로 볼 수 없습니다', fetchedAt: new Date().toISOString() };
+}
+
+/** 인스타 — 공개 조회(키 없이). 웹 공개 조회 → 링크 미리보기 순서. 둘 다 실패하면 오류 */
+export async function instagramPublic(handle: string): Promise<SnsStats> {
+  const h = String(handle).replace(/^@/, '').replace(/[^\w.]/g, '');
+  let why = '';
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), TIMEOUT);
+    let j: any;
+    try {
+      const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${h}`, { signal: ctl.signal,
+        headers: { 'User-Agent': BROWSER_UA, 'X-IG-App-ID': '936619743392459', Accept: '*/*', Referer: `https://www.instagram.com/${h}/` } });
+      j = await res.json().catch(() => ({}));
+    } finally { clearTimeout(t); }
+    const u = j?.data?.user;
+    if (!u) throw new Error(String(j?.message || '응답 없음').slice(0, 80));
+    const edges = u.edge_owner_to_timeline_media?.edges || [];
+    const recent: Post[] = edges.map((e: any) => e.node).map((p: any) => ({
+      at: p.taken_at_timestamp ? new Date(p.taken_at_timestamp * 1000).toISOString() : '',
+      likes: n(p.edge_liked_by?.count ?? p.edge_media_preview_like?.count), comments: n(p.edge_media_to_comment?.count),
+      views: p.is_video ? n(p.video_view_count) : null, type: p.is_video ? '영상' : p.__typename === 'GraphSidecar' ? '여러 장' : '사진',
+      url: p.shortcode ? `https://www.instagram.com/p/${p.shortcode}/` : undefined, caption: String(p.edge_media_to_caption?.edges?.[0]?.node?.text || '').slice(0, 120),
+    })).filter((p: Post) => p.at);
+    const followers = n(u.edge_followed_by?.count);
+    return { source: '인스타 웹 공개 조회(공개 페이지 수집 · 공식 API 아님)', followers, following: n(u.edge_follow?.count), posts: n(u.edge_owner_to_timeline_media?.count),
+      name: u.full_name || u.username, bio: String(u.biography || '').slice(0, 200), recent, summary: summarize(recent, followers), fetchedAt: new Date().toISOString() };
+  } catch (e: any) { why = String(e?.message || e); }
+  // 링크 미리보기 — 수치 셋만(최근 게시물 없음)
+  const html = await getText(`https://www.instagram.com/${h}/`, 'Twitterbot/1.0');
+  const desc = unent((/<meta (?:property="og:description"|name="description") content="([^"]*)"/.exec(html) || [])[1] || '');
+  const m = /([\d.,]+[KMB]?)\s*Followers?,\s*([\d.,]+[KMB]?)\s*Following,\s*([\d.,]+[KMB]?)\s*Posts?/i.exec(desc)
+    || /팔로워\s*([\d.,]+[만천억KM]?)명?,?\s*팔로잉\s*([\d.,]+[만천억KM]?)명?,?\s*게시물\s*([\d.,]+[만천억KM]?)개?/.exec(desc);
+  if (!m) throw new Error(`인스타 공개 정보를 읽지 못했습니다(${why || '미리보기 없음'})`);
+  const name = (/from\s+(.+?)\s*\(@/.exec(desc) || [])[1] || h;
+  const followers = koNum(m[1]);
+  return { source: '인스타 링크 미리보기 정보(공개 페이지 수집 · 공식 API 아님, 팔로워는 반올림값)', followers, following: koNum(m[2]), posts: koNum(m[3]), name,
+    recent: [], summary: summarize([], followers), note: '최근 게시물·반응은 이 방법으로 볼 수 없습니다', fetchedAt: new Date().toISOString() };
 }
 
 /** 인스타(연결 안 된 계정) — 외부 수집(Apify). Business Discovery 토큰이 없을 때 */
