@@ -76,8 +76,8 @@ export class BizReportService {
    *   ①은 업체가 직접 건 링크라 "확인", ③은 검색 결과에 주소가 실제로 있을 때만 "검색 결과 확인"(없으면 "출처 미확인", 점수에 안 씀).
    *   팔로워·게시물 수는 검색 결과에 보인 글자 그대로(날짜와 함께) — 인스타 공식 조회(Business Discovery)는 우리 연동 방식에서 막혀 있다(2026-10-21 실측).
    */
-  private async sns(businessId: string, input: { name: string; address: string; category: string; websites: string[] }) {
-    type Acc = SnsLink & { found: string[]; level: string; official?: string; followers?: string; posts?: string; lastActive?: string; evidence?: string };
+  private async sns(businessId: string, input: { name: string; address: string; category: string; websites: string[]; phones?: string[] }) {
+    type Acc = SnsLink & { found: string[]; level: string; official?: string; otherBranch?: string; followers?: string; posts?: string; lastActive?: string; evidence?: string };
     const accs = new Map<string, Acc>();
     const add = (l: SnsLink | null, how: string, extra: Partial<Acc> = {}) => {
       if (!l) return;
@@ -164,6 +164,13 @@ export class BizReportService {
       return { ...a, ...r };
     }));
     for (const a of [...accs.values()].slice(6)) withStats.push({ ...a, statsNote: '계정이 많아 수치는 앞 6개만 받음' });
+    // 다른 지점 계정 가려내기 — 계정 이름·소개글에 이 가게와 다른 전화번호·지점명·구가 있으면 점수에서 뺀다
+    //   (삐에스몽테 수원점 진단에 관악점 @pimong_bakery 가 섞인 사례, 2026-10-22)
+    for (const a of withStats as any[]) {
+      if (!a.stats || a.official === 'brand') continue;
+      const why = otherBranchOf(`${a.stats.name || ''} ${a.stats.bio || ''}`, input);
+      if (why) { a.official = 'other'; a.otherBranch = why; }
+    }
 
     const order: Record<string, number> = { 확인: 0, '검색 결과 확인': 1, '출처 미확인': 2 };
     return {
@@ -206,7 +213,7 @@ export class BizReportService {
       .map((c) => ({ name: c.name, rating: c.rating as number, reviews: c.ratingCount || 0, address: c.address, distance: x && c.lat ? Math.round(dist(Number(y), Number(x), c.lat, c.lng as number)) : null, sameBrand: brandOf(c.name) === brandOf(selfName) }))
       .sort((a, b2) => b2.reviews - a.reviews).slice(0, 15);
 
-    const sns = await safe('sns', () => this.sns(businessId, { name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '', setup: { youtube: false, discovery: false, tiktok: false, connectedInstagram: [] as string[] } });
+    const sns = await safe('sns', () => this.sns(businessId, { name: siteName(k?.name || b.name), address: k?.roadAddress || k?.address || g?.address || '', category: k?.category || b.industry || '', websites: [...new Set([g?.website, s.web?.url].filter(Boolean))] as string[], phones: [k?.phone, g?.phone].filter(Boolean) as string[] }), { accounts: [], searches: [], naverAvailable: false, checkedAt: '', setup: { youtube: false, discovery: false, tiktok: false, connectedInstagram: [] as string[] } });
 
     // 네이버 플레이스(외부 수집) — 키가 있을 때만, 카카오 장소와 주소·좌표가 맞는 곳만
     const naver = naverPlaceAvailable() && k
@@ -294,7 +301,7 @@ export function score(f: any): Score[] {
   {
     const p = f.presence; const posts = f.operations.posts?.posted30 || 0; const blogs = f.reputation.blogMentions || 0;
     // 점수에는 출처가 확인된 계정만(출처 미확인·다른 지점 계정 제외)
-    const okSns = (f.sns?.accounts || []).filter((a: any) => a.level !== '출처 미확인' && a.official !== 'brand');
+    const okSns = (f.sns?.accounts || []).filter((a: any) => a.level !== '출처 미확인' && a.official !== 'brand' && a.official !== 'other');
     const insta = okSns.filter((a: any) => a.platform === 'instagram');
     // 최근 30일 게시 — 인스타 공식 수치가 있으면 그걸로(다른 도구로 올린 것도 센다), 없으면 도피아 게시 기록
     const igLast30 = Math.max(0, ...insta.map((a: any) => a.stats?.summary?.last30 ?? 0));
@@ -321,15 +328,17 @@ export function score(f: any): Score[] {
   // 2-1) SNS 활동 — 이 가게(지점) 계정의 실제 수치(공식 API·공개 페이지·외부 수집). 본사 계정은 참고로만 적고 점수에는 안 넣는다
   {
     const all = (f.sns?.accounts || []).filter((a: any) => a.level !== '출처 미확인');
-    const own = all.filter((a: any) => a.official !== 'brand');
+    const own = all.filter((a: any) => a.official !== 'brand' && a.official !== 'other');
     const brand = all.filter((a: any) => a.official === 'brand');
+    const others = all.filter((a: any) => a.official === 'other');
     const st = own.filter((a: any) => a.stats);
     const last30 = st.filter((a: any) => a.stats.recent?.length).map((a: any) => a.stats.summary?.last30 ?? 0);
     const since = st.map((a: any) => a.stats.summary?.daysSinceLast).filter((x: any) => typeof x === 'number');
     const fol = st.map((a: any) => a.stats.followers).filter((x: any) => typeof x === 'number');
     const eng = st.map((a: any) => a.stats.summary?.engagementPct).filter((x: any) => typeof x === 'number');
     const items: [boolean | null, number, string][] = [
-      [own.length > 0, 25, own.length ? `이 가게 계정 ${own.map((a: any) => `${a.label} ${a.handle}`).join(', ')}` : `이 가게 계정 — 찾지 못함${brand.length ? `(본사 계정 ${brand.map((a: any) => `${a.label} ${a.handle}`).join(', ')}만 있음 — 점수 제외)` : ''}`],
+      [own.length > 0, 25, (own.length ? `이 가게 계정 ${own.map((a: any) => `${a.label} ${a.handle}`).join(', ')}` : `이 가게 계정 — 찾지 못함${brand.length ? `(본사 계정 ${brand.map((a: any) => `${a.label} ${a.handle}`).join(', ')}만 있음 — 점수 제외)` : ''}`)
+        + (others.length ? ` · 다른 지점 계정 ${others.map((a: any) => `${a.handle}(${a.otherBranch})`).join(', ')} — 점수 제외` : '')],
       [last30.length ? Math.max(...last30) >= 4 : own.length ? null : false, 30, last30.length ? `최근 30일 게시 ${Math.max(...last30)}건(4건 이상)` : '최근 30일 게시 — 수치 없음'],
       [since.length ? Math.min(...since) <= 14 : own.length ? null : false, 15, since.length ? `마지막 게시 ${Math.min(...since)}일 전(14일 이내)` : '마지막 게시 — 수치 없음'],
       [fol.length ? Math.max(...fol) >= 300 : own.length ? null : false, 15, fol.length ? `팔로워(구독자) ${Math.max(...fol).toLocaleString('ko-KR')}명(300명 이상)` : '팔로워 — 수치 없음'],
@@ -367,8 +376,11 @@ export function score(f: any): Score[] {
         [sub == null ? 0 : sub <= 200 ? 30 : sub <= 400 ? 20 : 10, sub == null ? '반경 500m 안 지하철역 없음' : `가장 가까운 지하철역 ${c.SW8.nearest[0].name} ${sub}m`],
         [Math.min(25, (c.AT4?.count || 0) * 3), `관광명소 ${c.AT4?.count || 0}곳`], [Math.min(15, (c.AD5?.count || 0) * 2), `숙박 ${c.AD5?.count || 0}곳`],
         [Math.min(30, Math.round(((c.FD6?.count || 0) + (c.CE7?.count || 0)) / 15)), `음식점·카페 ${(c.FD6?.count || 0) + (c.CE7?.count || 0)}곳(상권 밀도)`],
+        // 차로 찾아오는 손님(목적지형 매장) — 주변 주차장 수와 가게 주차 안내
+        [(c.PK6?.count || 0) >= 10 ? 20 : (c.PK6?.count || 0) >= 5 ? 12 : (c.PK6?.count || 0) >= 1 ? 6 : 0, `주차장 ${c.PK6?.count || 0}곳(반경 500m, 차량 유입)`],
+        ...((): [number, string][] => { const ev = ownParking(f); return [[ev ? 10 : 0, ev ? `가게 주차 안내 있음("${ev}")` : '가게 주차 안내 — 자료에서 찾지 못함']]; })(),
       ];
-      out.push({ key: 'locality', label: '주변 유입 요인', score: Math.min(100, parts.reduce((s2, [v]) => s2 + v, 0)), basis: [...parts.map(([v, t]) => `${t} → ${v}점`), '시설 수 기준 추정 — 실제 방문자 수는 아닙니다'] });
+      out.push({ key: 'locality', label: '주변 유입 요인', score: Math.min(100, parts.reduce((s2, [v]) => s2 + v, 0)), basis: [...parts.map(([v, t]) => `${t} → ${v}점`), '도보 유입(역·관광·숙박·상권)과 차량 유입(주차) 시설 기준 추정 — 실제 방문자 수는 아닙니다'] });
     }
   }
   // 5) 경쟁 위치: 주변 같은 업종(Google) 중 평점 순위·리뷰 수 순위
@@ -437,6 +449,41 @@ function sameTerms(leaf: string): string[] {
   // 빵집·디저트는 손님이 주변 카페와 견준다 — 카페도 비교 대상에 넣는다(2026-10-22 사용자 요청)
   if (base.some((t) => /제과|베이커리|빵|도넛|베이글|디저트|케이크/.test(t)) && !same.includes('카페')) same.push('카페');
   return same;
+}
+
+/**
+ * 다른 지점 계정인지 — 계정 이름·소개글(text)에 이 가게와 다른 정보가 있으면 이유를 돌려준다.
+ *   이 가게 전화번호·도로명이 있으면 이 가게 계정(빈 문자열). 다른 전화번호 / 이 가게 이름·주소에 없는 "OO점" / 다른 "OO구" 가 있으면 다른 지점
+ */
+function otherBranchOf(text: string, mine: { name: string; address: string; phones?: string[] }): string {
+  const t = String(text || '');
+  const digits = (p: string) => p.replace(/\D/g, '');
+  const myPhones = (mine.phones || []).map(digits).filter((p) => p.length >= 9);
+  const phones = [...t.matchAll(/(0\d{1,2})\s*[-.)]?\s*(\d{3,4})\s*[-.]?\s*(\d{4})/g)].map((m) => m[1] + m[2] + m[3]);
+  const road = (/([가-힣0-9]+(?:로|길))\s*\d+/.exec(mine.address) || [])[1] || '';
+  if (phones.some((p) => myPhones.includes(p)) || (road && squash(t).includes(squash(road)))) return '';
+  const here = squash(`${mine.name} ${mine.address}`);
+  const branch = [...t.matchAll(/([가-힣A-Za-z0-9]{2,})점/g)].map((m) => m[1]).find((b) => !/^(본|지|매|상|관|요|시|정|장점|이|문)$/.test(b) && !here.includes(squash(b)));
+  if (branch) return `${branch}점`;
+  const gu = [...t.matchAll(/([가-힣]{2,4}구)(?![가-힣])/g)].map((m) => m[1]).find((g) => !here.includes(squash(g)));
+  if (gu) return gu;
+  if (phones.length && myPhones.length) return `다른 전화번호 ${phones[0].replace(/^(0\d{1,2})(\d{3,4})(\d{4})$/, '$1-$2-$3')}`;
+  return '';
+}
+
+/** 가게 자체 주차 안내 — 인스타 소개글·조사 시트·리뷰·블로그 후기에서 "주차 가능·넓은 주차" 같은 말을 찾는다(근거 문구 반환) */
+function ownParking(f: any): string {
+  const texts: string[] = [
+    ...(f.sns?.accounts || []).filter((a: any) => a.official !== 'other' && a.official !== 'brand').map((a: any) => a.stats?.bio || ''),
+    ...(f.research?.facts || []).map((x: any) => x.text || ''),
+    ...(f.reputation?.sample || []).map((x: any) => x.text || ''),
+    ...(f.reputation?.naver?.reviews || []).map((x: any) => `${x.title} ${x.text}`),
+  ];
+  for (const t of texts) {
+    const m = /[^.!?\n]{0,12}주차[^.!?\n]{0,12}(가능|완비|보유|넓|무료|편리|여유)[^.!?\n]{0,6}/.exec(t) || /[^.!?\n]{0,8}(넓은|무료|전용|자체)\s*주차[^.!?\n]{0,10}/.exec(t);
+    if (m) return m[0].trim().slice(0, 40);
+  }
+  return '';
 }
 
 const baseName = (n: string) => splitName(n).brand;

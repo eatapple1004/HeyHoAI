@@ -350,7 +350,9 @@ function SnsStatsView({ accounts, setup }: { accounts: any[]; setup?: any }) {
         <tbody>{accounts.map((a) => { const st = a.stats; const sm = st?.summary || {}; return (
           <tr key={a.platform + a.handle} className="border-t border-zinc-100 align-top">
             <td className="py-2 pr-2"><b>{a.label}</b> <span className="text-xs text-zinc-500">{a.handle}</span>
-              <div className="text-[11px] text-zinc-500">{st ? st.source : a.statsNote}</div></td>
+              <div className="text-[11px] text-zinc-500">{st ? st.source : a.statsNote}</div>
+              {a.official === 'other' && <div className="text-[11px] font-semibold text-amber-700">다른 지점 계정({a.otherBranch}) — 점수 제외</div>}
+              {a.official === 'brand' && <div className="text-[11px] font-semibold text-zinc-500">본사 계정 — 점수 제외</div>}</td>
             {st ? (<>
               <td className="tabular-nums">{fmt(st.followers)}</td><td className="tabular-nums">{fmt(st.following)}</td><td className="tabular-nums">{fmt(st.posts)}</td>
               <td className="tabular-nums">{sm.last30 ?? '–'}건</td><td className="tabular-nums">{sm.avgGapDays != null ? `${sm.avgGapDays}일` : '–'}</td>
