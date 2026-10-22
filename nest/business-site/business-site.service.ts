@@ -13,7 +13,7 @@ const sharp = require('sharp');
 import { CorpSite, CorpPhoto, routeCorp, RouteResult, profileOf, planPages, sitePages } from './multipage';
 import { sources, GooglePlaceDetail, KakaoPlace, NaverBlog, NaverLocal, WebPage, WebImage } from './place-sources';
 import { TEMPLATES, TEMPLATE_KEYS, guessTemplate, renderSite, SiteModel, SitePhoto, SiteReview } from './templates';
-import { naverPack } from './naver-pack';
+import { naverPack, categoryType } from './naver-pack';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
@@ -140,6 +140,9 @@ export class BusinessSiteService {
       query: body.query, collectedAt: new Date().toISOString(),
       kakao, google, naver: { local: body.naver ? pickNaver(body.naver) : null, blogs }, manual, web, errors,
     };
+    // 업종 칸이 비어 있으면 지도 분류로 채운다(브랜드 칸은 건너뜀 — "제과,베이커리 > 뚜레쥬르" → 제과·베이커리)
+    const autoIndustry = categoryType(kakao?.category || body.naver?.category || '', name) || google?.type || '';
+    if (!b.industry && autoIndustry) { await this.repo.fillIndustry(businessId, autoIndustry); b.industry = autoIndustry; }
     const site = await this.repo.ensure(businessId, guessTemplate(kakao?.category || body.naver?.category, b.industry || ''));
     const photos = await this.mergePhotos(businessId, site.photos as PhotoEntry[], source);
     if (!site.slug) await this.repo.update(businessId, { slug: await this.defaultSlug(businessId, kakao) });

@@ -90,3 +90,18 @@ export function naverText(p: NaverPack): string {
 export function naverLinks(p: NaverPack): string[] {
   return [...p.blog.items, ...p.web, ...p.news.items, ...p.cafe.items].map((i) => i.link).filter(Boolean);
 }
+
+/**
+ * 지도 분류에서 업종을 뽑는다 — 카카오 분류 끝칸이 브랜드인 경우("음식점 > 간식 > 제과,베이커리 > 뚜레쥬르")는 건너뛴다.
+ *   "제과,베이커리" → "제과·베이커리". 못 찾으면 ''
+ */
+export function categoryType(category: string, storeName = ''): string {
+  const parts = String(category || '').split('>').map((t) => t.trim()).filter(Boolean);
+  const brand = squash(splitName(storeName).brand);
+  while (parts.length > 1 && brand) {
+    const last = squash(parts[parts.length - 1]);
+    if (last && (brand.includes(last) || last.includes(brand))) parts.pop(); else break;
+  }
+  const leaf = parts.length > 1 ? parts[parts.length - 1] : '';
+  return leaf.split(/[,/]/).map((t) => t.trim()).filter(Boolean).join('·');
+}
