@@ -334,9 +334,12 @@ export function score(f: any): Score[] {
     const max = known.reduce((s2, [, w]) => s2 + w, 0);
     const got = known.reduce((s2, [ok, w]) => s2 + (ok ? w : 0), 0);
     const srcs = [...new Set(st.map((a: any) => a.stats.source))];
-    out.push({ key: 'sns', label: 'SNS 활동', score: max ? Math.round((got / max) * 100) : null,
+    // 계정은 있는데 게시 활동 수치(최근 게시·마지막 게시)가 하나도 없으면 점수를 내지 않는다 — 계정·팔로워만으로 100점이 나오는 것 방지
+    const noActivity = own.length > 0 && !last30.length && !since.length;
+    out.push({ key: 'sns', label: 'SNS 활동', score: noActivity ? null : max ? Math.round((got / max) * 100) : null,
       basis: [...items.map(([ok, w, t]) => `${ok === null ? '–' : ok ? '✓' : '✗'} ${t}${ok === null ? '' : ` (${w}점)`}`),
-        ...(max && max < 100 ? [`확인 가능한 ${max}점 만점을 100점으로 환산`] : []), ...(srcs.length ? [`수치 출처: ${srcs.join(' / ')}`] : [])] });
+        ...(noActivity ? ['게시 활동 수치(최근 게시물)를 읽지 못해 점수를 내지 않음 — 인스타는 Business Discovery 또는 외부 수집이 필요'] : max && max < 100 ? [`확인 가능한 ${max}점 만점을 100점으로 환산`] : []),
+        ...(srcs.length ? [`수치 출처: ${srcs.join(' / ')}`] : [])] });
   }
   // 3) 콘텐츠·운영: 직접 가진 사진·메뉴 정보·가격·홈페이지·게시 준비
   {
