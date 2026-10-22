@@ -3,7 +3,17 @@ import { MarketingRepository, TaskRow, TeamSettings } from './marketing.reposito
 import { MarketingWriterService, Action } from './marketing-writer.service';
 import { BusinessService } from '../business/business.service';
 import { toPublicUrl } from '../business/business.repository';
-import { naverPack, naverText } from '../business-site/naver-pack';
+import { naverPack, naverText, splitName, squash } from '../business-site/naver-pack';
+import { sources } from '../business-site/place-sources';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const nanoBanana = require(path.join(__dirname, '..', '..', 'src', 'images', 'providers', 'nanoBanana.provider.js'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
+const IMG_DIR = path.join(process.cwd(), 'tmp', 'images');
 
 /**
  * AI 마케팅 팀(2026-10-20) — NoimosAI 구성(에이전트가 일하고 사람은 피드에서 승인)을 도피아 자산 위에 얹었다.
@@ -11,6 +21,8 @@ import { naverPack, naverText } from '../business-site/naver-pack';
  *   동향 담당: 웹 검색 동향 보고 + 이번 주 할 일 제안 → 할 일을 누르면 게시물 초안·할 일로 이어진다
  *   리뷰 담당: Google 리뷰(홈페이지 제작에서 모은 것) 답글 초안 → 복사해서 단다(답글 API 없음)
  *   지시: 관리자가 한 줄로 시키면 할 일로 나눈다
+ *   사진이 없으면: 지도·검색에서 모은 사진을 참고해 게시용 사진을 AI로 새로 만든다(2026-10-22 사업자 결정).
+ *     원본을 그대로 올리지 않고 새 구도로 만든 이미지 + "AI 생성" 표기(캡션·화면), 참고 원본 출처는 사진 기록에 남긴다
  *   진단: 마케팅 진단(/admin-business/:id/report)의 약점·할 일을 이어받아 할 일로(같은 진단은 한 번만)
  * 실행은 항상 승인 뒤에만. 거절 사유는 브랜드 노트에 쌓여 다음 초안부터 지킨다.
  */
@@ -180,23 +192,90 @@ export class MarketingService implements OnModuleInit {
 
   // ── 인스타 담당 ──
   private async posts(businessId: string, n: number, brief?: string) {
-    const images = await this.repo.freshImages(businessId, n);
+    let images = await this.repo.freshImages(businessId, n);
     if (!images.length) {
-      await this.repo.addTask({ businessId, agent: 'instagram', kind: 'post', title: '쓸 사진이 없습니다', status: 'error' })
-        .then((t) => this.repo.updateTask(t.id, { status: 'error', error: '아직 게시하지 않은 사업체 사진이 없습니다. 사업체 상세에서 사진을 올리세요.' }));
-      return;
+      // 올린 사진이 없으면 수집한 사진을 참고해 AI로 새로 만든다
+      await this.work(businessId, 'instagram', 'photo', '게시용 사진을 AI로 만드는 중', async () => {
+        const made = await this.makePhotos(businessId, n);
+        return { title: `AI 게시용 사진 ${made.length}장 만듦`, body: { made } };
+      });
+      images = await this.repo.freshImages(businessId, n);
+      if (!images.length) {
+        await this.repo.addTask({ businessId, agent: 'instagram', kind: 'post', title: '쓸 사진이 없습니다', status: 'error' })
+          .then((t) => this.repo.updateTask(t.id, { status: 'error', error: '사업체 사진이 없고, 참고할 사진(지도·네이버 검색)도 찾지 못해 AI 사진을 만들지 못했습니다. 사업체 상세에서 사진을 올리세요.' }));
+        return;
+      }
     }
     const s = settingsOf((await this.repo.team(businessId)).settings);
     const notes = (await this.repo.team(businessId)).notes;
     await Promise.all(images.map((img, i) => this.work(businessId, 'instagram', 'post', '인스타 게시물 초안 작성 중', async () => {
-      const highlight = [brief, notes ? `지킬 것(사장님 노트): ${notes.slice(-800)}` : ''].filter(Boolean).join('\n');
+      const ai = img.source === 'ai';
+      const highlight = [brief, ai ? `이 사진은 실제 매장 사진이 아니라 AI로 만든 이미지다 — "오늘 나온 빵"처럼 실물 사진인 척하지 말 것. 소재: ${img.caption || ''}` : '',
+        notes ? `지킬 것(사장님 노트): ${notes.slice(-800)}` : ''].filter(Boolean).join('\n');
       const d = await this.business.caption(businessId, { mediaId: img.id, highlight: highlight || undefined });
+      // AI 기본법(생성형 AI 결과물 표시) — 캡션 끝에 표기
+      if (ai && !/AI로 만든 이미지/.test(d.caption)) d.caption = `${d.caption}\n\n※ AI로 만든 이미지입니다.`;
       const first = d.caption.split('\n')[0].slice(0, 28);
       return {
         title: `인스타 게시물 — ${first}${d.caption.length > 28 ? '…' : ''}`,
-        body: { mediaId: img.id, imageUrl: toPublicUrl(img.file_path), caption: d.caption, hashtags: d.hashtags, altText: d.altText, brief: brief || '', scheduledAt: slot(i + 1, s.postTime || '19:00') },
+        body: { mediaId: img.id, imageUrl: toPublicUrl(img.file_path), ...(ai ? { aiGenerated: true, aiFrom: img.metadata?.from || null } : {}), caption: d.caption, hashtags: d.hashtags, altText: d.altText, brief: brief || '', scheduledAt: slot(i + 1, s.postTime || '19:00') },
       };
     })));
+  }
+
+  /**
+   * 게시용 사진 AI로 만들기 — ① Google 지도 사진(최대 8) + 네이버 이미지 검색(가게 이름 든 것, 최대 6)을 모은다
+   *   ② Claude 가 이 가게 제품·매장 사진만 골라 새 사진 지시문을 쓴다 ③ Gemini 이미지가 참고 사진의 생김새만 따와 새 구도로 만든다
+   *   ④ 사업체 사진(source 'ai')으로 저장 — 참고 원본은 metadata.from
+   */
+  private async makePhotos(businessId: string, n: number) {
+    const b = await this.biz(businessId);
+    const src = (await this.repo.siteSource(businessId))?.source || {};
+    const name = String(src.kakao?.name || src.google?.name || siteName(b.name));
+    fs.mkdirSync(IMG_DIR, { recursive: true });
+    const cands: { buf: Buffer; type: string; from: string; url: string }[] = [];
+    for (const ph of (src.google?.photos || []).slice(0, 8)) {
+      const r = await sources.googlePhoto(ph.name, 1024).catch(() => null);
+      if (r && /image\/(jpe?g|png|webp)/.test(r.type)) cands.push({ buf: r.buf, type: r.type.replace('jpg', 'jpeg'), from: 'Google 지도 사진', url: ph.name });
+    }
+    if (sources.available().naver) {
+      const nm = splitName(name);
+      const r = await sources.naverSearch('image', `${nm.brand} ${nm.branch}`.trim(), { display: 20 }).catch(() => ({ items: [] as any[] }));
+      for (const it of r.items.filter((i: any) => squash(i.title).includes(squash(nm.brand))).slice(0, 6)) {
+        try {
+          const res = await fetch(it.thumbnail || it.link, { signal: AbortSignal.timeout(10000) });
+          const type = (res.headers.get('content-type') || '').split(';')[0];
+          if (res.ok && /image\/(jpe?g|png|webp)/.test(type)) cands.push({ buf: Buffer.from(await res.arrayBuffer()), type, from: '네이버 이미지 검색', url: it.link });
+        } catch { /* 다음 사진 */ }
+      }
+    }
+    if (!cands.length) throw new Error('참고할 사진(Google 지도 사진·네이버 이미지 검색)을 찾지 못했습니다.');
+    const picks = await this.writer.pickPhotos({ name: siteName(name), industry: b.industry, n,
+      images: cands.map((c) => ({ data: c.buf.toString('base64'), mediaType: c.type, from: c.from })) });
+    const made: { mediaId: string; imageUrl: string; subject: string; from: string; fromUrl: string }[] = [];
+    for (const p of picks) {
+      const c = cands[p.i];
+      const ref = path.join(IMG_DIR, `ref-${randomUUID()}.${c.type.split('/')[1].replace('jpeg', 'jpg')}`);
+      fs.writeFileSync(ref, c.buf);
+      try {
+        const out = await nanoBanana.generate({
+          prompt: `${p.prompt}\nUse the reference image only for what the product looks like (shape, color, texture, toppings). Make a NEW photograph: different angle, background, composition and lighting. No text, no logos, no watermark, no people's faces. Photorealistic, Instagram 4:5.`,
+          width: 1080, height: 1350, references: [{ path: ref, kind: 'product' }],
+        });
+        const local: string = out.metadata?.localPath || String(out.url).replace(/^file:\/\//, '');
+        try { await mediaStore.putFile(local); } catch { /* 저장소 미설정이면 로컬만 */ }
+        const filePath = `tmp/images/${path.basename(local)}`;
+        const from = { kind: c.from, url: c.url };
+        const id = await this.repo.insertAiMedia(businessId, filePath, p.subject, { aiGenerated: true, model: out.metadata?.model, subject: p.subject, from, prompt: p.prompt.slice(0, 600) });
+        made.push({ mediaId: id, imageUrl: toPublicUrl(filePath), subject: p.subject, from: c.from, fromUrl: c.from === '네이버 이미지 검색' ? c.url : '' });
+      } catch (e: any) {
+        console.warn('[marketing] ai photo failed', e?.message);
+      } finally {
+        fs.rmSync(ref, { force: true });
+      }
+    }
+    if (!made.length) throw new Error('AI 사진을 만들지 못했습니다(참고 사진에서 이 가게 제품·매장을 찾지 못했거나 생성 실패).');
+    return made;
   }
 
   // ── 리뷰 담당 ──

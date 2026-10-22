@@ -209,7 +209,7 @@ function card(t) {
   if (t.status === 'running') inner = '<div class="prog">담당이 일하는 중입니다…</div>';
   else if (t.status === 'error') inner = `<div class="errtxt">${esc(t.error || '실패')}</div><div class="acts"><button class="sm" onclick="reject('${t.id}', true)">지우기</button></div>`;
   else if (t.kind === 'post') {
-    inner = `<div class="post"><img src="${esc(b.imageUrl)}" alt="${esc(b.altText || '')}" loading="lazy"><div>
+    inner = `<div class="post"><div><img src="${esc(b.imageUrl)}" alt="${esc(b.altText || '')}" loading="lazy">${b.aiGenerated ? `<div class="prog" style="margin-top:4px"><span class="badge b-wait">AI 생성 이미지</span> 참고: ${esc((b.aiFrom && b.aiFrom.kind) || '수집 사진')}</div>` : ''}</div><div>
       ${b.brief ? `<div class="prog" style="margin-bottom:6px">주제: ${esc(b.brief)}</div>` : ''}
       ${ready ? `<textarea id="cap-${t.id}" rows="6">${esc(b.caption)}</textarea>
         <div class="field" style="margin-top:8px"><label>해시태그</label><input id="tag-${t.id}" style="width:100%" value="${esc((b.hashtags || []).map((h) => '#' + h).join(' '))}"></div>
@@ -231,6 +231,10 @@ function card(t) {
     inner = `<div class="review">${b.rating ? '★'.repeat(Math.round(b.rating)) + ' ' : ''}<b>${esc(b.author)}</b>${b.when ? ' · ' + esc(b.when) : ''}<br>${esc(b.text)}</div>
       ${ready ? `<textarea id="rep-${t.id}" rows="3">${esc(b.reply)}</textarea>` : `<div class="text">${esc(b.reply)}</div>`}
       <div class="acts"><button class="sm" onclick="copyReply('${t.id}')">답글 복사</button>${ready ? `<button class="ok" onclick="saveReply('${t.id}').then(()=>approve('${t.id}'))">답글 달았음</button><button onclick="reject('${t.id}')">거절</button>` : ''}</div>`;
+  } else if (t.kind === 'photo') {
+    inner = `<div class="prog" style="margin-bottom:8px">올린 사진이 없어 지도·네이버 검색 사진을 참고해 새로 만든 이미지입니다(원본을 그대로 쓰지 않음). 게시물 초안에 "AI로 만든 이미지" 표기가 붙습니다.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${(b.made || []).map((m) => `<figure style="margin:0;width:160px"><img src="${esc(m.imageUrl)}" style="width:160px;border-radius:10px" loading="lazy"><figcaption class="prog">${esc(m.subject)}<br>참고: ${m.fromUrl ? `<a href="${esc(m.fromUrl)}" target="_blank" rel="noopener">${esc(m.from)}</a>` : esc(m.from)}</figcaption></figure>`).join('')}</div>
+      ${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">확인</button></div>` : ''}`;
   } else if (t.kind === 'todo') {
     inner = `<div class="text">${esc(b.why || '')}${b.brief ? '\n' + esc(b.brief) : ''}</div>${ready ? `<div class="acts"><button class="ok" onclick="approve('${t.id}', this)">완료</button><button onclick="reject('${t.id}')">거절</button></div>` : ''}`;
   }
