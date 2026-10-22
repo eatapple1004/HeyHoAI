@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { BizReportRepository } from './biz-report.repository';
 import { BizReportWriterService, ReportStory, normUrl } from './biz-report-writer.service';
 import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
@@ -26,8 +26,16 @@ const CATS: { code: string; label: string }[] = [
 export interface Score { key: string; label: string; score: number | null; basis: string[] }
 
 @Injectable()
-export class BizReportService {
+export class BizReportService implements OnModuleInit {
   constructor(private readonly repo: BizReportRepository, private readonly writer: BizReportWriterService) {}
+
+  /** 서버가 다시 켜지면 그 전에 돌던 진단은 이어지지 않는다 — 바로 실패로 정리해 "다시 진단"이 막히지 않게 한다(배포 재시작으로 멈춘 사례, 2026-10-22) */
+  async onModuleInit() {
+    try {
+      const n = await this.repo.failRunning('서버가 다시 시작되어 중단됐습니다. 다시 진단하세요.');
+      if (n) console.warn(`[biz-report] 재시작 전 진행 중이던 진단 ${n}건을 중단 처리`);
+    } catch (e: any) { console.warn('[biz-report] 시작 정리 실패', e?.message); }
+  }
 
   async get(businessId: string) {
     const business = await this.repo.business(businessId);
