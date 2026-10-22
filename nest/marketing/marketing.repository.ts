@@ -96,9 +96,9 @@ export class MarketingRepository {
   }
 
   /** 아직 쓰지 않은 사진 — 게시 큐에 들어갔거나 최근 초안에 쓴 사진은 뺀다 */
-  async freshImages(businessId: string, limit: number): Promise<{ id: string; file_path: string; caption: string | null }[]> {
+  async freshImages(businessId: string, limit: number): Promise<{ id: string; file_path: string; caption: string | null; source: string | null; metadata: any }[]> {
     const r = await this.db.query(
-      `SELECT m.id, m.file_path, m.caption
+      `SELECT m.id, m.file_path, m.caption, m.source, m.metadata
          FROM account_media m
          LEFT JOIN social_accounts sa ON sa.id = m.account_id
         WHERE (m.business_id = $1 OR sa.business_id = $1) AND m.media_type = 'image'
@@ -113,6 +113,14 @@ export class MarketingRepository {
   async siteSource(businessId: string): Promise<any | null> {
     const r = await this.db.query('SELECT source, slug, status FROM business_sites WHERE business_id = $1', [businessId]);
     return r.rows[0] || null;
+  }
+
+  /** AI로 다시 만든 게시용 사진 — 사업체 사진으로 넣는다(source 'ai', 참고 원본은 metadata) */
+  async insertAiMedia(businessId: string, filePath: string, caption: string, metadata: Record<string, unknown>): Promise<string> {
+    const r = await this.db.query(
+      `INSERT INTO account_media (business_id, file_path, media_type, caption, is_base, source, metadata)
+       VALUES ($1, $2, 'image', $3, false, 'ai', $4) RETURNING id`, [businessId, filePath, caption, JSON.stringify(metadata)]);
+    return r.rows[0].id;
   }
 
   /** 가장 최근에 끝난 마케팅 진단(biz-report) — 마케팅 팀이 할 일로 이어받는다 */

@@ -401,7 +401,7 @@ export const sources = {
    *   구 개발자센터: openapi.naver.com/v1/search/<kind>.json + X-Naver-Client-Id/Secret (2027-06-30 종료)
    *   요청 파라미터·응답 구조는 같다.
    */
-  naverRequest(kind: 'local' | 'blog' | 'webkr' | 'news' | 'cafearticle', qs: string): [string, Record<string, string>] {
+  naverRequest(kind: 'local' | 'blog' | 'webkr' | 'news' | 'cafearticle' | 'image', qs: string): [string, Record<string, string>] {
     if (env.NAVER_HUB_KEY_ID && env.NAVER_HUB_KEY) {
       return [`https://naverapihub.apigw.ntruss.com/search/v1/${kind}?${qs}`,
         { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_HUB_KEY_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_HUB_KEY }];
@@ -439,7 +439,7 @@ export const sources = {
   },
 
   /** 네이버 검색 공통 — 전체 건수와 글(제목·요약·주소·날짜·작성 곳). 키가 없으면 오류(필수 단계에서 부른다) */
-  async naverSearch(kind: 'blog' | 'webkr' | 'news' | 'cafearticle', query: string, opt: { display?: number; sort?: 'sim' | 'date' } = {}): Promise<{ total: number; items: { title: string; snippet: string; link: string; date: string; by: string }[] }> {
+  async naverSearch(kind: 'blog' | 'webkr' | 'news' | 'cafearticle' | 'image', query: string, opt: { display?: number; sort?: 'sim' | 'date' } = {}): Promise<{ total: number; items: { title: string; snippet: string; link: string; date: string; by: string; thumbnail?: string }[] }> {
     if (!this.available().naver) throw new Error('네이버 검색 키가 없습니다(NAVER_HUB_KEY_ID/NAVER_HUB_KEY)');
     const [url, headers] = this.naverRequest(kind, `display=${opt.display || 10}&sort=${opt.sort || 'sim'}&query=${encodeURIComponent(query)}`);
     const j = await getJson(url, { headers });
@@ -448,7 +448,7 @@ export const sources = {
       items: (j.items || []).map((i: any) => ({
         title: stripTags(i.title), snippet: stripTags(i.description), link: i.originallink || i.link,
         date: i.postdate || (i.pubDate ? new Date(i.pubDate).toISOString().slice(0, 10).replace(/-/g, '') : ''),
-        by: i.bloggername || i.cafename || '',
+        by: i.bloggername || i.cafename || '', ...(i.thumbnail ? { thumbnail: i.thumbnail } : {}),
       })),
     };
   },

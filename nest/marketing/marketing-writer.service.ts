@@ -38,6 +38,27 @@ export class MarketingWriterService {
     return this.client;
   }
 
+  /** 게시용 사진 다시 만들기 — 수집한 사진을 보고 이 가게 제품·매장이 찍힌 것을 골라 새 사진을 만들 지시문을 쓴다 */
+  async pickPhotos(input: { name: string; industry?: string | null; n: number; images: { data: string; mediaType: string; from: string }[] }): Promise<{ i: number; subject: string; prompt: string }[]> {
+    const content: any[] = [];
+    input.images.forEach((im, i) => {
+      content.push({ type: 'text', text: `사진 ${i} (${im.from})` });
+      content.push({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } });
+    });
+    content.push({ type: 'text', text: `업체: ${input.name}${input.industry ? ` (${input.industry})` : ''}
+위 사진은 지도 서비스·검색에서 모은 것이다. 이 사진들을 참고해 인스타 게시용 사진을 AI로 새로 만든다.
+- 이 가게의 제품(메뉴)·매장 내부·외관이 분명히 보이는 사진만 고른다. 사람 얼굴이 중심인 사진, 다른 가게·다른 브랜드, 글자가 대부분인 메뉴판·영수증·화면 캡처는 고르지 않는다.
+- 서로 다른 소재로 최대 ${input.n}개(같은 빵을 두 번 고르지 않는다).
+- subject: 무엇인지 한국어 짧게(예: "진열대의 소보로빵"). 사진에 보이는 것만 — 이름을 모르면 "둥근 크림빵"처럼 생김새로.
+- prompt: 새로 만들 사진 지시(영어). 참고 사진 속 제품의 생김새(모양·색·질감·토핑)는 그대로, 구도·각도·배경·조명은 새로. 인스타 4:5, 자연광, 사실적인 사진. 글자·로고·워터마크·사람 얼굴 없음.
+JSON: {"picks":[{"i":0,"subject":"","prompt":""}]}` });
+    const res: any = await this.anthropic().messages.create({ model: env.CLAUDE_MODEL, max_tokens: 2000, system: RULES, messages: [{ role: 'user', content }] } as any);
+    const text = (res.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+    const j = parseJson(text);
+    return arr(j.picks).map((p: any) => ({ i: Number(p?.i), subject: clip(p?.subject, 60), prompt: clip(p?.prompt, 1200) }))
+      .filter((p) => Number.isInteger(p.i) && p.i >= 0 && p.i < input.images.length && p.prompt).slice(0, input.n);
+  }
+
   /** 진단 이어받기 — 진단 글(점수·발견·할 일·계획·빈칸)을 이 팀이 할 수 있는 일로 나눈다(웹 검색 없이, 진단에 있는 사실만) */
   async fromReport(input: { name: string; industry?: string | null; notes: string; diagnosis: Record<string, unknown> }): Promise<{ summary: string; actions: Action[] }> {
     const user = `업체: ${input.name}${input.industry ? ` (${input.industry})` : ''}
