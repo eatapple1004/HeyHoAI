@@ -99,7 +99,7 @@ export class BizReportService {
     //   계정 이름(제목)에 가게 이름이 들어 있을 때만 받는다
     const naverAvailable = sources.available().naver;
     if (naverAvailable) {
-      const nameKey = squash(input.name);
+      const nameKey = squash(baseName(input.name));
       for (const q of [`${input.name} 인스타그램`, `${input.name} 공식 블로그`]) {
         try {
           for (const r of await sources.naverWeb(q)) {
@@ -200,9 +200,11 @@ export class BizReportService {
     //   최신순 100개 중 제목·요약에 가게 이름이 있는 글만 세고, 그중 최근 30일 건수를 점수에 쓴다
     const blog = sources.available().naver
       ? await safe('naver-blog', async () => {
-          const name = baseName(siteName(k?.name || b.name)); const key = squash(name);
-          const r = await sources.naverBlogRecent(`"${name}"`);
-          const hit = r.items.filter((i) => squash(`${i.title} ${i.snippet}`).includes(key));
+          // 프랜차이즈 지점이면 브랜드 언급이 아니라 "브랜드 + 지점" 언급만 센다(본사 인스타를 지점 것으로 치지 않는 것과 같은 기준)
+          const nm = splitName(siteName(k?.name || b.name));
+          const name = nm.branch ? `${nm.brand} ${nm.branch}` : nm.brand;
+          const r = await sources.naverBlogRecent(nm.branch ? `"${nm.brand}" ${nm.branch}` : `"${nm.brand}"`);
+          const hit = r.items.filter((i) => { const t = squash(`${i.title} ${i.snippet}`); return t.includes(squash(nm.brand)) && (!nm.branch || t.includes(squash(nm.branch))); });
           const cut = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
           const recent = hit.filter((i) => String(i.date || '') >= cut);
           const oldest = r.items[r.items.length - 1]?.date || '';
@@ -285,7 +287,7 @@ export function score(f: any): Score[] {
       [other.length > 0, 5, other.length ? `다른 SNS ${other.map((a: any) => a.label).join('·')}` : '다른 SNS(유튜브·페이스북·블로그·카카오채널) — 찾지 못함'],
       [f.reputation.blogMentions == null ? null : blogs >= 5, 10, f.reputation.blogMentions == null
         ? `네이버 블로그 언급 — 확인 불가(${f.reputation.naverAvailable ? '검색 실패' : '네이버 검색 키 없음'})`
-        : `네이버 블로그 최근 30일 언급 ${blogs}건${f.reputation.blog?.capped ? ' 이상' : ''}(5건 이상)`],
+        : `네이버 블로그 최근 30일 '${f.reputation.blog?.query || ''}' 언급 ${blogs}건${f.reputation.blog?.capped ? ' 이상' : ''}(5건 이상)`],
       [p.phonesConsistent, 5, p.phonesConsistent ? '지도 서비스 전화번호 일치' : `지도 서비스 전화번호 불일치(${p.phones.join(' / ')})`],
     ];
     const known = items.filter(([ok]) => ok !== null);
@@ -345,5 +347,17 @@ const brandOf = (n: string) => String(n || '').trim().split(/[\s(/]+/)[0].replac
 const langOf = (t: string) => (/[぀-ヿ]/.test(t) ? 'ja' : /[가-힣]/.test(t) ? 'ko' : /[一-鿿]/.test(t) ? 'zh' : 'en');
 const siteName = (n: string) => String(n || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || n;
 /** 이름 비교용 — 띄어쓰기·기호 없이 소문자. 지점 꼬리("명동교자 본점", "뚜레쥬르 명동점")는 뗀다 */
-const baseName = (n: string) => String(n || '').replace(/\s+\S*(본점|분점|지점|호점|점)$/, '').trim();
-const squash = (n: string) => baseName(n).toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+/**
+ * 가게 이름을 브랜드와 지점으로 나눈다 — 카카오 이름은 "명동교자 명동역점 신관 본점", "뚜레쥬르 송도아트윈점"처럼 꼬리가 붙는다.
+ *   두 번째 낱말부터 "…점·…관"이면 지점 꼬리. 본점이 들어 있거나 꼬리가 없으면 flagship(브랜드 이름 = 이 가게)
+ */
+const splitName = (n: string) => {
+  const t = String(n || '').trim().split(/\s+/).filter(Boolean);
+  const i = t.findIndex((w, j) => j > 0 && /(점|관)$/.test(w));
+  const brand = (i > 0 ? t.slice(0, i) : t).join(' ');
+  const tail = i > 0 ? t.slice(i) : [];
+  const flagship = !tail.length || tail.includes('본점');
+  return { brand, flagship, branch: flagship ? '' : tail[0].replace(/(지점|점)$/, '') };
+};
+const baseName = (n: string) => splitName(n).brand;
+const squash = (n: string) => String(n || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
