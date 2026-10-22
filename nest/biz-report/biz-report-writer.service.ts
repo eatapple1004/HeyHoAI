@@ -111,7 +111,7 @@ JSON: {"summary":"","findings":[{"title":"","body":""}],"actions":[{"title":"","
     if (!j) throw new InternalServerErrorException(stop === 'max_tokens' ? 'AI 응답이 길이 한도에 걸려 잘렸습니다.' : 'AI 응답을 읽지 못했습니다.');
     // 규칙을 줘도 가끔 자료의 영어 이름이 글에 섞인다 — 사장님이 읽는 말로 바꿔 둔다
     const TERMS: [RegExp, string][] = [[/\bpresence\b/g, '온라인 노출'], [/\breputation\b/g, '평판'], [/\blocality\b/g, '주변 유입 요인'], [/\bcontent\b/g, '콘텐츠·운영'], [/\bcompetition\b/g, '경쟁 위치'],
-      [/\bposted30\b/g, '최근 30일 게시'], [/\bownPhotos\b/g, '직접 가진 사진'], [/\bnaverAvailable\b[=:]?\s*(false|true)?/g, '네이버 검색 연결'], [/\b(draft)\b/g, '공개 전'], [/\b(published)\b/g, '공개'], [/\bready\b/g, '승인 대기']];
+      [/\bposted30\b/g, '최근 30일 게시'], [/\bblogMentions\b/g, '네이버 블로그 언급'], [/\brecent30\b/g, '최근 30일'], [/\bownPhotos\b/g, '직접 가진 사진'], [/\bnaverAvailable\b[=:]?\s*(false|true)?/g, '네이버 검색 연결'], [/\b(draft)\b/g, '공개 전'], [/\b(published)\b/g, '공개'], [/\bready\b/g, '승인 대기']];
     // 남은 "(…phonesConsistent=false)" 같은 자료 표기 조각은 통째로 지운다
     const plain = (t: string) => TERMS.reduce((x, [re, to]) => x.replace(re, to), t)
       .replace(/\s*\(?[가-힣 ]*\.?\b[a-z]+[A-Z][A-Za-z.]*\s*[=:]\s*[\w.]+\)?/g, '').replace(/\s{2,}/g, ' ');
