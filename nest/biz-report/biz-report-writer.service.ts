@@ -95,6 +95,7 @@ ${JSON.stringify(input.scores, null, 1)}
 - actions: 지금 할 일 3개(owner: "사장님" 또는 "도피아", when: "이번 주"·"2주 안" 처럼).
 - reviewThemes: Google 리뷰 표본(reputation.sample)과 네이버 블로그 후기(reputation.naver.reviews)를 함께 보고 좋게 말한 점(good)과 아쉬운 점(bad) 각 1~4개(짧은 구절). 네이버 블로그 후기에서만 나온 것은 끝에 "(네이버 블로그)"를 붙인다. 둘 다 없으면 빈 배열.
 - findings 중 하나는 네이버(지도 등록·블로그 후기·카페·뉴스) 결과를 반드시 다룬다.
+- findings 중 하나는 SNS(sns.accounts 의 계정별 팔로워·최근 게시·반응, SNS 활동 점수)를 반드시 다룬다. 본사(brand) 계정 수치는 "본사 계정"이라고 밝히고 이 가게 성과처럼 쓰지 않는다. 공개 페이지·외부 수집 수치는 그 출처를 밝힌다.
 - plan: 90일 계획 3단계 — [{"phase":"고치기","period":"1~30일"}, {"phase":"열기","period":"31~60일"}, {"phase":"키우기","period":"61~90일"}] 마다 tasks 2~4개(task, owner, metric=무엇으로 확인).
 - metrics: 90일 뒤 볼 지표 3~6개 — now 는 자료에 있는 값만(없으면 "측정 전"), target 은 제안값(근거는 note).
 - missing: 진단에 더 필요한 자료(공개 API로 못 구하는 것: 매출·시간대별 방문·네이버 플레이스 리뷰 수·배달앱 등)와 왜 필요한지, 어떻게 받는지(how).
