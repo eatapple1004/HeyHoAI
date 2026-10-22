@@ -431,7 +431,9 @@ function forAi(facts: any) {
     ...facts,
     sns: facts.sns && {
       ...facts.sns,
-      accounts: (facts.sns.accounts || []).map((a: any) => (a.stats ? { ...a, stats: { ...a.stats, recent: (a.stats.recent || []).map(post), summary: a.stats.summary && { ...a.stats.summary, best: (a.stats.summary.best || []).map(post) } } } : a)),
+      // 계정 역할을 우리말로 붙인다 — official 값(branch/brand/other)만 주면 AI가 이 가게 계정을 "본사 계정"으로 부르는 일이 있었다(2026-10-22)
+      accounts: (facts.sns.accounts || []).map((a0: any) => ({ ...a0, 역할: a0.official === 'brand' ? '본사(브랜드) 계정 — 이 가게 점수에서 제외'
+        : a0.official === 'other' ? `다른 지점 계정(${a0.otherBranch || ''}) — 이 가게 점수에서 제외` : a0.level === '출처 미확인' ? '출처 미확인 계정 — 점수 제외' : '이 가게 계정' })).map((a: any) => (a.stats ? { ...a, stats: { ...a.stats, recent: (a.stats.recent || []).map(post), summary: a.stats.summary && { ...a.stats.summary, best: (a.stats.summary.best || []).map(post) } } } : a)),
     },
   };
 }
