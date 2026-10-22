@@ -3,6 +3,7 @@ import { MarketingRepository, TaskRow, TeamSettings } from './marketing.reposito
 import { MarketingWriterService, Action } from './marketing-writer.service';
 import { BusinessService } from '../business/business.service';
 import { toPublicUrl } from '../business/business.repository';
+import { naverPack, naverText } from '../business-site/naver-pack';
 
 /**
  * AI 마케팅 팀(2026-10-20) — NoimosAI 구성(에이전트가 일하고 사람은 피드에서 승인)을 도피아 자산 위에 얹었다.
@@ -125,7 +126,9 @@ export class MarketingService implements OnModuleInit {
     const src = (await this.repo.siteSource(businessId))?.source || {};
     const place = { 이름: src.kakao?.name || src.google?.name, 주소: src.kakao?.roadAddress || src.kakao?.address || src.google?.address, 분류: src.kakao?.category || src.google?.type, 웹사이트: src.google?.website };
     await this.work(businessId, 'trends', 'report', '이번 주 동향 보고 작성 중', async () => {
-      const r = await this.writer.trends({ name: siteName(b.name), industry: b.industry, memo: b.memo, place, notes: team.notes, stats: await this.repo.postStats(businessId), focus, diagnosis: diagnosisBrief((await this.repo.latestReport(businessId))?.data) });
+      // 네이버 검색은 필수 — 실패하면 이 보고는 실패로 남는다(이유 표시)
+      const naver = naverText(await naverPack(String(place.이름 || b.name), String(place.주소 || '')));
+      const r = await this.writer.trends({ naver, name: siteName(b.name), industry: b.industry, memo: b.memo, place, notes: team.notes, stats: await this.repo.postStats(businessId), focus, diagnosis: diagnosisBrief((await this.repo.latestReport(businessId))?.data) });
       return { title: `이번 주 동향 보고 — 할 일 ${r.actions.length}개`, body: r };
     });
   }

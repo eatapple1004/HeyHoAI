@@ -541,6 +541,7 @@ function renderProcess() {
       ${sheet.gaps.length ? `<div style="margin-top:14px"><b style="font-size:.84rem">회사에 받아야 할 자료</b><ul class="ul">${sheet.gaps.map((g) => `<li><b>${esc(g.item)}</b> — ${esc(g.why)}</li>`).join('')}</ul></div>` : ''}
       ${sheet.benchmarks.length ? `<div style="margin-top:10px"><b style="font-size:.84rem">구성 참고 사이트</b> <span class="prog">레이아웃만 참고, 문구·사진은 쓰지 않음</span><ul class="ul">${sheet.benchmarks.map((b) => `<li><a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.name)}</a> — ${esc(b.why)}</li>`).join('')}</ul></div>` : ''}
       ${(sheet.searches || []).length ? `<div class="prog" style="margin-top:8px">검색어: ${sheet.searches.map(esc).join(' · ')}</div>` : ''}
+      ${sheet.naver ? `<div class="prog" style="margin-top:4px">네이버(필수): 지도 ${sheet.naver.placeFound ? '등록 확인' : '찾지 못함'} · 블로그 ${Number(sheet.naver.blogTotal).toLocaleString()}건(이름 든 글 ${sheet.naver.blogSample}개, 후기 ${sheet.naver.reviews}개) · 뉴스 ${Number(sheet.naver.news).toLocaleString()} · 카페 ${Number(sheet.naver.cafe).toLocaleString()}</div>` : '<div class="prog" style="margin-top:4px">네이버 검색 없이 만든 조사입니다 — 다시 조사하면 네이버가 포함됩니다.</div>'}
       <div class="prog" style="margin-top:4px">조사 ${new Date(p.research.at).toLocaleString('ko-KR')}</div>`;
   }
 

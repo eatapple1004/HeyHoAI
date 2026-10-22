@@ -177,7 +177,7 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
         </div>
       </Card>
 
-      <Section n="01" title="평판" hint="Google 지도 기준 · 리뷰 글은 최근 표본">
+      <Section n="01" title="평판" hint="Google 지도 · 네이버 블로그 후기 기준 · 리뷰 글은 최근 표본">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="rounded-2xl bg-violet-50 p-6">
             <div className="text-sm text-violet-900/70">Google 평점</div>
@@ -205,6 +205,7 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
                 <p className="mt-1 line-clamp-2 text-zinc-600">{x.text}</p>
               </li>
             ))}</ul>
+            <NaverBlogReviews nv={f.reputation.naver} blog={f.reputation.blog} />
           </div>
         </div>
       </Section>
@@ -301,7 +302,7 @@ function Report({ data, at, history }: { data: ReportData; at: string; history: 
             <li key={i}><Tag tone="zinc">{x.topic}</Tag> {x.text} <span className="text-xs text-zinc-500">— {x.url ? <a className="text-violet-700" href={x.url} target="_blank" rel="noreferrer">{x.source}</a> : x.source}</span></li>
           ))}</ul>
         ) : <Empty>조사 시트가 없습니다(홈페이지 제작 2단계).</Empty>}
-        <p className="mt-4 text-xs text-zinc-500">데이터 출처: 카카오 로컬 API(장소·주변 시설), Google Places API(평점·리뷰·영업시간·주변 같은 업종), 도피아 조사 시트(웹 검색, 출처별), 도피아 운영 기록(인스타 게시·사진).
+        <p className="mt-4 text-xs text-zinc-500">데이터 출처: 카카오 로컬 API(장소·주변 시설), Google Places API(평점·리뷰·영업시간·주변 같은 업종), 네이버 검색 API(지도 등록·블로그·카페·뉴스), 도피아 조사 시트(웹 검색, 출처별), 도피아 운영 기록(인스타 게시·사진).
           {f.business.kakaoUrl && <> · <a className="text-violet-700" href={f.business.kakaoUrl} target="_blank" rel="noreferrer">카카오맵</a></>}
           {f.business.googleUrl && <> · <a className="text-violet-700" href={f.business.googleUrl} target="_blank" rel="noreferrer">Google 지도</a></>}</p>
         {data.check?.unsourced?.length ? <p className="mt-2 text-xs text-red-600">확인 필요: 해석 글의 숫자 {data.check.unsourced.join(', ')}이(가) 모은 자료에 없습니다.</p> : <p className="mt-2 text-xs text-emerald-700">해석 글의 숫자는 모두 모은 자료에 있습니다.</p>}
@@ -408,6 +409,31 @@ function Sns({ sns }: { sns: any }) {
 function compRows(f: Facts) {
   const self = { name: f.business.name, rating: f.reputation.googleRating, reviews: f.reputation.googleReviews || 0, distance: null, sameBrand: false, self: true };
   return [self, ...f.competitors.map((c: any) => ({ ...c, self: false }))].sort((a, b) => b.reviews - a.reviews).slice(0, 10);
+}
+
+function ymd(d?: string) { return d && d.length === 8 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}` : d || ''; }
+
+/** 네이버 블로그 후기 — 공식 검색 API의 요약 글(본문 전체 아님) */
+function NaverBlogReviews({ nv, blog }: { nv?: any; blog?: any }) {
+  if (!nv) return <p className="mt-4 rounded-xl border border-dashed border-zinc-300 p-3 text-xs text-zinc-500">네이버 블로그 후기: 네이버 검색이 필수가 되기 전에 만든 진단입니다. 진단을 새로 만들면 들어갑니다.</p>;
+  return (
+    <div className="mt-5">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h4 className="text-sm font-bold text-emerald-800">네이버 블로그 후기</h4>
+        <span className="text-xs text-zinc-500">"{nv.query}" 블로그 {fmt(nv.blogTotal)}건{blog ? ` · 최근 30일 언급 ${blog.recent30}건${blog.capped ? ' 이상' : ''}` : ''} · 카페 {fmt(nv.cafe?.total)}건 · 뉴스 {fmt(nv.news?.total)}건</span>
+      </div>
+      {nv.reviews?.length ? (
+        <ul className="space-y-2">{nv.reviews.slice(0, 6).map((x: any, i: number) => (
+          <li key={i} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 text-sm">
+            <a className="font-semibold text-emerald-900" href={x.link} target="_blank" rel="noreferrer">{x.title}</a>
+            <span className="ml-2 text-xs text-zinc-500">{ymd(x.date)}{x.by ? ` · ${x.by}` : ''}</span>
+            <p className="mt-1 line-clamp-2 text-zinc-600">{x.text}</p>
+          </li>
+        ))}</ul>
+      ) : <Empty>가게 이름이 들어간 블로그 후기를 찾지 못했습니다.</Empty>}
+      <p className="mt-2 text-[11px] text-zinc-500">네이버 검색 API가 주는 글 요약입니다(본문 전체 아님) · 블로그 글에는 답글을 달 수 없어 분석에만 씁니다.</p>
+    </div>
+  );
 }
 
 function starDist(sample: { rating?: number }[]) {

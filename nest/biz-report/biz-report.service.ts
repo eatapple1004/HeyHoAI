@@ -5,6 +5,7 @@ import { SNS_LABEL, SnsLink, snsFromHtml, toSns } from './sns';
 import { naverPlaceAvailable, naverPlaceReviews } from './naver-place';
 import { instagramConnected, instagramDiscovery, discoveryAvailable, youtubeChannel, youtubeAvailable, naverBlogRss, tiktokExternal, tiktokAvailable, SnsStats } from './sns-stats';
 import { sources } from '../business-site/place-sources';
+import { naverPack, splitName, squash } from '../business-site/naver-pack';
 import { numbers, loosely, norm } from '../business-site/site-qa';
 
 /**
@@ -198,8 +199,10 @@ export class BizReportService {
 
     // 네이버 블로그 언급 — 진단 때마다 새로 찾는다(자료 수집 때 저장분은 키가 없던 때 것일 수 있다).
     //   최신순 100개 중 제목·요약에 가게 이름이 있는 글만 세고, 그중 최근 30일 건수를 점수에 쓴다
-    const blog = sources.available().naver
-      ? await safe('naver-blog', async () => {
+    // 네이버는 필수 단계 — 키가 없거나 실패하면 진단을 멈추고 이유를 보여 준다(조용히 빼고 점수 내지 않는다)
+    const naverPk = await naverPack(k?.name || g?.name || b.name, k?.roadAddress || k?.address || g?.address || '');
+    const naverHere = naverPk.local.find((l) => l.match) || null;
+    const blog = await (async () => {
           // 프랜차이즈 지점이면 브랜드 언급이 아니라 "브랜드 + 지점" 언급만 센다(본사 인스타를 지점 것으로 치지 않는 것과 같은 기준)
           const nm = splitName(siteName(k?.name || b.name));
           const name = nm.branch ? `${nm.brand} ${nm.branch}` : nm.brand;
@@ -210,26 +213,28 @@ export class BizReportService {
           const oldest = r.items[r.items.length - 1]?.date || '';
           return { query: name, total: r.total, recent30: recent.length, capped: r.items.length >= 100 && oldest >= cut,
             sample: recent.slice(0, 5).map((i) => ({ title: i.title.slice(0, 80), link: i.link, date: i.date, blogger: i.blogger })) };
-        }, null)
-      : null;
+        })().catch((e) => { throw new Error(`네이버 검색은 필수 단계입니다 — 블로그 검색 실패(${String(e?.message || e).slice(0, 100)})`); });
 
     const reviews = (g?.reviews || []).map((r: any) => ({ author: r.author, rating: r.rating, when: r.when, text: String(r.text || '').slice(0, 600), lang: langOf(r.text) }));
     const sheet = site?.process?.research?.sheet;
     const posts = await this.repo.postStats(businessId);
     const social = await this.repo.social(businessId);
     // 번호는 원래 표기로 보여 주고, 같은지는 숫자만 비교
-    const phones = [...new Map([k?.phone, g?.phone].filter(Boolean).map((p: string) => [p.replace(/[^\d]/g, ''), p])).values()];
+    const phones = [...new Map([k?.phone, g?.phone, naverHere?.phone].filter(Boolean).map((p: string) => [p.replace(/[^\d]/g, ''), p])).values()];
 
     return {
       at: new Date().toISOString(),
       business: { name: siteName(k?.name || b.name), industry: b.industry || leaf, category: k?.category || g?.type || '', address: k?.roadAddress || k?.address || g?.address || '', phone: k?.phone || g?.phone || '', website: g?.website || s.web?.url || '', hours: g?.hours || [], kakaoUrl: k?.url || '', googleUrl: g?.mapsUrl || '' },
       reputation: { googleRating: g?.rating ?? null, googleReviews: g?.ratingCount ?? null, sample: reviews, blogMentions: blog ? blog.recent30 : null, blog, naverAvailable: sources.available().naver,
+        // 네이버 블로그 후기(공식 검색 API, 요약 글) — 리뷰 분석에 Google 리뷰와 함께 쓴다
+        naver: { query: naverPk.query, at: naverPk.at, reviews: naverPk.blog.reviews.slice(0, 10).map((i) => ({ title: i.title.slice(0, 100), text: i.snippet.slice(0, 240), link: i.link, date: i.date, by: i.by })),
+          blogTotal: naverPk.blog.total, news: { total: naverPk.news.total, items: naverPk.news.items.slice(0, 5) }, cafe: { total: naverPk.cafe.total, items: naverPk.cafe.items.slice(0, 5) } },
         naverPlace: naver ? naver : { skipped: naverPlaceAvailable() ? '카카오 장소가 없어 찾지 않음' : '외부 수집 키(REEF_API_KEY) 없음' } },
       nearby: { radius: NEAR, categories: nearby, sameCategory: { keyword: leaf, kakaoCount: sameKakao.total, nearest: sameKakao.places.filter((p) => p.id !== k?.id).slice(0, 8).map((p) => ({ name: p.name, distance: p.distance })) } },
       competitors,
       sns,
       presence: {
-        kakaoPlace: Boolean(k), googlePlace: Boolean(g), hours: (g?.hours || []).length > 0, website: Boolean(g?.website || s.web?.url),
+        kakaoPlace: Boolean(k), googlePlace: Boolean(g), naverPlace: Boolean(naverHere), naverPlaceName: naverHere ? `${naverHere.name} · ${naverHere.roadAddress || naverHere.address}` : '', hours: (g?.hours || []).length > 0, website: Boolean(g?.website || s.web?.url),
         doppiaSite: site?.content?.multipage ? (site.status === 'published' ? 'published' : 'draft') : (site && Object.keys(site.content || {}).length ? 'single' : 'none'),
         doppiaPages: site?.content?.multipage ? null : 0,
         instagram: social.filter((a) => /insta/i.test(a.platform || '')).map((a) => a.username),
@@ -280,7 +285,8 @@ export function score(f: any): Score[] {
     const other = okSns.filter((a: any) => a.platform !== 'instagram');
     // null = 확인할 수 없음(출처 키 없음) — 점수 계산에서 빼고 남은 항목으로 100점 환산
     const items: [boolean | null, number, string][] = [
-      [p.kakaoPlace, 10, '카카오맵 등록'], [p.googlePlace, 10, 'Google 지도 등록'], [p.hours, 10, '영업시간 등록(Google)'],
+      [p.kakaoPlace, 10, '카카오맵 등록'], [p.googlePlace, 10, 'Google 지도 등록'],
+      [p.naverPlace ?? null, 10, p.naverPlace ? '네이버 지도 등록' : p.naverPlace === false ? '네이버 지도 — 이름·주소가 맞는 장소를 찾지 못함' : '네이버 지도 — 확인 전 진단'], [p.hours, 10, '영업시간 등록(Google)'],
       [p.website, 10, '홈페이지 있음'], [p.doppiaSite === 'published', 10, '도피아 홈페이지 공개'],
       [insta.length > 0 || p.instagram.length > 0, 10, insta.length ? `공식 인스타 있음(@${insta[0].handle})` : '공식 인스타 — 찾지 못함'],
       [p.instagram.length > 0, 5, '인스타를 도피아에 연결(게시 예약 가능)'], [Math.max(posts, igLast30) >= 4, 15, insta.some((a: any) => a.stats) ? `최근 30일 인스타 게시 ${Math.max(posts, igLast30)}건(4건 이상, 인스타 공식 수치)` : `최근 30일 도피아로 인스타 게시 ${posts}건(4건 이상)`],
@@ -347,17 +353,4 @@ const brandOf = (n: string) => String(n || '').trim().split(/[\s(/]+/)[0].replac
 const langOf = (t: string) => (/[぀-ヿ]/.test(t) ? 'ja' : /[가-힣]/.test(t) ? 'ko' : /[一-鿿]/.test(t) ? 'zh' : 'en');
 const siteName = (n: string) => String(n || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim() || n;
 /** 이름 비교용 — 띄어쓰기·기호 없이 소문자. 지점 꼬리("명동교자 본점", "뚜레쥬르 명동점")는 뗀다 */
-/**
- * 가게 이름을 브랜드와 지점으로 나눈다 — 카카오 이름은 "명동교자 명동역점 신관 본점", "뚜레쥬르 송도아트윈점"처럼 꼬리가 붙는다.
- *   두 번째 낱말부터 "…점·…관"이면 지점 꼬리. 본점이 들어 있거나 꼬리가 없으면 flagship(브랜드 이름 = 이 가게)
- */
-const splitName = (n: string) => {
-  const t = String(n || '').trim().split(/\s+/).filter(Boolean);
-  const i = t.findIndex((w, j) => j > 0 && /(점|관)$/.test(w));
-  const brand = (i > 0 ? t.slice(0, i) : t).join(' ');
-  const tail = i > 0 ? t.slice(i) : [];
-  const flagship = !tail.length || tail.includes('본점');
-  return { brand, flagship, branch: flagship ? '' : tail[0].replace(/(지점|점)$/, '') };
-};
 const baseName = (n: string) => splitName(n).brand;
-const squash = (n: string) => String(n || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
