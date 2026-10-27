@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko" data-v="?v=255e5c5f">
+<html lang="ko" data-v="?v=585de230">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,7 +8,7 @@
 <title>3D 마감 체험</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <!-- stamp:importmap -->
-<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/app.js": "./js/app.js?v=abc67eac", "./js/builder.js": "./js/builder.js?v=1e310e9b", "./js/furniture.js": "./js/furniture.js?v=81bcb281", "./js/homes.js": "./js/homes.js?v=fe597ccb", "./js/materials.js": "./js/materials.js?v=2fea544b", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/app.js": "./js/app.js?v=f5b81ce2", "./js/builder.js": "./js/builder.js?v=8f26151d", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=ca1faf9a", "./js/materials.js": "./js/materials.js?v=2fea544b", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
 <!-- /stamp -->
 <style>
 :root {
@@ -62,7 +62,8 @@ select.btn { appearance: none; padding-right: 28px; background-image: linear-gra
 #mini header { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--ink2); margin: 0 2px 6px; }
 #mini svg { width: 100%; display: block; cursor: crosshair; }
 #mini .room { fill: #efebe4; stroke: none; } #mini .room.here { fill: #e8d9c3; }
-#mini .wall { stroke: #2e2c29; stroke-linecap: square; }
+#mini .wall { stroke: #2e2c29; stroke-linecap: square; } #mini .wall.rail { stroke: #7fa3b0; }
+#mini .room.void { fill: #fff; stroke: #c9c2b6; stroke-width: .05; stroke-dasharray: .3 .2; }
 #mini text { font-size: .62px; fill: var(--ink2); text-anchor: middle; dominant-baseline: middle; font-weight: 600; pointer-events: none; }
 #mini .me { fill: var(--accent); } #mini .cone { fill: var(--accent); opacity: .28; }
 
@@ -162,6 +163,7 @@ td .sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; b
     <button data-mode="doll">3D 전체</button>
     <button data-mode="plan">2D 평면</button>
   </div>
+  <div class="seg" id="levels"></div>
   <div class="seg" id="time">
     <button data-t="day" class="on">낮</button>
     <button data-t="night">밤</button>
@@ -181,7 +183,7 @@ td .sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; b
 </div>
 <div id="tip"></div>
 
-<div id="mini"><header><span>평면도 · 누르면 이동</span><span id="miniRoom"></span></header><svg id="miniSvg"></svg></div>
+<div id="mini"><header><span><b id="miniLevel"></b>평면도 · 누르면 이동</span><span id="miniRoom"></span></header><svg id="miniSvg"></svg></div>
 <div id="joy"><i></i></div>
 
 <aside id="panel" aria-live="polite">
@@ -222,6 +224,6 @@ td .sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; b
 <div id="fade"></div>
 <div id="toast"></div>
 <div id="loading">집을 짓는 중…</div>
-<script type="module" src="./js/app.js?v=abc67eac"></script><!-- stamp:entry -->
+<script type="module" src="./js/app.js?v=f5b81ce2"></script><!-- stamp:entry -->
 </body>
 </html>

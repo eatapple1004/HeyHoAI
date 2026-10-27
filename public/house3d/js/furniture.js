@@ -70,14 +70,15 @@ const TYPES = {
     if (o.chair !== false) k.box(-0.28, d / 2 + 0.15, 0.28, d / 2 + 0.7, 0, 0.5, mat.leather);
   }],
   shelf: [[2.4, 0.4], (k, w, d) => {
-    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.05, mat.wood); k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.03, 0, 2.4, mat.wood);
-    for (let y = 0.45; y < 2.4; y += 0.45) k.box(-w / 2, -d / 2, w / 2, d / 2, y, y + 0.03, mat.wood);
+    k.box(-w / 2 + 0.03, -d / 2 + 0.03, w / 2 - 0.03, d / 2 - 0.004, 0, 0.05, mat.wood); k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.03, 0, 2.4, mat.wood);
+    for (let y = 0.45; y < 2.4; y += 0.45) k.box(-w / 2 + 0.03, -d / 2 + 0.03, w / 2 - 0.03, d / 2 - 0.004, y, y + 0.03, mat.wood);
     for (const x of [-w / 2, w / 2 - 0.03]) k.box(x, -d / 2, x + 0.03, d / 2, 0, 2.4, mat.wood);
   }],
   wardrobe: [[2.0, 0.6], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 2.4, mat.woodLight); }],
   wine: [[1.6, 0.5], (k, w, d) => {
-    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 2.2, mat.black); k.box(-w / 2 + 0.05, d / 2 - 0.02, w / 2 - 0.05, d / 2, 0.1, 2.1, mat.bottle);
-    k.box(-w / 2 + 0.04, d / 2, w / 2 - 0.04, d / 2 + 0.01, 0.08, 2.12, mat.glass);
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 2.2, mat.black); // 앞면끼리 같은 깊이에 두면 깜빡이므로(z-fighting) 조금씩 띄운다
+    k.box(-w / 2 + 0.05, d / 2 + 0.004, w / 2 - 0.05, d / 2 + 0.02, 0.1, 2.1, mat.bottle);
+    k.box(-w / 2 + 0.04, d / 2 + 0.035, w / 2 - 0.04, d / 2 + 0.045, 0.08, 2.12, mat.glass);
   }],
   vanity: [[1.4, 0.55], (k, w, d) => {
     k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.85, mat.white); k.box(-w / 2, -d / 2, w / 2, d / 2 + 0.02, 0.85, 0.9, mat.stone);
@@ -98,7 +99,7 @@ const TYPES = {
   bench: [[1.4, 0.45], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.45, mat.wood); }],
   console: [[1.4, 0.4], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.85, mat.wood); }],
   piano: [[1.5, 1.9], (k, w, d) => {
-    k.box(-w / 2, -d / 2, w / 2, d / 2 - 0.5, 0.6, 1.0, mat.piano); k.box(-w / 2 + 0.2, -d / 2 + 0.6, w / 2, d / 2 - 0.5, 0.6, 1.0, mat.piano);
+    k.box(-w / 2, -d / 2, w / 2, d / 2 - 0.5, 0.6, 1.0, mat.piano); k.box(-w / 2 + 0.2, -d / 2 + 0.6, w / 2 - 0.004, d / 2 - 0.504, 0.6, 0.996, mat.piano);
     k.box(-w / 2, d / 2 - 0.5, w / 2, d / 2 - 0.3, 0.7, 0.85, mat.white);
     for (const [x, z] of [[-w / 2 + 0.1, d / 2 - 0.6], [w / 2 - 0.1, d / 2 - 0.6], [0, -d / 2 + 0.2]]) k.cyl(x, z, 0.05, 0, 0.6, mat.piano, 10);
     k.box(-0.35, d / 2 - 0.2, 0.35, d / 2 + 0.15, 0, 0.5, mat.piano);
