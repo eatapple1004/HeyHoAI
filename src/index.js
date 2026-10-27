@@ -156,6 +156,18 @@ app.use('/hansung', (req, res, next) => {
   next();
 });
 
+// /house3d/* = 고급 주택 3D 마감 체험 시안 — **dev 전용**. /hansung 과 같은 방식(nest/main.ts·src/index.js 양쪽 동일 가드 — 한쪽만 고치지 말 것).
+app.use('/house3d', (req, res, next) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  if (req.originalUrl === '/house3d' || req.originalUrl.startsWith('/house3d?')) return res.redirect(301, '/house3d/' + req.originalUrl.slice(8));
+  if (req.path.endsWith('/')) {
+    const root = path.join(PUBLIC_DIR, 'house3d');
+    const file = path.join(root, path.normalize(req.path), 'index.html');
+    if (file.startsWith(root + path.sep) && fs.existsSync(file)) return res.sendFile(file);
+  }
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, setHeaders: require('./lib/staticCache').setStaticCache })); // (10-18) 사진·영상 CDN 캐시

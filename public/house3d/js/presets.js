@@ -1,0 +1,28 @@
+// 스타일 프리셋 — 집 전체 마감을 한 번에 바꾼다.
+// all = 모든 방 기본, wet = 욕실류(rooms 의 wet: true), rooms = 방별, accents = 면 하나('벽id:방id')
+export const PRESETS = [
+  { name: '모던 화이트',
+    all: { floor: 'marble-white', wall: 'paint-white', ceiling: 'ceil-white' },
+    wet: { floor: 'hex-white', wall: 'subway-white' },
+    rooms: { bed2: { floor: 'oak-plank' }, study: { floor: 'oak-plank' }, master: { floor: 'chevron-oak' } },
+    accents: { 'I2:living': 'marble-slab' },
+    exterior: 'ext-stucco' },
+  { name: '웜 내추럴',
+    all: { floor: 'oak-plank', wall: 'linen-paper', ceiling: 'ceil-white' },
+    wet: { floor: 'stone-travertine', wall: 'stone-travertine' },
+    rooms: { living: { ceiling: 'ceil-oak', wall: 'paint-warmwhite' }, kitchen: { floor: 'terrazzo', wall: 'paint-warmwhite' }, foyer: { floor: 'stone-travertine' } },
+    accents: { 'I2:living': 'wood-slat', 'I6:master': 'wood-slat' },
+    exterior: 'ext-limestone' },
+  { name: '다크 럭셔리',
+    all: { floor: 'chevron-walnut', wall: 'linen-grey', ceiling: 'ceil-white' },
+    wet: { floor: 'stone-grey', wall: 'marble-nero' },
+    rooms: { foyer: { floor: 'marble-nero', wall: 'paint-charcoal' }, kitchen: { floor: 'stone-grey' }, study: { wall: 'paint-navy' } },
+    accents: { 'I2:living': 'marble-nero', 'I6:master': 'paint-charcoal' },
+    exterior: 'ext-brick' },
+  { name: '클래식 하우스',
+    all: { floor: 'chevron-oak', wall: 'paint-warmwhite', ceiling: 'ceil-white' },
+    wet: { floor: 'hex-white', wall: 'subway-green' },
+    rooms: { foyer: { floor: 'marble-checker' }, kitchen: { floor: 'marble-checker' }, master: { wall: 'damask-ivory' }, study: { wall: 'stripe-paper', floor: 'oak-smoked' }, bed2: { wall: 'paint-sage' } },
+    accents: { 'I2:living': 'damask-paper' },
+    exterior: 'ext-limestone' },
+];
