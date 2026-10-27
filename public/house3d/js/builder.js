@@ -220,14 +220,20 @@ export function buildHome(plan) {
     for (let k = 0; k < n; k++) box(span(k / n, (k + 1) / n), 0, (rise * (k + 1)) / n, stepMat);
     const colliders = [];
     for (const side of st.rails || []) {
-      const entry = 0.9 / len; // 아래 끝 0.9m 는 비워 둔다(들어가는 곳)
-      for (let k = 0; k < n; k++) {
-        const t0 = k / n, t1 = (k + 1) / n, [x0, z0, x1, z1] = span(t0, t1), yb = (rise * (k + 1)) / n;
-        const r = side === 'z0' ? [x0, st.z0 - 0.012, x1, st.z0 + 0.012] : side === 'z1' ? [x0, st.z1 - 0.012, x1, st.z1 + 0.012]
-          : side === 'x0' ? [st.x0 - 0.012, z0, st.x0 + 0.012, z1] : [st.x1 - 0.012, z0, st.x1 + 0.012, z1];
-        box(r, yb, yb + 1.0, railGlass).renderOrder = 2; box([r[0] - 0.02, r[1] - 0.02, r[2] + 0.02, r[3] + 0.02], yb + 1.0, yb + 1.05, cap);
-        if (t1 > entry) colliders.push([r[0] - 0.08, r[1] - 0.08, r[2] + 0.08, r[3] + 0.08]);
+      const k0 = Math.ceil((0.9 / len) * n); // 아래 끝 0.9m 는 비워 둔다(들어가는 곳 — 보이는 것도 막히는 것도 없게)
+      const edge = (t0, t1) => { const [x0, z0, x1, z1] = span(t0, t1);
+        return side === 'z0' ? [x0, st.z0 - 0.012, x1, st.z0 + 0.012] : side === 'z1' ? [x0, st.z1 - 0.012, x1, st.z1 + 0.012]
+          : side === 'x0' ? [st.x0 - 0.012, z0, st.x0 + 0.012, z1] : [st.x1 - 0.012, z0, st.x1 + 0.012, z1]; };
+      for (let k = k0; k < n; k++) {
+        const r = edge(k / n, (k + 1) / n), yb = (rise * (k + 1)) / n;
+        box(r, yb, yb + 0.95, railGlass).renderOrder = 2;
+        colliders.push([r[0] - 0.08, r[1] - 0.08, r[2] + 0.08, r[3] + 0.08]);
       }
+      // 손스침: 계단 기울기를 따라 이어지는 한 줄
+      const a = edge(k0 / n, k0 / n), b = edge(1, 1), ya = (rise * (k0 + 1)) / n + 0.98, yb = rise + 0.98;
+      const pa = V((a[0] + a[2]) / 2, y0 + ya, (a[1] + a[3]) / 2), pb = V((b[0] + b[2]) / 2, y0 + yb, (b[1] + b[3]) / 2);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, pa.distanceTo(pb)), cap);
+      bar.position.copy(pa).lerp(pb, 0.5); bar.lookAt(pb); bar.castShadow = true; bar.userData.noPick = true; g.add(bar);
     }
     group.add(g);
     out[st.from].colliders.push(...colliders);
