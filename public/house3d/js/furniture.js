@@ -1,84 +1,128 @@
-// 가구 — 공간감을 위한 단순 형태. 실제 가구 모델(GLB)이 생기면 이 파일을 교체한다.
+// 가구 — 공간감을 위한 단순 형태. 실제 가구 모델(GLB)이 생기면 종류별 함수만 바꾼다.
+// 각 가구는 자기 좌표계에서 만든다: 원점 = 바닥 중심, 앞면이 +z, 등은 -z.
+// 평면 데이터의 [종류, x, z, 방향(도), 옵션] 대로 돌려서 놓고, 충돌 영역을 함께 만든다.
 import * as THREE from 'three';
 
 const M = (color, rough = 0.7, metal = 0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 const mat = {
   fabric: M(0xd9d3c8, 0.95), fabricDark: M(0x5a5651, 0.95), leather: M(0x6b4a33, 0.6),
   wood: M(0x8a6446, 0.55), woodLight: M(0xc9a983, 0.55), black: M(0x1f1f21, 0.4, 0.3), brass: M(0xb08d57, 0.3, 0.9),
-  stone: M(0xeeebe5, 0.2), white: M(0xf3f2ee, 0.35), linen: M(0xefebe3, 0.95), rug: M(0xb7aa95, 1), rug2: M(0x8f949a, 1),
-  green: M(0x4f6b45, 0.9), pot: M(0x9c8a76, 0.8), screen: M(0x0d0e10, 0.2, 0.5), glass: M(0x9fb7bd, 0.1),
+  stone: M(0xeeebe5, 0.2), white: M(0xf3f2ee, 0.35), linen: M(0xefebe3, 0.95), rug: M(0xb7aa95, 1),
+  green: M(0x4f6b45, 0.9), pot: M(0x9c8a76, 0.8), screen: M(0x0d0e10, 0.2, 0.5), mirror: M(0xc9d3d6, 0.05, 1),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xcfe3ea, roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false }),
+  piano: M(0x0c0c0d, 0.15, 0.2), bottle: M(0x3a1d22, 0.2, 0.1),
 };
 
-export function buildFurniture() {
-  const g = new THREE.Group(), colliders = [];
-  const box = (x0, z0, x1, z1, y0, y1, m, block = true) => {
+// 자기 좌표계에서 쓰는 도형 도구
+function kit(g) {
+  const box = (x0, z0, x1, z1, y0, y1, m) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m);
-    mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-    mesh.castShadow = mesh.receiveShadow = true; mesh.userData.noPick = true; g.add(mesh);
-    if (block && y1 > 0.3) colliders.push([x0, z0, x1, z1]);
-    return mesh;
+    mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); g.add(mesh); return mesh;
   };
-  const cyl = (x, z, r, y0, y1, m, block = true) => {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, 24), m);
-    mesh.position.set(x, (y0 + y1) / 2, z); mesh.castShadow = mesh.receiveShadow = true; mesh.userData.noPick = true; g.add(mesh);
-    if (block && y1 > 0.3) colliders.push([x - r, z - r, x + r, z + r]);
-    return mesh;
+  const cyl = (x, z, r, y0, y1, m, seg = 24) => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, seg), m);
+    mesh.position.set(x, (y0 + y1) / 2, z); g.add(mesh); return mesh;
   };
-  const plant = (x, z, h = 1.4) => {
-    cyl(x, z, 0.22, 0, 0.45, mat.pot);
-    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), mat.green);
-    leaf.position.set(x, 0.45 + h * 0.55, z); leaf.scale.set(1, h / 0.9, 1); leaf.castShadow = true; leaf.userData.noPick = true; g.add(leaf);
-  };
+  return { box, cyl };
+}
 
-  // 거실 — 소파는 TV 벽(북쪽)을 본다
-  box(1.4, 8.6, 6.6, 12.9, 0, 0.012, mat.rug, false);
-  box(1.8, 11.4, 5.8, 12.4, 0, 0.42, mat.fabric); box(1.8, 12.1, 5.8, 12.4, 0.42, 0.85, mat.fabric, false);  // 소파 + 등받이
-  box(1.8, 11.4, 2.05, 12.4, 0.42, 0.62, mat.fabric, false); box(5.55, 11.4, 5.8, 12.4, 0.42, 0.62, mat.fabric, false);
-  box(1.8, 9.6, 2.7, 11.4, 0, 0.42, mat.fabric); box(1.8, 9.6, 2.05, 11.4, 0.42, 0.85, mat.fabric, false);    // 카우치
-  cyl(4.0, 10.1, 0.55, 0, 0.36, mat.stone);                                                                    // 원형 테이블
-  box(1.3, 7.15, 5.3, 7.55, 0, 0.45, mat.wood);                                                                  // TV 콘솔
-  box(2.2, 7.1, 4.4, 7.16, 1.0, 2.25, mat.screen, false);                                                        // TV
-  box(6.6, 10.0, 7.5, 10.9, 0, 0.42, mat.leather); box(7.3, 10.0, 7.5, 10.9, 0.42, 0.8, mat.leather, false);    // 라운지 체어
-  plant(0.55, 13.4); plant(7.9, 7.6, 1.1);
-  cyl(7.7, 12.6, 0.02, 0, 1.6, mat.brass); cyl(7.7, 12.6, 0.2, 1.5, 1.75, mat.linen, false);                    // 플로어 램프
+// 종류별: 기본 크기 [w, d]와 그리기. 반환값 false = 통행을 막지 않음
+const TYPES = {
+  sofa: [[2.8, 0.95], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.42, mat.fabric);
+    k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.25, 0.42, 0.85, mat.fabric);
+    k.box(-w / 2, -d / 2, -w / 2 + 0.22, d / 2, 0.42, 0.62, mat.fabric); k.box(w / 2 - 0.22, -d / 2, w / 2, d / 2, 0.42, 0.62, mat.fabric);
+  }],
+  chair: [[0.85, 0.85], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.42, mat.leather); k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.2, 0.42, 0.8, mat.leather);
+  }],
+  coffee: [[1.1, 1.1], (k, w, d, o) => { k.cyl(0, 0, (o.r || w / 2), 0, 0.36, mat.stone, 32); }],
+  rug: [[3, 2.4], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.012, mat.rug); return false; }],
+  tv: [[3.6, 0.45], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.45, mat.wood);
+    const sw = Math.min(2.4, w * 0.62); k.box(-sw / 2, -d / 2 - 0.02, sw / 2, -d / 2 + 0.04, 1.0, 1.0 + sw * 0.56, mat.screen);
+  }],
+  bed: [[2.0, 2.2], (k, w, d) => {
+    k.box(-w / 2, -d / 2 + 0.15, w / 2, d / 2, 0, 0.5, mat.linen); k.box(-w / 2 - 0.05, -d / 2, w / 2 + 0.05, -d / 2 + 0.15, 0, 1.2, mat.wood);
+    k.box(-w / 2 + 0.05, -d / 2 + 0.75, w / 2 - 0.05, d / 2 - 0.05, 0.5, 0.56, mat.fabricDark);
+    k.box(-w / 2 + 0.15, -d / 2 + 0.22, -0.05, -d / 2 + 0.6, 0.5, 0.68, mat.white); k.box(0.05, -d / 2 + 0.22, w / 2 - 0.15, -d / 2 + 0.6, 0.5, 0.68, mat.white);
+  }],
+  night: [[0.5, 0.45], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.55, mat.wood); k.cyl(0, 0, 0.1, 0.55, 0.85, mat.linen); }],
+  dining: [[2.4, 1.0], (k, w, d, o) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0.72, 0.77, mat.woodLight); k.box(-w / 2 + 0.2, -d / 2 + 0.2, w / 2 - 0.2, d / 2 - 0.2, 0, 0.72, mat.black);
+    const n = Math.max(2, Math.round(w / 0.8));
+    for (let i = 0; i < n; i++) for (const s of [-1, 1]) {
+      const x = -w / 2 + (w / n) * (i + 0.5), z = s * (d / 2 + 0.25);
+      k.box(x - 0.22, z - 0.22, x + 0.22, z + 0.22, 0, 0.46, mat.fabricDark);
+    }
+    if (o.pend) for (let i = 0; i < 3; i++) { const x = (i - 1) * w * 0.28; k.cyl(x, 0, 0.12, 1.7, 1.86, mat.brass); k.cyl(x, 0, 0.006, 1.86, o.H, mat.black, 6); }
+  }, (w, d) => [w, d + 0.95]],
+  island: [[3.0, 1.0], (k, w, d, o) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.9, mat.wood); k.box(-w / 2 - 0.05, -d / 2 - 0.05, w / 2 + 0.05, d / 2 + 0.05, 0.9, 0.95, mat.stone);
+    if (o.stools) for (let x = -w / 2 + 0.5; x < w / 2 - 0.2; x += 0.8) k.cyl(x, d / 2 + 0.35, 0.18, 0, 0.72, mat.leather);
+  }, (w, d, o) => [w, o.stools ? d + 0.5 : d], (w, d, o) => (o.stools ? 0.25 : 0)],
+  counter: [[4.0, 0.65], (k, w, d, o) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.9, mat.white); k.box(-w / 2, -d / 2, w / 2, d / 2 + 0.03, 0.9, 0.94, mat.stone);
+    if (o.upper) k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.36, 1.5, 2.3, mat.white);
+  }],
+  desk: [[1.6, 0.7], (k, w, d, o) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0.72, 0.76, mat.wood); k.box(-w / 2 + 0.05, -d / 2, -w / 2 + 0.1, d / 2, 0, 0.72, mat.black); k.box(w / 2 - 0.1, -d / 2, w / 2 - 0.05, d / 2, 0, 0.72, mat.black);
+    if (o.chair !== false) k.box(-0.28, d / 2 + 0.15, 0.28, d / 2 + 0.7, 0, 0.5, mat.leather);
+  }],
+  shelf: [[2.4, 0.4], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.05, mat.wood); k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.03, 0, 2.4, mat.wood);
+    for (let y = 0.45; y < 2.4; y += 0.45) k.box(-w / 2, -d / 2, w / 2, d / 2, y, y + 0.03, mat.wood);
+    for (const x of [-w / 2, w / 2 - 0.03]) k.box(x, -d / 2, x + 0.03, d / 2, 0, 2.4, mat.wood);
+  }],
+  wardrobe: [[2.0, 0.6], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 2.4, mat.woodLight); }],
+  wine: [[1.6, 0.5], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 2.2, mat.black); k.box(-w / 2 + 0.05, d / 2 - 0.02, w / 2 - 0.05, d / 2, 0.1, 2.1, mat.bottle);
+    k.box(-w / 2 + 0.04, d / 2, w / 2 - 0.04, d / 2 + 0.01, 0.08, 2.12, mat.glass);
+  }],
+  vanity: [[1.4, 0.55], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.85, mat.white); k.box(-w / 2, -d / 2, w / 2, d / 2 + 0.02, 0.85, 0.9, mat.stone);
+    k.box(-w / 2 + 0.1, -d / 2, w / 2 - 0.1, -d / 2 + 0.02, 1.1, 2.0, mat.mirror);
+  }],
+  tub: [[1.8, 0.9], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.6, mat.white); }],
+  toilet: [[0.42, 0.7], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.2, 0, 0.8, mat.white); k.box(-w / 2 + 0.02, -d / 2 + 0.2, w / 2 - 0.02, d / 2, 0, 0.42, mat.white); }],
+  shower: [[0.9, 0.9], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.04, mat.stone);
+    k.box(-w / 2, d / 2 - 0.01, w / 2, d / 2, 0.04, 2.0, mat.glass); k.cyl(0, -d / 2 + 0.1, 0.1, 2.0, 2.02, mat.black);
+  }],
+  plant: [[0.45, 0.45], (k, w, d, o) => {
+    const h = o.h || 1.4; k.cyl(0, 0, 0.22, 0, 0.45, mat.pot);
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), mat.green); leaf.position.y = 0.45 + h * 0.55; leaf.scale.set(1, h / 0.9, 1); k.g.add(leaf);
+  }],
+  lamp: [[0.4, 0.4], (k) => { k.cyl(0, 0, 0.15, 0, 0.03, mat.black); k.cyl(0, 0, 0.02, 0, 1.6, mat.brass); k.cyl(0, 0, 0.2, 1.5, 1.75, mat.linen); }],
+  sunbed: [[0.7, 1.9], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.35, mat.white); k.box(-w / 2, -d / 2, w / 2, -d / 2 + 0.5, 0.35, 0.6, mat.white); }],
+  bench: [[1.4, 0.45], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.45, mat.wood); }],
+  console: [[1.4, 0.4], (k, w, d) => { k.box(-w / 2, -d / 2, w / 2, d / 2, 0, 0.85, mat.wood); }],
+  piano: [[1.5, 1.9], (k, w, d) => {
+    k.box(-w / 2, -d / 2, w / 2, d / 2 - 0.5, 0.6, 1.0, mat.piano); k.box(-w / 2 + 0.2, -d / 2 + 0.6, w / 2, d / 2 - 0.5, 0.6, 1.0, mat.piano);
+    k.box(-w / 2, d / 2 - 0.5, w / 2, d / 2 - 0.3, 0.7, 0.85, mat.white);
+    for (const [x, z] of [[-w / 2 + 0.1, d / 2 - 0.6], [w / 2 - 0.1, d / 2 - 0.6], [0, -d / 2 + 0.2]]) k.cyl(x, z, 0.05, 0, 0.6, mat.piano, 10);
+    k.box(-0.35, d / 2 - 0.2, 0.35, d / 2 + 0.15, 0, 0.5, mat.piano);
+  }],
+};
 
-  // 주방·다이닝
-  box(15.3, 7.3, 15.925, 13.0, 0, 0.9, mat.white); box(15.25, 7.3, 15.925, 13.0, 0.9, 0.94, mat.stone, false);   // 하부장 + 상판
-  box(15.55, 7.3, 15.925, 13.0, 1.5, 2.3, mat.white, false);                                                     // 상부장
-  box(11.0, 9.0, 14.0, 10.0, 0, 0.9, mat.wood); box(10.9, 8.95, 14.1, 10.05, 0.9, 0.95, mat.stone, false);      // 아일랜드
-  for (const x of [11.5, 12.5, 13.5]) { cyl(x, 10.35, 0.18, 0, 0.72, mat.leather); }
-  box(9.6, 11.6, 12.4, 12.6, 0.72, 0.77, mat.woodLight, false); box(9.8, 11.8, 12.2, 12.4, 0, 0.72, mat.black);  // 식탁
-  for (const x of [10.1, 11.0, 11.9]) for (const z of [11.25, 12.95]) { box(x - 0.22, z - 0.22, x + 0.22, z + 0.22, 0, 0.46, mat.fabricDark); }
-  for (const x of [10.4, 11.0, 11.6]) { cyl(x, 12.1, 0.12, 1.7, 1.86, mat.brass, false); cyl(x, 12.1, 0.006, 1.86, 3.0, mat.black, false); } // 펜던트
-
-  // 안방
-  box(16.08, 8.9, 18.3, 11.0, 0, 0.5, mat.linen); box(16.08, 8.75, 16.25, 11.15, 0, 1.2, mat.wood);            // 침대 + 헤드보드
-  box(16.6, 8.95, 18.25, 10.95, 0.5, 0.56, mat.fabricDark, false);
-  box(16.08, 8.2, 16.6, 8.65, 0, 0.55, mat.wood); box(16.08, 11.25, 16.6, 11.7, 0, 0.55, mat.wood);
-  box(17.0, 8.6, 19.6, 11.3, 0, 0.012, mat.rug2, false);
-  box(20.9, 6.0, 21.875, 7.8, 0, 0.42, mat.fabric);                                                           // 창가 벤치
-  plant(21.4, 13.4, 1.2);
-
-  // 침실 2
-  box(6.9, 1.8, 8.925, 3.6, 0, 0.5, mat.linen); box(8.78, 1.65, 8.925, 3.75, 0, 1.1, mat.woodLight);
-  box(4.7, 0.2, 5.6, 0.7, 0, 0.75, mat.woodLight);
-  // 서재
-  box(1.3, 0.25, 3.3, 1.0, 0.72, 0.76, mat.wood, false); box(1.4, 0.3, 1.5, 0.95, 0, 0.72, mat.black); box(3.1, 0.3, 3.2, 0.95, 0, 0.72, mat.black);
-  colliders.push([1.3, 0.25, 3.3, 1.0]);
-  box(1.9, 1.15, 2.5, 1.75, 0, 0.5, mat.leather);
-  box(4.0, 1.0, 4.425, 4.8, 0, 2.4, mat.wood);                                                                  // 책장
-  // 현관
-  box(12.3, 1.0, 12.925, 2.6, 0, 0.85, mat.wood); plant(9.5, 4.9, 1.0);
-  // 욕실
-  box(15.4, 0.6, 15.925, 2.4, 0, 0.85, mat.white); box(15.35, 0.6, 15.925, 2.4, 0.85, 0.9, mat.stone, false);
-  box(13.2, 3.8, 13.9, 4.4, 0, 0.42, mat.white);
-  box(19.0, 0.25, 21.6, 1.15, 0, 0.6, mat.white);                                                               // 욕조
-  box(21.3, 2.2, 21.875, 4.6, 0, 0.85, mat.wood); box(21.25, 2.2, 21.875, 4.6, 0.85, 0.9, mat.stone, false);
-  // 드레스룸
-  box(16.075, 0.2, 16.6, 5.0, 0, 2.4, mat.woodLight); box(17.9, 0.2, 18.425, 1.8, 0, 2.4, mat.woodLight); box(17.9, 3.1, 18.425, 5.0, 0, 2.4, mat.woodLight);
-  box(16.7, 0.9, 17.3, 1.9, 0, 0.9, mat.wood);
-  // 테라스 선베드
-  for (const x of [3.0, 5.0]) { box(x - 0.35, 16.5, x + 0.35, 18.4, 0, 0.35, mat.white); }
-
-  return { group: g, colliders };
+export function buildFurniture(items = [], H = 3) {
+  const root = new THREE.Group(), colliders = [];
+  for (const [type, x, z, rot = 0, o = {}] of items) {
+    const T = TYPES[type]; if (!T) { console.warn('알 수 없는 가구', type); continue; }
+    const [[dw, dd], draw, foot, shift] = T;
+    const w = o.w ?? dw, d = o.d ?? dd;
+    const g = new THREE.Group(), k = { ...kit(g), g };
+    const blocks = draw(k, w, d, { ...o, H }) !== false;
+    g.traverse((m) => { if (m.isMesh) { m.castShadow = m.receiveShadow = true; m.userData.noPick = true; } });
+    const a = (rot * Math.PI) / 180;
+    g.rotation.y = a; g.position.set(x, 0, z); root.add(g);
+    if (!blocks) continue;
+    // 충돌 영역: 자기 좌표 발자국을 돌려서 축 정렬 사각형으로
+    const [fw, fd] = foot ? foot(w, d, o) : [w, d], cz = shift ? shift(w, d, o) : 0;
+    const c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+    const hx = (fw * c + fd * s) / 2, hz = (fw * s + fd * c) / 2;
+    const ox = x + Math.sin(a) * cz, oz = z + Math.cos(a) * cz;
+    colliders.push([ox - hx, oz - hz, ox + hx, oz + hz]);
+  }
+  return { group: root, colliders };
 }

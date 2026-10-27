@@ -380,6 +380,8 @@ export const CATALOG = [
     gen: draw.brick({ base: '#4c3a33', mortar: '#8f8a82', seed: 63 }) },
   { id: 'ext-cedar', name: '시더 사이딩', group: '외장', cats: ['exterior'], size: [1.2, 2.4], spec: '140 세로 사이딩', rough: 0.75,
     gen: draw.slats({ base: '#9c6d45', gap: '#3b2616', n: 8, seed: 64 }) },
+  { id: 'ext-basalt', name: '제주 현무암', group: '외장', cats: ['exterior', 'wall'], size: [1.2, 0.6], spec: '300×600 버너', rough: 0.95,
+    gen: draw.speckle({ base: '#45464a', cols: 2, rows: 2, seed: 65, grout: '#2c2d30', dots: 2600, dot: ['#1b1b1d', '#6a6b70', '#0f0f10'] }), bump: groutBump(PX, PX, 2, 2, 2) },
 ];
 
 export const BY_ID = Object.fromEntries(CATALOG.map((m) => [m.id, m]));

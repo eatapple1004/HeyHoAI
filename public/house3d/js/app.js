@@ -1,13 +1,16 @@
 // 3D 마감 체험 — 걷기 · 3D 전체 · 2D 평면 세 가지 보기에서 면을 눌러 마감을 바로 바꾼다.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
-import { PLAN } from './plan.js';
+import { HOMES, homeById } from './homes.js';
 import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy } from './materials.js';
 import { buildHouse, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
 
 const $ = (s) => document.querySelector(s);
+// 어떤 주택을 보여 줄지: tour.html?h=주택id
+const HOME = homeById(new URLSearchParams(location.search).get('h')), PLAN = HOME.plan;
+const SITE = PLAN.site || {};
 const isTouch = matchMedia('(pointer: coarse)').matches;
 if (isTouch) document.body.classList.add('touch');
 
@@ -26,24 +29,29 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 const SKY = { day: new THREE.Color(0xcfdde6), night: new THREE.Color(0x10151d) };
 scene.background = SKY.day.clone();
-scene.fog = new THREE.Fog(SKY.day.clone(), 45, 130);
 
 const hemi = new THREE.HemisphereLight(0xe4ecf2, 0x8a7a66, 0.9);
 const sun = new THREE.DirectionalLight(0xfff1dc, 3.0);
-sun.position.set(2, 16, 26); sun.target.position.set(11, 0, 7);
 sun.castShadow = true;
-Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 70 });
 sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
 scene.add(hemi, sun, sun.target);
 
-const house = buildHouse(PLAN), site = buildSite(house.bounds), furn = buildFurniture();
+const house = buildHouse(PLAN), site = buildSite(house.bounds, SITE, house.roomAt), furn = buildFurniture(PLAN.furniture, PLAN.height);
+const CX = (house.bounds.x0 + house.bounds.x1) / 2, CZ = (house.bounds.z0 + house.bounds.z1) / 2;
+{ // 해와 그림자 범위를 집 크기에 맞춘다
+  const half = Math.max(house.bounds.x1 - house.bounds.x0, house.bounds.z1 - house.bounds.z0) / 2 + 7;
+  sun.position.set(CX - 9, 16, CZ + 19); sun.target.position.set(CX, 0, CZ);
+  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 1, far: 80 });
+}
+scene.fog = new THREE.Fog(SKY.day.clone(), ...(site.fog || [45, 130]));
 scene.add(house.group, site.group, furn.group);
 const colliders = [...house.colliders, ...site.colliders, ...furn.colliders];
 const surfaces = house.surfaces;
 const SURF = Object.fromEntries(surfaces.map((s) => [s.id, s]));
 const pickables = surfaces.map((s) => s.mesh);
-const blockers = [...furn.group.children, house.roof];
+const blockers = [];
+[furn.group, house.roof].forEach((g) => g.traverse((o) => o.isMesh && blockers.push(o)));
 
 // 밤 조명: 방마다 천장 아래 따뜻한 점광원
 const roomLights = PLAN.rooms.map((r) => {
@@ -60,10 +68,12 @@ const KIND_KO = { floor: '바닥', wall: '벽', ceiling: '천장' };
 let state = initialState();
 function initialState() {
   const over = {};
-  for (const [k, v] of Object.entries(PLAN.accents || {})) { const [w, r] = k.split(':'); if (SURF[`${w}:${r}`]) over[`${w}:${r}`] = v; }
+  for (const [f, v] of Object.entries(PLAN.accents || {})) { const k = PLAN.features?.[f]; if (SURF[k]) over[k] = v; }
   return { room: {}, over };
 }
-const defaultFor = (room, kind) => PLAN.defaults[room]?.[kind] ?? PLAN.defaults['*'][kind];
+const ROOM = Object.fromEntries(PLAN.rooms.map((r) => [r.id, r]));
+// 기본 마감: 방 id → 방 종류('@type') → 집 전체('*') 순으로 찾는다
+const defaultFor = (room, kind) => PLAN.defaults[room]?.[kind] ?? PLAN.defaults['@' + ROOM[room]?.type]?.[kind] ?? PLAN.defaults['*'][kind];
 function matIdOf(s) {
   const kind = s.kind;
   return state.over[s.id] ?? state.room[s.room]?.[kind] ?? defaultFor(s.room, kind);
@@ -85,12 +95,13 @@ function setRoom(room, kind, id) { (state.room[room] ||= {})[kind] = id; }
 // 저장: 이 브라우저에 자동 저장 + 링크(#s=...)로 공유
 const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, '');
 const dec = (s) => JSON.parse(decodeURIComponent(escape(atob(s))));
-function saveLocal() { try { localStorage.setItem('hw-state', JSON.stringify(state)); } catch {} }
+const STORE = 'hw-state:' + PLAN.id;
+function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} }
 function loadState() {
   try {
     const h = new URLSearchParams(location.hash.slice(1)).get('s');
     if (h) return dec(h);
-    const l = localStorage.getItem('hw-state'); if (l) return JSON.parse(l);
+    const l = localStorage.getItem(STORE); if (l) return JSON.parse(l);
   } catch {}
   return null;
 }
@@ -99,12 +110,12 @@ if (loaded?.room && loaded?.over) state = loaded;
 applyAll();
 
 // ── 카메라와 보기 모드 ──
-const persp = new THREE.PerspectiveCamera(70, 1, 0.05, 300);
-const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+const persp = new THREE.PerspectiveCamera(70, 1, 0.05, site.far || 300);
+const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
 let camera = persp, mode = 'walk';
 const player = { x: PLAN.start.x, z: PLAN.start.z, yaw: PLAN.start.yaw, pitch: -0.04, eye: 1.6, r: 0.28 };
-const orbit = { theta: 0.5, phi: 0.95, dist: 34, tx: 11, tz: 8 };
-const plan2d = { cx: 11, cz: 8, zoom: 10 };
+const orbit = { theta: 0.5, phi: 0.95, dist: 34, tx: CX, tz: CZ };
+const plan2d = { cx: CX, cz: CZ, zoom: 10 };
 
 // 3D 전체·2D 보기에서 보이는 내 위치 표시
 const marker = new THREE.Group();
@@ -185,7 +196,8 @@ function collide(x, z) {
       }
     }
   }
-  return [Math.max(-12, Math.min(34, x)), Math.max(-10, Math.min(26, z))];
+  const b = house.bounds;
+  return [Math.max(b.x0 - 14, Math.min(b.x1 + 14, x)), Math.max(b.z0 - 14, Math.min(b.z1 + 14, z))];
 }
 function moveBy(dx, dz) { [player.x, player.z] = collide(player.x + dx, player.z + dz); }
 
@@ -426,11 +438,11 @@ $('#preset').onchange = (e) => {
   commit(() => {
     state = { room: {}, over: {} };
     for (const r of PLAN.rooms) {
-      const base = { ...p.all, ...(r.wet ? p.wet : {}), ...(p.rooms?.[r.id] || {}) };
+      const base = { ...p.all, ...(r.wet ? p.wet : {}), ...(p.types?.[r.type] || {}) };
       for (const k of ['floor', 'wall', 'ceiling']) if (base[k]) setRoom(r.id, k, base[k]);
     }
     if (p.exterior) setRoom('exterior', 'wall', p.exterior);
-    for (const [k, v] of Object.entries(p.accents || {})) if (SURF[k]) state.over[k] = v;
+    for (const [f, v] of Object.entries(p.features || {})) { const k = PLAN.features?.[f]; if (SURF[k]) state.over[k] = v; }
   });
   toast(`'${p.name}' 적용`);
 };
@@ -559,7 +571,7 @@ $('#specX').onclick = () => $('#spec').close();
 $('#printBtn').onclick = () => window.print();
 function payload(extra) {
   const { rows, totals } = specData();
-  return { plan: PLAN.name, createdAt: new Date().toISOString(), link: location.href.split('#')[0] + '#s=' + enc(state),
+  return { home: PLAN.id, plan: PLAN.name, region: HOME.region, kind: HOME.kind, createdAt: new Date().toISOString(), link: location.href.split('#')[0] + '#s=' + enc(state),
     finishes: rows.map(({ room, part, name, spec, area }) => ({ room, part, material: name, spec, area: +area.toFixed(2) })),
     totals: totals.map((t) => ({ material: t.name, area: +t.area.toFixed(2) })), state, ...extra };
 }
@@ -589,6 +601,12 @@ function frame() {
   requestAnimationFrame(frame);
 }
 $('#planName').textContent = PLAN.name;
+document.title = `${PLAN.name} · 3D 마감 체험`;
+$('#planMeta').textContent = `${HOME.region} · ${HOME.type} · ${HOME.kind}형 시연 평면`;
+$('#reqForm [name=type]').value = HOME.kind === '분양' ? '분양 상담' : '신축 시공';
+// 다른 주택으로 바꾸기
+$('#homeSel').innerHTML = HOMES.map((h) => `<option value="${h.plan.id}" ${h === HOME ? 'selected' : ''}>${h.region} · ${h.plan.name}</option>`).join('');
+$('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
 setMode('walk');
 requestAnimationFrame(() => { frame(); const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 450); });
 
