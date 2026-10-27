@@ -109,6 +109,18 @@ async function bootstrap() {
     return next();
   });
 
+  // /house3d/* = 고급 주택 3D 마감 체험 시안 — **dev 전용**. /hansung 과 같은 방식(nest/main.ts·src/index.js 양쪽 동일 가드 — 한쪽만 고치지 말 것).
+  server.use('/house3d', (req: any, res: any, next: any) => {
+    if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+    if (req.originalUrl === '/house3d' || req.originalUrl.startsWith('/house3d?')) return res.redirect(301, '/house3d/' + req.originalUrl.slice(8));
+    if (req.path.endsWith('/')) {
+      const root = path.join(PUBLIC_DIR, 'house3d');
+      const file = path.join(root, path.normalize(req.path), 'index.html');
+      if (file.startsWith(root + path.sep) && fs.existsSync(file)) return res.sendFile(file);
+    }
+    return next();
+  });
+
   // (10-18) 사진·영상·폰트는 Cloudflare 가 캐시하도록(기본 max-age=0 이라 매번 서버 재확인 → 장당 0.5~1초)
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   app.useStaticAssets(PUBLIC_DIR, { index: false, setHeaders: require(path.join(__dirname, '..', 'src', 'lib', 'staticCache.js')).setStaticCache });

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<title>3D 마감 체험</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<style>
+:root {
+  --ink: #1d1c1a; --ink2: #5e5a54; --ink3: #8f8a82; --line: #e2ddd4; --paper: #f8f6f2; --card: rgba(250, 248, 244, .94);
+  --accent: #8a6a45; --accent-ink: #fff; --sel: #c99a5b; --shadow: 0 10px 40px rgba(20, 16, 10, .18);
+  --r: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #cfd9df; color: var(--ink);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#gl.grab { cursor: grab; } #gl.grabbing { cursor: grabbing; } #gl.pick { cursor: pointer; }
+
+/* 상단 바 */
+.top { position: fixed; top: 12px; left: 12px; right: 12px; display: flex; gap: 10px; align-items: center; pointer-events: none; z-index: 5; }
+.top > * { pointer-events: auto; }
+.brand { background: var(--card); backdrop-filter: blur(12px); border-radius: var(--r); padding: 9px 14px; box-shadow: var(--shadow); line-height: 1.25; }
+.brand b { display: block; font-size: 14px; letter-spacing: -.01em; }
+.brand span { font-size: 11.5px; color: var(--ink2); }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 99px; padding: 0 6px; margin-left: 4px; vertical-align: 1px; }
+.seg { display: flex; background: var(--card); backdrop-filter: blur(12px); border-radius: var(--r); padding: 4px; box-shadow: var(--shadow); }
+.seg button { border: 0; background: none; padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--ink2); white-space: nowrap; }
+.seg button.on { background: var(--ink); color: #fff; }
+.spacer { flex: 1; }
+.btn { border: 0; background: var(--card); backdrop-filter: blur(12px); border-radius: var(--r); padding: 10px 14px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow); white-space: nowrap; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+select.btn { appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--ink2) 50%), linear-gradient(135deg, var(--ink2) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; font-family: inherit; color: var(--ink); }
+
+/* 걷기 HUD */
+#roomName { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); background: rgba(20, 18, 15, .55); color: #fff; font-size: 13px; font-weight: 600;
+  padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(8px); z-index: 4; pointer-events: none; transition: opacity .3s; }
+#hint { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(20, 18, 15, .62); color: #f3efe8; font-size: 12.5px; padding: 9px 16px;
+  border-radius: 99px; backdrop-filter: blur(8px); z-index: 4; white-space: nowrap; display: flex; gap: 14px; align-items: center; }
+#hint kbd { font: inherit; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .14); border-radius: 5px; padding: 0 5px; }
+#hint button { border: 0; background: none; color: #bdb5a8; padding: 0 0 0 4px; font-size: 15px; line-height: 1; }
+#tip { position: fixed; z-index: 6; pointer-events: none; background: rgba(20, 18, 15, .82); color: #fff; font-size: 12px; padding: 6px 10px; border-radius: 8px;
+  white-space: nowrap; transform: translate(14px, 14px); display: none; }
+#tip small { color: #cbbfae; margin-left: 6px; }
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+.rl { position: absolute; transform: translate(-50%, -50%); text-align: center; font-size: 12px; font-weight: 700; color: var(--ink); background: rgba(255, 255, 255, .82);
+  padding: 4px 9px; border-radius: 8px; white-space: nowrap; box-shadow: 0 2px 10px rgba(0, 0, 0, .12); }
+.rl small { display: block; font-weight: 500; font-size: 10.5px; color: var(--ink2); }
+
+/* 미니맵 */
+#mini { position: fixed; right: 12px; bottom: 12px; width: 260px; background: var(--card); backdrop-filter: blur(12px); border-radius: var(--r); box-shadow: var(--shadow);
+  padding: 10px 10px 8px; z-index: 4; }
+#mini header { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--ink2); margin: 0 2px 6px; }
+#mini svg { width: 100%; display: block; cursor: crosshair; }
+#mini .room { fill: #efebe4; stroke: none; } #mini .room.here { fill: #e8d9c3; }
+#mini .wall { stroke: #2e2c29; stroke-linecap: square; }
+#mini text { font-size: .62px; fill: var(--ink2); text-anchor: middle; dominant-baseline: middle; font-weight: 600; pointer-events: none; }
+#mini .me { fill: var(--accent); } #mini .cone { fill: var(--accent); opacity: .28; }
+
+/* 마감 선택 패널 */
+#panel { position: fixed; top: 76px; right: 12px; width: 340px; max-height: calc(100% - 76px - 200px); display: flex; flex-direction: column;
+  background: var(--card); backdrop-filter: blur(14px); border-radius: 18px; box-shadow: var(--shadow); z-index: 6; overflow: hidden;
+  transform: translateX(calc(100% + 24px)); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+#panel.open { transform: none; }
+.ph { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); position: relative; }
+.ph .where { font-size: 12px; color: var(--ink2); font-weight: 600; }
+.ph h2 { margin: 3px 0 2px; font-size: 18px; letter-spacing: -.02em; }
+.ph .spec { font-size: 12px; color: var(--ink3); }
+.ph .x { position: absolute; top: 12px; right: 12px; border: 0; background: #ece8e1; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; line-height: 1; }
+.scope { display: flex; gap: 6px; padding: 12px 18px 0; flex-wrap: wrap; }
+.scope button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 5px 11px; font-size: 12px; font-weight: 600; color: var(--ink2); }
+.scope button.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.tabs { display: flex; gap: 2px; padding: 12px 14px 0; overflow-x: auto; scrollbar-width: none; }
+.tabs button { border: 0; background: none; padding: 6px 8px 8px; font-size: 13px; font-weight: 700; color: var(--ink3); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs button.on { color: var(--ink); border-color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 18px; overflow-y: auto; }
+.chip { border: 0; background: none; padding: 0; text-align: left; }
+.chip i { display: block; aspect-ratio: 1; border-radius: 10px; background-size: cover; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); transition: transform .15s; }
+.chip:hover i { transform: scale(1.04); }
+.chip.on i { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--sel); }
+.chip span { display: block; font-size: 11.5px; font-weight: 600; margin-top: 6px; line-height: 1.25; }
+.chip small { display: block; font-size: 10.5px; color: var(--ink3); }
+.chip.custom i { display: grid; place-items: center; background: conic-gradient(#e66, #ec6, #6c6, #6ce, #66e, #e6e, #e66); position: relative; }
+.chip.custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.pf { display: flex; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid var(--line); }
+.pf button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 9px; font-size: 12.5px; font-weight: 600; }
+.pf button:disabled { opacity: .4; cursor: default; }
+
+/* 조이스틱 (터치) */
+#joy { position: fixed; left: 22px; bottom: 26px; width: 120px; height: 120px; border-radius: 50%; background: rgba(20, 18, 15, .25); backdrop-filter: blur(6px);
+  z-index: 4; display: none; touch-action: none; }
+#joy i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px; border-radius: 50%; background: rgba(255, 255, 255, .85); }
+.touch #joy.show { display: block; }
+
+/* 사양서 */
+dialog { border: 0; border-radius: 20px; padding: 0; width: min(860px, calc(100% - 24px)); max-height: calc(100% - 40px); box-shadow: var(--shadow); color: var(--ink); }
+dialog::backdrop { background: rgba(20, 16, 10, .45); backdrop-filter: blur(3px); }
+.dh { display: flex; align-items: center; gap: 10px; padding: 20px 24px 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 1; }
+.dh h2 { margin: 0; font-size: 19px; flex: 1; }
+.db { padding: 18px 24px 24px; }
+.db h3 { font-size: 14px; margin: 22px 0 8px; } .db h3:first-child { margin-top: 0; }
+.note { font-size: 12px; color: var(--ink3); margin: 4px 0 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 11.5px; color: var(--ink3); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; background-size: cover; vertical-align: middle; margin-right: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form label { font-size: 12px; font-weight: 600; color: var(--ink2); display: grid; gap: 4px; }
+.form input, .form textarea, .form select { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; }
+.form .wide { grid-column: 1 / -1; }
+.ok { background: #f2efe8; border-radius: 12px; padding: 14px 16px; font-size: 13px; margin-top: 12px; display: none; }
+
+#fade { position: fixed; inset: 0; background: #f4f1ec; opacity: 0; pointer-events: none; z-index: 8; transition: opacity .22s; }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; background: #ece8e1; z-index: 9; font-size: 14px; color: var(--ink2); transition: opacity .4s; }
+#toast { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 99px; font-size: 13px;
+  z-index: 9; opacity: 0; transition: opacity .25s; pointer-events: none; }
+
+@media (max-width: 760px) {
+  .top { flex-wrap: wrap; gap: 6px; top: 8px; left: 8px; right: 8px; }
+  .brand { padding: 7px 11px; } .brand span { display: none; }
+  .seg button { padding: 6px 9px; font-size: 12px; }
+  .btn { padding: 8px 10px; font-size: 12px; }
+  .top .spacer { display: none; }
+  #roomName { top: auto; bottom: 168px; }
+  #hint { display: none; }
+  #mini { width: 150px; top: 104px; bottom: auto; padding: 6px; } #mini header { display: none; }
+  #panel { top: auto; bottom: 0; right: 0; left: 0; width: auto; max-height: 52%; border-radius: 18px 18px 0 0; transform: translateY(105%); }
+  .grid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 14px; }
+  .form { grid-template-columns: 1fr; }
+  .rl { font-size: 10px; padding: 2px 5px; } .rl small { display: none; }
+}
+@media print {
+  body { overflow: visible; height: auto; background: #fff; }
+  body > *:not(dialog) { display: none !important; }
+  dialog { position: static; width: 100%; max-height: none; box-shadow: none; }
+  dialog::backdrop { display: none; }
+  .dh .btn, #reqForm, #reqForm + .ok, .db h3:nth-last-of-type(1) { display: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="gl" tabindex="0"></canvas>
+<div id="labels"></div>
+
+<div class="top">
+  <div class="brand"><b>3D 마감 체험 <em class="badge">시안</em></b><span id="planName"></span></div>
+  <div class="seg" id="modes">
+    <button data-mode="walk" class="on">걷기</button>
+    <button data-mode="doll">3D 전체</button>
+    <button data-mode="plan">2D 평면</button>
+  </div>
+  <div class="seg" id="time">
+    <button data-t="day" class="on">낮</button>
+    <button data-t="night">밤</button>
+  </div>
+  <div class="spacer"></div>
+  <select class="btn" id="preset" aria-label="스타일 프리셋">
+    <option value="">스타일 프리셋</option>
+  </select>
+  <button class="btn" id="shareBtn">링크 복사</button>
+  <button class="btn primary" id="specBtn">마감 사양서</button>
+</div>
+
+<div id="roomName"></div>
+<div id="hint">
+  <span><kbd>드래그</kbd> 둘러보기</span><span><kbd>W A S D</kbd> 이동</span><span><kbd>클릭</kbd> 마감 바꾸기</span><span><kbd>더블클릭</kbd> 그곳으로 걷기</span>
+  <button aria-label="닫기" id="hintX">×</button>
+</div>
+<div id="tip"></div>
+
+<div id="mini"><header><span>평면도 · 누르면 이동</span><span id="miniRoom"></span></header><svg id="miniSvg"></svg></div>
+<div id="joy"><i></i></div>
+
+<aside id="panel" aria-live="polite">
+  <div class="ph">
+    <div class="where" id="pWhere"></div>
+    <h2 id="pName"></h2>
+    <div class="spec" id="pSpec"></div>
+    <button class="x" id="pClose" aria-label="닫기">×</button>
+  </div>
+  <div class="scope" id="pScope"></div>
+  <div class="tabs" id="pTabs"></div>
+  <div class="grid" id="pGrid"></div>
+  <div class="pf"><button id="undoBtn" disabled>되돌리기</button><button id="resetBtn">처음 마감으로</button></div>
+</aside>
+
+<dialog id="spec">
+  <div class="dh"><h2>마감 사양서</h2><button class="btn" id="jsonBtn">JSON 저장</button><button class="btn" id="printBtn">인쇄 · PDF</button><button class="btn" id="specX">닫기</button></div>
+  <div class="db">
+    <h3>공간별 마감</h3>
+    <table id="specRooms"></table>
+    <h3>자재별 물량</h3>
+    <table id="specTotals"></table>
+    <p class="note">면적은 벽 중심선 기준으로 계산한 참고값이며 창·문 개구부를 뺀 값입니다. 발주 물량은 실측 후 확정합니다. 규격은 참고 표기입니다.</p>
+    <h3>이 마감으로 시공 상담 요청</h3>
+    <form class="form" id="reqForm">
+      <label>이름<input name="name" required autocomplete="name"></label>
+      <label>연락처<input name="phone" required autocomplete="tel" inputmode="tel"></label>
+      <label>요청 구분<select name="type"><option>신축 시공</option><option>리모델링</option><option>분양 상담</option></select></label>
+      <label>시공 지역<input name="area" placeholder="예: 경기 성남시"></label>
+      <label class="wide">요청 사항<textarea name="memo" rows="3"></textarea></label>
+      <label class="wide" style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" required> 상담을 위한 개인정보 수집·이용에 동의합니다</label>
+      <div class="wide"><button class="btn primary" type="submit">상담 요청 보내기</button></div>
+    </form>
+    <div class="ok" id="reqOk"></div>
+  </div>
+</dialog>
+
+<div id="fade"></div>
+<div id="toast"></div>
+<div id="loading">집을 짓는 중…</div>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
