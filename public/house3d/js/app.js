@@ -257,7 +257,8 @@ canvas.addEventListener('pointermove', (e) => {
   drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
   if (drag.moved < 4) return;
   if (mode === 'walk') {
-    const k = isTouch ? 0.006 : 0.0042;
+    // 모바일: 손가락이 가는 쪽으로 시선이 간다. 데스크톱: 화면을 잡아끄는 방식
+    const k = isTouch ? -0.006 : 0.0042;
     player.yaw += dx * k; player.pitch = Math.max(-1.25, Math.min(1.25, player.pitch + dy * k));
   } else if (mode === 'doll') {
     if (e.buttons === 2 || e.shiftKey) { panDoll(dx, dy); }
