@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
 <!-- stamp:importmap -->
-<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/app.js": "./js/app.js?v=f5b81ce2", "./js/builder.js": "./js/builder.js?v=8f26151d", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=ca1faf9a", "./js/materials.js": "./js/materials.js?v=2fea544b", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/app.js": "./js/app.js?v=f7f58232", "./js/builder.js": "./js/builder.js?v=8f26151d", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=ca1faf9a", "./js/materials.js": "./js/materials.js?v=2fea544b", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
 <!-- /stamp -->
 <style>
 :root {
@@ -383,6 +383,8 @@ function showTab(t, home) {
   $('#okMsg').style.display = 'none';
 }
 $$('.tabs2 button').forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
+// 3D 체험 화면에서 넘어온 경우(?home=주택id#request) 그 주택으로 골라 둔다
+{ const id = new URLSearchParams(location.search).get('home'), h = HOMES.find((x) => x.plan.id === id); if (h) showTab(h.kind === '분양' ? 'sale' : 'build', id); }
 document.addEventListener('click', (e) => { const a = e.target.closest('[data-tab]:not(.tabs2 button)'); if (a) showTab(a.dataset.tab, a.dataset.home); });
 
 // 요청 저장 — 접수 API 연결 전 시안: 이 브라우저에 보관하고 파일로 내려 준다 (3D 체험 화면과 같은 방식)

@@ -1,7 +1,7 @@
 // 3D 마감 체험 — 걷기 · 3D 전체 · 2D 평면 세 가지 보기에서 면을 눌러 마감을 바로 바꾼다.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
-import { HOMES, homeById } from './homes.js';
+import { HOMES, homeById, planArea } from './homes.js';
 import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy } from './materials.js';
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
@@ -15,7 +15,8 @@ const isTouch = matchMedia('(pointer: coarse)').matches;
 if (isTouch) document.body.classList.add('touch');
 
 // ── 렌더러·장면 ──
-const canvas = $('#gl');
+const canvas = $('#gl'), viewer = $('#viewer');
+let VW = 1, VH = 1; // 뷰어 크기(px)
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -136,6 +137,7 @@ const marker = new THREE.Group();
 
 function setMode(m, opts = {}) {
   mode = m;
+  if (m !== 'walk' && locked()) document.exitPointerLock();
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
   const inside = m === 'walk';
   house.roofs.forEach((r) => (r.visible = inside));
@@ -146,11 +148,11 @@ function setMode(m, opts = {}) {
   camera = m === 'plan' ? ortho : persp;
   persp.fov = inside ? 70 : 40; persp.updateProjectionMatrix();
   // 화면 비율에 맞춰 집 전체가 들어오게
-  const b = house.bounds, bw = b.x1 - b.x0 + 3, bh = b.z1 - b.z0 + 3, asp = innerWidth / innerHeight;
+  const b = house.bounds, bw = b.x1 - b.x0 + 3, bh = b.z1 - b.z0 + 3, asp = VW / VH;
   if (m === 'doll' && !opts.keep) { orbit.tx = (b.x0 + b.x1) / 2; orbit.tz = (b.z0 + b.z1) / 2 + 1; orbit.dist = Math.max(30, 26 / Math.min(1, asp * 0.9)); }
   if (m === 'plan' && !opts.keep) { plan2d.cx = (b.x0 + b.x1) / 2; plan2d.cz = (b.z0 + b.z1) / 2; plan2d.zoom = Math.max(bh / 2, bw / 2 / asp); }
   $('#roomName').style.opacity = inside ? 1 : 0;
-  $('#hint').style.display = inside && !hintClosed && !isTouch ? '' : 'none';
+  showHint();
   $('#mini').style.display = inside ? '' : 'none';
   $('#joy').classList.toggle('show', inside);
   $('#labels').style.display = inside ? 'none' : '';
@@ -158,6 +160,16 @@ function setMode(m, opts = {}) {
 }
 let hintClosed = false;
 $('#hintX').onclick = () => { hintClosed = true; $('#hint').style.display = 'none'; };
+// 안내 문구: 마우스 시점 중 / 시작 전 / 드래그 방식
+function showHint() {
+  const h = $('#hint'); if (!h) return;
+  h.style.display = mode === 'walk' && !hintClosed && !isTouch ? '' : 'none';
+  $('#hintText').innerHTML = typeof locked === 'function' && locked()
+    ? '<span><kbd>마우스</kbd> 둘러보기</span><span><kbd>W A S D</kbd> 이동</span><span><kbd>클릭</kbd> 가운데 점의 마감 바꾸기</span><span><kbd>더블클릭</kbd> 그곳으로 걷기</span><span><kbd>Esc</kbd> 마우스 풀기</span>'
+    : lookMode && canLock
+      ? '<span><kbd>클릭</kbd> 마우스로 둘러보기 시작</span><span><kbd>W A S D</kbd> 이동</span><span><kbd>Shift</kbd> 빨리 걷기</span>'
+      : '<span><kbd>드래그</kbd> 둘러보기</span><span><kbd>W A S D</kbd> 이동</span><span><kbd>클릭</kbd> 마감 바꾸기</span><span><kbd>더블클릭</kbd> 그곳으로 걷기</span>';
+}
 document.querySelectorAll('#modes button').forEach((b) => (b.onclick = () => fadeTo(() => setMode(b.dataset.mode))));
 
 function fadeTo(fn) {
@@ -166,13 +178,15 @@ function fadeTo(fn) {
 }
 
 function resize() {
-  const w = innerWidth, h = innerHeight;
+  VW = viewer.clientWidth || 1; VH = viewer.clientHeight || 1;
+  const w = VW, h = VH;
   renderer.setSize(w, h, false);
   persp.aspect = w / h; persp.updateProjectionMatrix();
   const a = w / h, z = plan2d.zoom;
   Object.assign(ortho, { left: -z * a, right: z * a, top: z, bottom: -z }); ortho.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
+new ResizeObserver(() => resize()).observe(viewer);
 
 function updateCamera() {
   if (mode === 'walk') {
@@ -212,8 +226,11 @@ function collide(x, z) {
 function moveBy(dx, dz) { [player.x, player.z] = collide(player.x + dx, player.z + dz); }
 
 const keys = new Set();
+// 키보드는 뷰어를 쓰는 중일 때만(마우스가 뷰어 위·마우스 시점·전체 화면) — 아니면 페이지 스크롤에 양보
+const viewerActive = () => locked() || isFull() || viewer.matches(':hover') || document.activeElement === canvas;
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea, select, dialog')) return;
+  if (!viewerActive()) return;
   keys.add(e.code);
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'Escape') select(null);
@@ -259,37 +276,59 @@ function teleport(x, z, yaw, level) {
 }
 
 // ── 입력: 드래그 = 둘러보기/회전/이동, 짧게 누름 = 면 선택 ──
+// 좌표는 모두 뷰어 안 기준(px). 데스크톱 걷기는 마우스 시점(포인터 잠금): 마우스만 움직여도 시선이 돈다
 const pointers = new Map();
 let drag = null, pinch0 = 0;
+const loc = (e) => { const r = viewer.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+const locked = () => document.pointerLockElement === canvas;
+const canLock = !isTouch && !!canvas.requestPointerLock;
+function lockLook() { if (canLock && mode === 'walk' && !locked()) { const p = canvas.requestPointerLock(); p?.catch?.(() => {}); } }
+document.addEventListener('pointerlockchange', () => {
+  const on = locked();
+  viewer.classList.toggle('locked', on);
+  $('#lookBtn')?.classList.toggle('on', on);
+  if (on) { mouse.x = VW / 2; mouse.y = VH / 2; mouse.dirty = true; select(null); }
+  else { tip.style.display = 'none'; hoverSurface(null); }
+  showHint();
+});
 canvas.addEventListener('pointerdown', (e) => {
   canvas.focus({ preventScroll: true });
+  if (locked()) { drag = { lockedTap: true, t: performance.now() }; return; }
+  // 데스크톱 걷기(마우스 시점 켬): 한 번 누르면 마우스 시점으로 들어가고, 면 선택은 가운데 조준점으로 한다
+  const [lx, ly] = loc(e);
   canvas.setPointerCapture(e.pointerId);
-  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pointers.size === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: 0, t: performance.now() };
+  pointers.set(e.pointerId, { x: lx, y: ly });
+  if (pointers.size === 1) drag = { x: lx, y: ly, sx: lx, sy: ly, moved: 0, t: performance.now() };
   if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); drag = null; }
   canvas.classList.add('grabbing');
 });
 canvas.addEventListener('pointermove', (e) => {
-  mouse.x = e.clientX; mouse.y = e.clientY; mouse.dirty = true;
+  if (locked()) { // FPS 시점: 마우스를 오른쪽으로 → 오른쪽을 본다
+    const k = 0.0022 * lookSens;
+    player.yaw -= e.movementX * k; player.pitch = Math.max(-1.35, Math.min(1.35, player.pitch - e.movementY * k));
+    mouse.dirty = true; return;
+  }
+  const [lx, ly] = loc(e);
+  mouse.x = lx; mouse.y = ly; mouse.dirty = true;
   if (!pointers.has(e.pointerId)) return;
-  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  pointers.set(e.pointerId, { x: lx, y: ly });
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
     if (pinch0) zoomBy(pinch0 / d); pinch0 = d; return;
   }
   if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
-  drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
+  const dx = lx - drag.x, dy = ly - drag.y; drag.x = lx; drag.y = ly;
+  drag.moved = Math.max(drag.moved, Math.hypot(lx - drag.sx, ly - drag.sy));
   if (drag.moved < 4) return;
   if (mode === 'walk') {
-    // 모바일: 손가락이 가는 쪽으로 시선이 간다. 데스크톱: 화면을 잡아끄는 방식
+    // 모바일: 손가락이 가는 쪽으로 시선이 간다. 데스크톱(마우스 시점을 끈 경우): 화면을 잡아끄는 방식
     const k = isTouch ? -0.006 : 0.0042;
     player.yaw += dx * k; player.pitch = Math.max(-1.25, Math.min(1.25, player.pitch + dy * k));
   } else if (mode === 'doll') {
     if (e.buttons === 2 || e.shiftKey) { panDoll(dx, dy); }
     else { orbit.theta -= dx * 0.006; orbit.phi = Math.max(0.2, Math.min(1.52, orbit.phi + dy * 0.005)); }
   } else {
-    const k = (2 * plan2d.zoom) / innerHeight; plan2d.cx -= dx * k; plan2d.cz -= dy * k;
+    const k = (2 * plan2d.zoom) / VH; plan2d.cx -= dx * k; plan2d.cz -= dy * k;
   }
 });
 function panDoll(dx, dy) {
@@ -297,20 +336,55 @@ function panDoll(dx, dy) {
   orbit.tx -= (dx * c - dy * s) * k; orbit.tz -= (-dx * s - dy * c) * k;
 }
 const endPointer = (e) => {
+  if (drag?.lockedTap) { // 마우스 시점: 화면 가운데(조준점)를 누른 것으로 본다
+    if (e.type === 'pointerup' && performance.now() - drag.t < 600) onTap(VW / 2, VH / 2);
+    drag = null; return;
+  }
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
-  if (drag && pointers.size === 0 && drag.moved < 6 && e.type === 'pointerup' && performance.now() - drag.t < 600) onTap(e.clientX, e.clientY, e);
+  if (drag && pointers.size === 0 && drag.moved < 6 && e.type === 'pointerup' && performance.now() - drag.t < 600) {
+    const [lx, ly] = loc(e);
+    // 데스크톱 걷기에서 면이 아닌 곳(또는 아무 곳)을 누르면 마우스 시점 시작 — 면 선택은 조준점으로
+    if (canLock && mode === 'walk' && lookMode) lockLook(); else onTap(lx, ly, e);
+  }
   if (pointers.size === 0) { drag = null; pinch0 = 0; canvas.classList.remove('grabbing'); }
 };
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
+// 휠: 3D 전체·2D 에서만 확대·축소(걷기에서는 페이지가 스크롤되게 둔다)
+canvas.addEventListener('wheel', (e) => { if (mode === 'walk' && !locked() && !isFull()) return; e.preventDefault(); zoomBy(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
 function zoomBy(f) {
   if (mode === 'doll') orbit.dist = Math.max(8, Math.min(90, orbit.dist * f));
   else if (mode === 'plan') { plan2d.zoom = Math.max(3, Math.min(40, plan2d.zoom * f)); resize(); }
   else { persp.fov = Math.max(35, Math.min(80, persp.fov * f)); persp.updateProjectionMatrix(); }
 }
+// 마우스 시점 켜기/끄기(끄면 예전처럼 드래그로 둘러본다). 감도는 브라우저에 기억
+let lookMode = true, lookSens = 1;
+try { lookMode = localStorage.getItem('hw-look') !== 'drag'; lookSens = +(localStorage.getItem('hw-sens') || 1) || 1; } catch {}
+if (canLock) {
+  $('#lookBtn').onclick = () => {
+    if (locked()) { document.exitPointerLock(); lookMode = false; }
+    else { lookMode = true; if (mode !== 'walk') setMode('walk'); lockLook(); }
+    try { localStorage.setItem('hw-look', lookMode ? 'fps' : 'drag'); } catch {}
+    showHint();
+  };
+} else $('#lookBtn')?.remove();
+
+// ── 전체 화면 (뷰어만). iPhone 처럼 API 가 없으면 화면을 덮는 방식으로 ──
+const fsApi = !!(viewer.requestFullscreen || viewer.webkitRequestFullscreen);
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement) || viewer.classList.contains('pseudo-fs');
+$('#fsBtn').onclick = () => {
+  if (isFull()) {
+    if (viewer.classList.contains('pseudo-fs')) { viewer.classList.remove('pseudo-fs'); document.body.classList.remove('noscroll'); fsChanged(); }
+    else (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    return;
+  }
+  if (fsApi) (viewer.requestFullscreen || viewer.webkitRequestFullscreen).call(viewer).catch?.(() => { viewer.classList.add('pseudo-fs'); fsChanged(); });
+  else { viewer.classList.add('pseudo-fs'); document.body.classList.add('noscroll'); fsChanged(); }
+};
+function fsChanged() { $('#fsBtn').classList.toggle('on', isFull()); $('#fsBtn').setAttribute('aria-label', isFull() ? '전체 화면 끝내기' : '전체 화면'); resize(); }
+document.addEventListener('fullscreenchange', fsChanged); document.addEventListener('webkitfullscreenchange', fsChanged);
 
 // 탭 두 번(또는 더블클릭) = 그 바닥으로 이동
 let lastTap = { t: 0, x: 0, y: 0 };
@@ -330,13 +404,14 @@ function onTap(x, y) {
     return;
   }
   // 두 번째 탭을 잠깐 기다렸다가 선택한다 (더블클릭으로 걸을 때 패널이 열리지 않게)
-  onTap.h = setTimeout(() => select(hit?.surface || null), 260);
+  // 마우스 시점에서 면을 고르면 마우스를 풀어 패널을 쓸 수 있게 한다
+  onTap.h = setTimeout(() => { if (hit?.surface && locked()) document.exitPointerLock(); select(hit?.surface || null); }, 260);
 }
 
 // ── 고르기(레이캐스트) ──
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(x, y) {
-  ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+  ndc.set((x / VW) * 2 - 1, -(y / VH) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const shown = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
   const objs = [...pickables, ...blockers].filter(shown);
@@ -346,7 +421,7 @@ function pick(x, y) {
 }
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 function groundAt(x, y) {
-  ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  ndc.set((x / VW) * 2 - 1, -(y / VH) * 2 + 1); ray.setFromCamera(ndc, camera);
   return ray.ray.intersectPlane(groundPlane, new THREE.Vector3());
 }
 
@@ -357,6 +432,7 @@ canvas.addEventListener('pointerleave', () => { tip.style.display = 'none'; hove
 function updateHover() {
   if (isTouch || !mouse.dirty || pointers.size) return;
   mouse.dirty = false;
+  if (locked()) { mouse.x = VW / 2; mouse.y = VH / 2; }
   const s = pick(mouse.x, mouse.y)?.surface;
   hoverSurface(s);
   if (s) {
@@ -554,7 +630,7 @@ function updateLabels() {
     tmp.copy(p).project(camera);
     const vis = level === top && tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
     el.style.display = vis ? '' : 'none';
-    if (vis) el.style.transform = `translate(${(tmp.x + 1) / 2 * innerWidth}px, ${(1 - tmp.y) / 2 * innerHeight}px) translate(-50%, -50%)`;
+    if (vis) el.style.transform = `translate(${(tmp.x + 1) / 2 * VW}px, ${(1 - tmp.y) / 2 * VH}px) translate(-50%, -50%)`;
   }
 }
 
@@ -640,6 +716,20 @@ $('#reqForm [name=type]').value = HOME.kind === '분양' ? '분양 상담' : '�
 // 다른 주택으로 바꾸기
 $('#homeSel').innerHTML = HOMES.map((h) => `<option value="${h.plan.id}" ${h === HOME ? 'selected' : ''}>${h.region} · ${h.plan.name}</option>`).join('');
 $('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
+// 뷰어 아래 소개와 다른 주택
+{
+  const a = planArea(PLAN), top = LV.at(-1), V = document.documentElement.dataset.v || '';
+  $('#reqLink').href = `./?home=${PLAN.id}#request`;
+  $('#homeInfo').innerHTML = `<div class="eyebrow">${HOME.region} · ${HOME.type} · ${HOME.kind}</div>
+    <h2>${PLAN.name}</h2><p>${HOME.tagline}</p>
+    <div class="facts"><div><b>${Math.round(a)}㎡</b><span>약 ${(a / 3.3058).toFixed(0)}평 · 벽 중심</span></div><div><b>${HOME.beds}</b><span>침실</span></div>
+      <div><b>${HOME.baths}</b><span>욕실</span></div><div><b>${(MULTI ? top.y + top.height : PLAN.height).toFixed(1)}m</b><span>${MULTI ? '거실 층고 · 복층' : '천장고'}</span></div></div>
+    <div class="acts"><button class="btn primary" id="specBtn2">마감 사양서 · 상담 요청</button><a class="btn" href="./?home=${PLAN.id}#request">${HOME.kind === '분양' ? '분양 상담' : '시공 요청'} 페이지로</a></div>
+    <p class="note" style="margin-top:14px">공개 보도에 나온 규모만 참고해 새로 그린 시연용 평면입니다. 실제 단지의 도면이 아닙니다. (${HOME.ref})</p>`;
+  $('#specBtn2').onclick = () => openSpec();
+  $('#otherHomes').innerHTML = HOMES.filter((h) => h !== HOME).slice(0, 4).map((h) =>
+    `<a href="?h=${h.plan.id}"><img src="./images/${h.plan.id}.jpg${V}" alt="" loading="lazy"><span>${h.plan.name}<small>${h.region} · ${h.kind}</small></span></a>`).join('');
+}
 setMode('walk');
 requestAnimationFrame(() => { frame(); const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 450); });
 
