@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
 import { HOMES, homeById, planArea } from './homes.js';
-import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy } from './materials.js';
+import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans } from './materials.js';
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
@@ -24,6 +24,7 @@ renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
+await loadScans(); // 실사 스캔 색 지도(못 읽으면 그린 무늬로)
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);

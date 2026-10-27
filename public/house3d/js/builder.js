@@ -52,7 +52,8 @@ export function buildHouse(plan, opts = {}) {
     };
     box(s0, s1, 0, 1.08, glassRail, 0.024).renderOrder = 2;
     box(s0, s1, 1.08, 1.13, railCap, 0.06);
-    if (w.fascia !== false) { const f = box(s0, s1, -(opts.slab ?? 0.4), 0, trimFascia, 0.12); f.castShadow = true; }
+    // 위·아래 면이 위층 바닥·아래층 천장과 같은 높이면 깜빡이므로(z-fighting) 살짝 안쪽으로
+    if (w.fascia !== false) { const f = box(s0, s1, -(opts.slab ?? 0.4) + 0.004, -0.004, trimFascia, 0.12); f.castShadow = true; }
     colliders.push(horiz ? [s0, c - 0.1, s1, c + 0.1] : [c - 0.1, s0, c + 0.1, s1]);
   }
   const trimFascia = new THREE.MeshStandardMaterial({ color: 0xf2f0eb, roughness: 0.6 });
