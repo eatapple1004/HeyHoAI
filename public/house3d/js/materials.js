@@ -1,9 +1,14 @@
-// 마감재 카탈로그 — 텍스처는 캔버스로 직접 그린다(외부 이미지 없음).
+// 마감재 카탈로그 — 텍스처는 캔버스로 직접 그린다.
+// scan 이 있는 마감은 실사 스캔(textures/, ambientCG CC0 — tools/textures.py 로 받음)을 쓴다:
+//   mode 'surface' = 스캔 사진을 표면으로 깔고 규격대로 줄눈을 그린다(석재·콘크리트·미장)
+//   mode 'detail'  = 그린 무늬(판 배치·쉐브론·루버) 위에 실제 결을 겹친다
+//   두 경우 모두 표면 요철(normal)·광택 차이(roughness) 지도를 함께 쓴다. 스캔을 못 읽으면 그린 무늬로 돌아간다.
 // 실제 자재 사진이 들어오면 entry.src 에 이미지 경로를 넣으면 그림 대신 그 이미지를 쓴다.
 // size = 텍스처 한 장이 덮는 실제 크기(m). 모든 면의 UV가 m 단위라서 규격이 실제 비율로 깔린다.
 import * as THREE from 'three';
 
-const PX = 512; // 텍스처 한 변 해상도
+const PX = 512; // 줄눈 요철 지도 해상도
+const HI = 1024; // 색 텍스처 한 변 해상도
 
 // ── 도구 ──
 function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
@@ -321,32 +326,32 @@ const PAINTS = [
 export const CATALOG = [
   // 바닥
   { id: 'marble-white', name: '화이트 마블 포세린', group: '타일', cats: ['floor', 'wall'], size: [1.2, 1.2], spec: '600×1200 폴리싱', rough: 0.12,
-    gen: draw.marble({ base: '#f1eee8', vein: '#8f8a84', cols: 2, rows: 1, seed: 11 }), bump: groutBump(PX, PX, 2, 1, 2) },
+    gen: draw.marble({ base: '#f1eee8', vein: '#8f8a84', cols: 2, rows: 1, seed: 11 }), scan: { a: 'Marble021', m: 1.2, cells: [2, 1], grout: '#cfcac2' }, bump: groutBump(PX, PX, 2, 1, 2) },
   { id: 'marble-checker', name: '블랙&화이트 체커', group: '타일', cats: ['floor'], size: [1.2, 1.2], spec: '600×600 대리석', rough: 0.14,
     gen: draw.checker({ a: '#efece6', b: '#1d1d1f', va: '#8d8780', vb: '#d6d1c9', seed: 5 }), bump: groutBump(PX, PX, 2, 2, 2) },
   { id: 'stone-grey', name: '차콜 스톤', group: '타일', cats: ['floor', 'wall'], size: [1.2, 1.2], spec: '600×600 무광', rough: 0.7,
-    gen: draw.speckle({ base: '#55565a', cols: 2, rows: 2, seed: 4, grout: '#3a3b3e' }), bump: groutBump(PX, PX, 2, 2, 2) },
+    gen: draw.speckle({ base: '#55565a', cols: 2, rows: 2, seed: 4, grout: '#3a3b3e' }), scan: { a: 'Concrete034', m: 1.1, cells: [2, 2], grout: '#3a3b3e', tint: '#66676c' }, bump: groutBump(PX, PX, 2, 2, 2) },
   { id: 'stone-travertine', name: '트래버틴', group: '타일', cats: ['floor', 'wall'], size: [2.4, 1.2], spec: '600×1200 혼드', rough: 0.55,
-    gen: draw.travertine({ base: '#d9c7a7', cols: 2, rows: 2, bond: 0.5, seed: 8 }), bump: groutBump(PX, PX, 2, 2, 2, 0.5) },
+    gen: draw.travertine({ base: '#d9c7a7', cols: 2, rows: 2, bond: 0.5, seed: 8 }), scan: { a: 'Travertine009', m: 1.2, cells: [2, 2, 0.5], grout: '#b9a888' }, bump: groutBump(PX, PX, 2, 2, 2, 0.5) },
   { id: 'terrazzo', name: '테라조', group: '타일', cats: ['floor', 'wall'], size: [1.0, 1.0], spec: '현장 시공', rough: 0.35,
-    gen: draw.terrazzo({ base: '#e9e3d8', chips: ['#9b8f80', '#c7bba9', '#6f6a63', '#b48d72', '#ffffff'], seed: 3 }) },
+    gen: draw.terrazzo({ base: '#e9e3d8', chips: ['#9b8f80', '#c7bba9', '#6f6a63', '#b48d72', '#ffffff'], seed: 3 }), scan: { a: 'Terrazzo013', m: 1.0 } },
   { id: 'hex-white', name: '헥사곤 화이트', group: '타일', cats: ['floor', 'wall'], size: [1.2, 1.2124], spec: '200 헥사곤', rough: 0.3,
     gen: draw.hex({ base: '#f2f1ec', grout: '#b8b4ac', seed: 9, alt: '#d8d4cc' }) },
   { id: 'oak-plank', name: '오크 원목마루', group: '마루', cats: ['floor', 'wall'], size: [2.4, 1.14], spec: '190×1900 광폭', rough: 0.55,
-    gen: draw.planks({ base: '#c49a6c', rows: 6, seed: 21 }) },
+    gen: draw.planks({ base: '#c49a6c', rows: 6, seed: 21 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 1.2, mix: 0.5 } },
   { id: 'oak-smoked', name: '스모크 오크', group: '마루', cats: ['floor'], size: [2.4, 1.14], spec: '190×1900 오일', rough: 0.6,
-    gen: draw.planks({ base: '#7a5a3f', rows: 6, seed: 22 }) },
+    gen: draw.planks({ base: '#7a5a3f', rows: 6, seed: 22 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 1.2, mix: 0.5 } },
   { id: 'chevron-walnut', name: '월넛 쉐브론', group: '마루', cats: ['floor'], size: [1.2, 1.188], spec: '120×600 쉐브론', rough: 0.5,
-    gen: draw.chevron({ base: '#7b5537', seed: 1 }) },
+    gen: draw.chevron({ base: '#7b5537', seed: 1 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 0.6, mix: 0.35 } },
   { id: 'chevron-oak', name: '내추럴 오크 쉐브론', group: '마루', cats: ['floor'], size: [1.2, 1.188], spec: '120×600 쉐브론', rough: 0.5,
-    gen: draw.chevron({ base: '#c9a57b', seed: 2 }) },
+    gen: draw.chevron({ base: '#c9a57b', seed: 2 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 0.6, mix: 0.35 } },
 
   // 벽
   ...PAINTS.map(([id, name, color]) => ({ id, name, group: '도장', cats: ['wall', 'ceiling'], color, spec: '친환경 수성 무광', rough: 0.92, paint: true })),
   { id: 'linen-paper', name: '린넨 실크벽지', group: '벽지', cats: ['wall'], size: [0.5, 0.5], spec: '실크 1,060mm 폭', rough: 0.8,
-    gen: draw.linen({ base: '#ddd5c7', seed: 31 }) },
+    gen: draw.linen({ base: '#ddd5c7', seed: 31 }), scan: { a: 'Fabric082A', mode: 'detail', m: 0.5, mix: 0 } },
   { id: 'linen-grey', name: '린넨 그레이', group: '벽지', cats: ['wall'], size: [0.5, 0.5], spec: '실크 1,060mm 폭', rough: 0.8,
-    gen: draw.linen({ base: '#a8a6a2', seed: 32 }) },
+    gen: draw.linen({ base: '#a8a6a2', seed: 32 }), scan: { a: 'Fabric082A', mode: 'detail', m: 0.5, mix: 0 } },
   { id: 'stripe-paper', name: '리젠시 스트라이프', group: '벽지', cats: ['wall'], size: [0.4, 0.4], spec: '실크 1,060mm 폭', rough: 0.75,
     gen: draw.stripe({ a: '#e7e1d4', b: '#cfc4b0', seed: 33 }) },
   { id: 'damask-paper', name: '다마스크', group: '벽지', cats: ['wall'], size: [0.53, 0.53], spec: '실크 1,060mm 폭', rough: 0.7,
@@ -354,13 +359,13 @@ export const CATALOG = [
   { id: 'damask-ivory', name: '다마스크 아이보리', group: '벽지', cats: ['wall'], size: [0.53, 0.53], spec: '실크 1,060mm 폭', rough: 0.7,
     gen: draw.damask({ base: '#ece5d6', ink: '#c9b994', seed: 35 }) },
   { id: 'marble-slab', name: '칼라카타 대판', group: '석재·패널', cats: ['wall', 'floor'], size: [1.2, 2.4], spec: '1200×2400 포세린 대판', rough: 0.1,
-    gen: draw.marble({ base: '#f3f0ea', vein: '#9a8566', cols: 1, rows: 1, seed: 41, n: 4, bold: 2.2, grout: '#d9d4cc' }) },
+    gen: draw.marble({ base: '#f3f0ea', vein: '#9a8566', cols: 1, rows: 1, seed: 41, n: 4, bold: 2.2, grout: '#d9d4cc' }), scan: { a: 'Marble014', m: 2.4, cells: [1, 1], grout: '#d9d4cc' } },
   { id: 'marble-nero', name: '네로 마르퀴나', group: '석재·패널', cats: ['wall', 'floor'], size: [1.2, 2.4], spec: '1200×2400 포세린 대판', rough: 0.12,
-    gen: draw.marble({ base: '#1c1c1e', vein: '#d8d4cc', cols: 1, rows: 1, seed: 42, n: 3, bold: 1.6, grout: '#333' }) },
+    gen: draw.marble({ base: '#1c1c1e', vein: '#d8d4cc', cols: 1, rows: 1, seed: 42, n: 3, bold: 1.6, grout: '#333' }), scan: { a: 'Marble016', m: 2.4, cells: [1, 1], grout: '#333' } },
   { id: 'wood-slat', name: '월넛 슬랫 패널', group: '석재·패널', cats: ['wall', 'ceiling'], size: [0.6, 1.2], spec: '40×20 루버', rough: 0.6,
-    gen: draw.slats({ base: '#6d4a2f', seed: 43 }) },
+    gen: draw.slats({ base: '#6d4a2f', seed: 43 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 0.6, mix: 0.4, rot: true } },
   { id: 'concrete', name: '노출 콘크리트', group: '석재·패널', cats: ['wall', 'ceiling', 'exterior'], size: [1.8, 0.9], spec: '1800×900 패널', rough: 0.85,
-    gen: draw.concrete({ base: '#a6a49f', seed: 44 }) },
+    gen: draw.concrete({ base: '#a6a49f', seed: 44 }), scan: { a: 'Concrete034', m: 1.1, cells: [1, 1], grout: '#8d8b86' } },
   { id: 'subway-white', name: '서브웨이 화이트', group: '타일', cats: ['wall'], size: [0.6, 0.3], spec: '75×150 유광', rough: 0.15,
     gen: draw.marble({ base: '#f6f5f1', vein: '#e2e0da', cols: 4, rows: 4, bond: 0.5, seed: 45, n: 0, grout: '#bdb9b1' }), bump: groutBump(PX, PX, 4, 4, 3, 0.5) },
   { id: 'subway-green', name: '서브웨이 딥그린', group: '타일', cats: ['wall'], size: [0.6, 0.3], spec: '75×150 유광', rough: 0.15,
@@ -369,17 +374,17 @@ export const CATALOG = [
   // 천장
   { id: 'ceil-white', name: '천장 화이트', group: '도장', cats: ['ceiling'], color: '#f6f5f2', spec: '무광 수성', rough: 0.95, paint: true },
   { id: 'ceil-oak', name: '오크 루버 천장', group: '석재·패널', cats: ['ceiling'], size: [1.2, 0.6], spec: '40×20 루버', rough: 0.6,
-    gen: draw.slats({ base: '#c49a6c', gap: '#3a2a1a', vertical: false, seed: 51 }) },
+    gen: draw.slats({ base: '#c49a6c', gap: '#3a2a1a', vertical: false, seed: 51 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 0.6, mix: 0.4 } },
 
   // 외장
   { id: 'ext-stucco', name: '화이트 스타코', group: '외장', cats: ['exterior'], size: [1, 1], spec: '수성 스타코', rough: 0.95,
-    gen: draw.stucco({ base: '#ece9e2', seed: 61 }) },
+    gen: draw.stucco({ base: '#ece9e2', seed: 61 }), scan: { a: 'Plaster001', m: 1.0 } },
   { id: 'ext-limestone', name: '라임스톤 패널', group: '외장', cats: ['exterior'], size: [2.4, 1.2], spec: '600×1200 버너', rough: 0.8,
-    gen: draw.travertine({ base: '#d8cfbc', cols: 2, rows: 2, bond: 0, seed: 62 }) },
-  { id: 'ext-brick', name: '다크 브릭', group: '외장', cats: ['exterior'], size: [0.96, 1.04], spec: '230×60 고벽돌', rough: 0.9,
-    gen: draw.brick({ base: '#4c3a33', mortar: '#8f8a82', seed: 63 }) },
+    gen: draw.travertine({ base: '#d8cfbc', cols: 2, rows: 2, bond: 0, seed: 62 }), scan: { a: 'Travertine009', m: 1.2, cells: [2, 2], grout: '#b9a888', tint: '#f2eee6' } },
+  { id: 'ext-brick', name: '다크 브릭', group: '외장', cats: ['exterior'], size: [1.04, 1.04], spec: '230×60 고벽돌', rough: 0.9,
+    gen: draw.brick({ base: '#4c3a33', mortar: '#8f8a82', seed: 63 }), scan: { a: 'Bricks061', m: 1.04, tint: '#a58272' } },
   { id: 'ext-cedar', name: '시더 사이딩', group: '외장', cats: ['exterior'], size: [1.2, 2.4], spec: '140 세로 사이딩', rough: 0.75,
-    gen: draw.slats({ base: '#9c6d45', gap: '#3b2616', n: 8, seed: 64 }) },
+    gen: draw.slats({ base: '#9c6d45', gap: '#3b2616', n: 8, seed: 64 }), scan: { a: 'WoodFloor062', mode: 'detail', m: 0.6, mix: 0.4, rot: true } },
   { id: 'ext-basalt', name: '제주 현무암', group: '외장', cats: ['exterior', 'wall'], size: [1.2, 0.6], spec: '300×600 버너', rough: 0.95,
     gen: draw.speckle({ base: '#45464a', cols: 2, rows: 2, seed: 65, grout: '#2c2d30', dots: 2600, dot: ['#1b1b1d', '#6a6b70', '#0f0f10'] }), bump: groutBump(PX, PX, 2, 2, 2) },
 ];
@@ -398,10 +403,62 @@ const canvases = new Map(), materials = new Map();
 let maxAniso = 8;
 export function setAnisotropy(n) { maxAniso = n; }
 
+// ── 실사 스캔 ──
+const SCANS = new Map(); // 자산 → { c, n, r } (Image)
+const loadImg = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+const scanUrl = (a, k) => new URL(`../textures/${a}_${k}.jpg`, import.meta.url).href;
+// 색 지도만 먼저 읽는다(견본 칩·첫 화면에 필요). 결·광택 지도는 그 재질을 처음 쓸 때 읽는다.
+export function loadScans() {
+  const ids = [...new Set(CATALOG.filter((e) => e.scan).map((e) => e.scan.a))];
+  return Promise.all(ids.map((a) => loadImg(scanUrl(a, 'c')).then((c) => SCANS.set(a, { c }), () => {})));
+}
+const extras = new Map();
+function scanExtras(a) {
+  if (!extras.has(a)) extras.set(a, Promise.all(['n', 'r'].map((k) => loadImg(scanUrl(a, k)).catch(() => null)))
+    .then(([n, r]) => Object.assign(SCANS.get(a), { n, r })));
+  return extras.get(a);
+}
+// 스캔 한 장을 텍스처 캔버스에 깐다. kind: 'c'(색) | 'n'(요철) | 'r'(광택)
+// 캔버스 경계에서 이음매가 없도록 가로·세로 반복 횟수를 정수로 맞추고, 줄눈이 있으면 칸마다 다른 부분을 쓴다.
+function scanCanvas(e, img, kind, under) {
+  const s = e.scan, W = HI, H = Math.round(HI * e.size[1] / e.size[0]);
+  const c = canvas(W, H), g = c.getContext('2d');
+  const pat = g.createPattern(img, 'repeat');
+  const kx = Math.max(1, Math.round(e.size[0] / s.m)), ky = Math.max(1, Math.round(e.size[1] / s.m));
+  const sx = W / kx / img.width, sy = H / ky / img.height;
+  const place = (ox, oy) => pat.setTransform(s.rot ? new DOMMatrix().translate(ox, oy).rotate(90).translate(0, -img.height * sx).scale(sx, sy)
+    : new DOMMatrix().translate(ox, oy).scale(sx, sy));
+  if (s.mode === 'detail') {
+    if (kind === 'c') {
+      g.drawImage(under, 0, 0, W, H);
+      if (s.mix) { place(0, 0); g.globalCompositeOperation = 'overlay'; g.globalAlpha = s.mix; g.fillStyle = pat; g.fillRect(0, 0, W, H); }
+    } else { place(0, 0); g.fillStyle = pat; g.fillRect(0, 0, W, H); }
+    return c;
+  }
+  const [cols, rows, bond = 0] = s.cells || [1, 1], cw = W / cols, rh = H / rows, r = rng(e.id.length * 977 + cols * 31);
+  for (let j = 0; j < rows; j++) for (let i = -1; i < cols; i++) {
+    const x = i * cw + (j % 2) * bond * cw; if (x >= W) continue;
+    const ox = r() * W, oy = r() * H, lum = (r() - 0.5) * 0.08;
+    wrapDraw(W, H, x, j * rh, cw, rh, (xx, yy) => {
+      g.save(); g.beginPath(); g.rect(xx, yy, cw, rh); g.clip();
+      place(s.cells ? xx + ox : 0, s.cells ? yy + oy : 0); g.fillStyle = pat; g.fillRect(xx, yy, cw, rh);
+      if (kind === 'c' && s.cells && lum) { g.globalAlpha = Math.abs(lum); g.fillStyle = lum > 0 ? '#fff' : '#000'; g.fillRect(xx, yy, cw, rh); }
+      g.restore();
+    });
+  }
+  if (kind === 'c' && s.tint) { g.globalCompositeOperation = 'multiply'; g.fillStyle = s.tint; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over'; }
+  if (s.cells) grid(g, W, H, cols, rows, kind === 'c' ? s.grout : kind === 'n' ? '#8080ff' : '#f0f0f0', 3, bond);
+  return c;
+}
+function meanLuma(img) { const c = canvas(8, 8), g = c.getContext('2d'); g.drawImage(img, 0, 0, 8, 8); const d = g.getImageData(0, 0, 8, 8).data; let t = 0; for (let i = 0; i < d.length; i += 4) t += d[i]; return t / 64 / 255; }
+
 function baseCanvas(e) {
   if (!canvases.has(e.id)) {
-    const W = PX, H = Math.round(PX * e.size[1] / e.size[0]);
-    canvases.set(e.id, e.gen(W, H, W / e.size[0]));
+    const W = HI, H = Math.round(HI * e.size[1] / e.size[0]);
+    let c = e.gen(W, H, W / e.size[0]);
+    const sc = e.scan && SCANS.get(e.scan.a);
+    if (sc) c = scanCanvas(e, sc.c, 'c', c);
+    canvases.set(e.id, c);
   }
   return canvases.get(e.id);
 }
@@ -421,7 +478,13 @@ export function getMaterial(id) {
   else if (e.src) { new THREE.TextureLoader().load(e.src, (t) => { Object.assign(t, tex(t.image, e, true)); m.map = t; m.needsUpdate = true; }); }
   else {
     m.map = tex(baseCanvas(e), e, true);
-    if (e.bump) { m.bumpMap = tex(e.bump, e, false); m.bumpScale = 1.2; }
+    if (e.scan && SCANS.has(e.scan.a)) { // 요철·광택 지도는 받는 대로 붙인다
+      scanExtras(e.scan.a).then(({ n, r }) => {
+        if (n) { m.normalMap = tex(scanCanvas(e, n, 'n'), e, false); const k = e.scan.ns ?? 0.7; m.normalScale.set(k, k); }
+        if (r) { m.roughnessMap = tex(scanCanvas(e, r, 'r'), e, false); m.roughness = Math.min(1, Math.max(rough, 0.2) / Math.max(0.15, meanLuma(r))); }
+        m.needsUpdate = true;
+      });
+    } else if (e.bump) { m.bumpMap = tex(e.bump, e, false); m.bumpScale = 1.2; }
   }
   materials.set(id, m);
   return m;
