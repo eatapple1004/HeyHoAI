@@ -29,8 +29,11 @@ class Acc { // 면을 모았다가 BufferGeometry 하나로
 }
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
-export function buildHouse(plan) {
-  const H = plan.height;
+// 한 층을 짓는다. opts.wallH = 벽 높이(위층이 있으면 위층 바닥까지), opts.allRooms = 이름 찾기용 전체 방, opts.covered(r) = 위층이 덮는 방(지붕 생략)
+export function buildHouse(plan, opts = {}) {
+  const H = plan.height, WH = opts.wallH ?? H;
+  const glassRail = new THREE.MeshPhysicalMaterial({ color: 0xcfe3ea, roughness: 0.05, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
+  const railCap = new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.45, metalness: 0.4 });
   const group = new THREE.Group();
   const roomAt = (x, z) => plan.rooms.find((r) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1);
   const surfaceAcc = new Map();   // id → { acc, meta }
@@ -40,7 +43,21 @@ export function buildHouse(plan) {
 
   const surf = (id, meta) => { if (!surfaceAcc.has(id)) surfaceAcc.set(id, { acc: new Acc(), meta: { id, ...meta } }); return surfaceAcc.get(id).acc; };
 
+  // 유리 난간 벽(보이드·계단 가장자리): 높이 1.1m, 아래로 슬래브 마감 띠
+  function rail(w) {
+    const horiz = w.a[1] === w.b[1], c = horiz ? w.a[1] : w.a[0], s0 = horiz ? w.a[0] : w.a[1], s1 = horiz ? w.b[0] : w.b[1];
+    const box = (k0, k1, y0, y1, m, t) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(horiz ? k1 - k0 : t, y1 - y0, horiz ? t : k1 - k0), m);
+      mesh.position.set(horiz ? (k0 + k1) / 2 : c, (y0 + y1) / 2, horiz ? c : (k0 + k1) / 2); mesh.userData.noPick = true; group.add(mesh); return mesh;
+    };
+    box(s0, s1, 0, 1.08, glassRail, 0.024).renderOrder = 2;
+    box(s0, s1, 1.08, 1.13, railCap, 0.06);
+    if (w.fascia !== false) { const f = box(s0, s1, -(opts.slab ?? 0.4), 0, trimFascia, 0.12); f.castShadow = true; }
+    colliders.push(horiz ? [s0, c - 0.1, s1, c + 0.1] : [c - 0.1, s0, c + 0.1, s1]);
+  }
+  const trimFascia = new THREE.MeshStandardMaterial({ color: 0xf2f0eb, roughness: 0.6 });
   for (const w of plan.walls) {
+    if (w.rail) { rail(w); continue; }
     const horiz = w.a[1] === w.b[1];
     const t = w.ext ? plan.extT : plan.intT, ht = t / 2;
     const s0 = horiz ? w.a[0] : w.a[1], s1 = horiz ? w.b[0] : w.b[1], c = horiz ? w.a[1] : w.a[0];
@@ -59,16 +76,16 @@ export function buildHouse(plan) {
     for (let i = 0; i < xs.length - 1; i++) {
       const p = xs[i], q = xs[i + 1]; if (q - p < 1e-4) continue;
       const m = (p + q) / 2, op = ops.find((o) => m > o.s0 && m < o.s1);
-      const side = (k) => { const v = P(m, 0, k); return roomAt(v.x, v.z)?.id || 'exterior'; };
+      const side = (k) => { const v = P(m, 0, k), r = roomAt(v.x, v.z); return r ? r.of || r.id : 'exterior'; };
       const rA = side(-ht - 0.05), rB = side(ht + 0.05);
       const accA = surf(`${w.id}:${rA}`, { kind: 'wall', room: rA, wall: w.id });
       const accB = surf(`${w.id}:${rB}`, { kind: 'wall', room: rB, wall: w.id });
-      const spans = op ? [[0, op.sill || 0], [op.head, H]].filter(([a, b]) => b - a > 1e-3) : [[0, H]];
+      const spans = op ? [[0, op.sill || 0], [op.head, WH]].filter(([a, b]) => b - a > 1e-3) : [[0, WH]];
       for (const [y0, y1] of spans) {
         const uvS = (v) => [horiz ? v.x : v.z, v.y];
         accA.quad([P(p, y0, -ht), P(q, y0, -ht), P(q, y1, -ht), P(p, y1, -ht)], nA, uvS);
         accB.quad([P(p, y0, ht), P(q, y0, ht), P(q, y1, ht), P(p, y1, ht)], nB, uvS);
-        const top = y1 >= H - 1e-3 ? poche : trim;
+        const top = y1 >= WH - 1e-3 ? poche : trim;
         top.quad([P(p, y1, -ht), P(q, y1, -ht), P(q, y1, ht), P(p, y1, ht)], V(0, 1, 0), (v) => [horiz ? v.x : v.z, horiz ? v.z : v.x]);
         if (y0 > 0) trim.quad([P(p, y0, -ht), P(q, y0, -ht), P(q, y0, ht), P(p, y0, ht)], V(0, -1, 0), (v) => [horiz ? v.x : v.z, horiz ? v.z : v.x]);
         const uvC = (v) => [horiz ? v.z : v.x, v.y];
@@ -98,10 +115,15 @@ export function buildHouse(plan) {
   }
 
   // 바닥·천장 (방 사각형, 벽 중심선까지)
+  // void = 아래층과 트인 곳(바닥 없음), open = 위가 트인 곳(천장 없음 — 2층 높이 거실·계단실)
   for (const r of plan.rooms) {
-    const f = surf(`floor:${r.id}`, { kind: 'floor', room: r.id });
-    f.quad([V(r.x0, 0, r.z0), V(r.x1, 0, r.z0), V(r.x1, 0, r.z1), V(r.x0, 0, r.z1)], V(0, 1, 0), (v) => [v.x, v.z]);
-    const cl = surf(`ceil:${r.id}`, { kind: 'ceiling', room: r.id });
+    if (!r.void) {
+      const f = surf(`floor:${r.id}`, { kind: 'floor', room: r.id });
+      f.quad([V(r.x0, 0, r.z0), V(r.x1, 0, r.z0), V(r.x1, 0, r.z1), V(r.x0, 0, r.z1)], V(0, 1, 0), (v) => [v.x, v.z]);
+    }
+    if (r.open) continue;
+    const rid = r.of || r.id;
+    const cl = surf(`ceil:${rid}`, { kind: 'ceiling', room: rid });
     cl.quad([V(r.x0, H, r.z0), V(r.x1, H, r.z0), V(r.x1, H, r.z1), V(r.x0, H, r.z1)], V(0, -1, 0), (v) => [v.x, v.z]);
   }
 
@@ -112,7 +134,7 @@ export function buildHouse(plan) {
     mesh.receiveShadow = true; mesh.castShadow = meta.kind === 'wall';
     mesh.userData.surface = meta;
     meta.mesh = mesh; meta.area = acc.area();
-    const r = plan.rooms.find((x) => x.id === meta.room);
+    const r = (opts.allRooms || plan.rooms).find((x) => x.id === meta.room);
     meta.roomName = r ? r.name : '외관';
     surfaces.push(meta); group.add(mesh);
   }
@@ -142,6 +164,7 @@ export function buildHouse(plan) {
   const roof = new THREE.Group(), roofMat = new THREE.MeshStandardMaterial({ color: 0x3a3b3e, roughness: 0.85 });
   const ov = plan.roofOverhang ?? 0.9, outside = (x, z) => !roomAt(x, z);
   for (const r of plan.rooms) {
+    if (opts.covered?.(r)) continue;
     const mx = (r.x0 + r.x1) / 2, mz = (r.z0 + r.z1) / 2;
     const e = { x0: outside(r.x0 - 0.3, mz) ? ov : 0, x1: outside(r.x1 + 0.3, mz) ? ov : 0, z0: outside(mx, r.z0 - 0.3) ? ov : 0, z1: outside(mx, r.z1 + 0.3) ? ov : 0 };
     const x0 = r.x0 - e.x0, x1 = r.x1 + e.x1, z0 = r.z0 - e.z0, z1 = r.z1 + e.z1;
@@ -153,6 +176,85 @@ export function buildHouse(plan) {
 
   return { group, surfaces, colliders, roof, bounds, roomAt,
     ceilings: surfaces.filter((s) => s.kind === 'ceiling').map((s) => s.mesh) };
+}
+
+// 여러 층 주택. plan.levels 가 없으면 단층으로 본다.
+// 층: { id, name, y(바닥 높이), height(천장고), rooms, walls, furniture }
+// 계단: plan.stairs = [{ x0, z0, x1, z1, up: '+x'|'-x'|'+z'|'-z', from: 층번호, to: 층번호, rails: ['z1', …](난간을 둘 변) }]
+export function buildHome(plan) {
+  const levels = (plan.levels || [{ id: '1F', name: '1층', y: 0, height: plan.height, rooms: plan.rooms, walls: plan.walls, furniture: plan.furniture }])
+    .map((l) => ({ y: 0, height: plan.height, ...l }));
+  const allRooms = levels.flatMap((l, i) => l.rooms.map((r) => Object.assign(r, { level: i })));
+  const group = new THREE.Group(), surfaces = [], ceilings = [], roofs = [], out = [];
+  const inside = (r, x, z) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1;
+  levels.forEach((l, i) => {
+    const next = levels[i + 1], prev = levels[i - 1];
+    const lp = { ...plan, ...l };
+    const b = buildHouse(lp, {
+      wallH: next ? next.y - l.y : l.height, allRooms,
+      slab: prev ? l.y - prev.y - prev.height : 0.4,
+      covered: (r) => !!next && next.rooms.some((u) => inside(u, (r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2)),
+    });
+    b.group.position.y = l.y; group.add(b.group);
+    b.surfaces.forEach((m) => (m.level = i)); surfaces.push(...b.surfaces); ceilings.push(...b.ceilings); roofs.push(b.roof);
+    out.push({ ...l, index: i, group: b.group, colliders: b.colliders, roomAt: b.roomAt, bounds: b.bounds });
+  });
+
+  // 계단: 단을 쌓은 원목 계단 + 난간. 아래층에서는 낮은 쪽 끝으로만 들어갈 수 있다
+  const stairs = (plan.stairs || []).map((st) => {
+    const y0 = levels[st.from].y, y1 = levels[st.to].y, rise = y1 - y0;
+    const n = Math.max(2, Math.round(rise / 0.175)), alongX = st.up[1] === 'x', sign = st.up[0] === '+' ? 1 : -1;
+    const len = alongX ? st.x1 - st.x0 : st.z1 - st.z0;
+    const stepMat = getMaterial('oak-plank').clone(), g = new THREE.Group();
+    const railGlass = new THREE.MeshPhysicalMaterial({ color: 0xcfe3ea, roughness: 0.05, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
+    const cap = new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.45, metalness: 0.4 });
+    // 진행 방향 비율 t(0=아래 끝) → 평면 좌표 구간
+    const span = (t0, t1) => {
+      const a = sign > 0 ? t0 : 1 - t1, b2 = sign > 0 ? t1 : 1 - t0;
+      return alongX ? [st.x0 + a * len, st.z0, st.x0 + b2 * len, st.z1] : [st.x0, st.z0 + a * len, st.x1, st.z0 + b2 * len];
+    };
+    const box = ([x0, z0, x1, z1], ya, yb, m) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, yb - ya, z1 - z0), m);
+      mesh.position.set((x0 + x1) / 2, y0 + (ya + yb) / 2, (z0 + z1) / 2); mesh.castShadow = mesh.receiveShadow = true; mesh.userData.noPick = true; g.add(mesh); return mesh;
+    };
+    for (let k = 0; k < n; k++) box(span(k / n, (k + 1) / n), 0, (rise * (k + 1)) / n, stepMat);
+    const colliders = [];
+    for (const side of st.rails || []) {
+      const entry = 0.9 / len; // 아래 끝 0.9m 는 비워 둔다(들어가는 곳)
+      for (let k = 0; k < n; k++) {
+        const t0 = k / n, t1 = (k + 1) / n, [x0, z0, x1, z1] = span(t0, t1), yb = (rise * (k + 1)) / n;
+        const r = side === 'z0' ? [x0, st.z0 - 0.012, x1, st.z0 + 0.012] : side === 'z1' ? [x0, st.z1 - 0.012, x1, st.z1 + 0.012]
+          : side === 'x0' ? [st.x0 - 0.012, z0, st.x0 + 0.012, z1] : [st.x1 - 0.012, z0, st.x1 + 0.012, z1];
+        box(r, yb, yb + 1.0, railGlass).renderOrder = 2; box([r[0] - 0.02, r[1] - 0.02, r[2] + 0.02, r[3] + 0.02], yb + 1.0, yb + 1.05, cap);
+        if (t1 > entry) colliders.push([r[0] - 0.08, r[1] - 0.08, r[2] + 0.08, r[3] + 0.08]);
+      }
+    }
+    group.add(g);
+    out[st.from].colliders.push(...colliders);
+    return { ...st, y0, y1, len, alongX, sign };
+  });
+
+  const xs = out.flatMap((l) => [l.bounds.x0, l.bounds.x1]), zs = out.flatMap((l) => [l.bounds.z0, l.bounds.z1]);
+  const bounds = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
+  const roomAt = (x, z, i = 0) => out[i]?.roomAt(x, z);
+  // 발 높이 feet 근처에서 디딜 수 있는 바닥 높이
+  const groundAt = (x, z, feet) => {
+    for (const st of stairs) {
+      if (x <= st.x0 || x >= st.x1 || z <= st.z0 || z >= st.z1 || feet < st.y0 - 0.5 || feet > st.y1 + 0.5) continue;
+      const p = st.alongX ? (x - st.x0) / st.len : (z - st.z0) / st.len, t = st.sign > 0 ? p : 1 - p;
+      return st.y0 + Math.max(0, Math.min(1, t)) * (st.y1 - st.y0);
+    }
+    for (let i = out.length - 1; i >= 0; i--) {
+      const l = out[i]; if (l.y > feet + 0.45) continue;
+      const r = l.roomAt(x, z);
+      if (r && !r.void) return l.y;
+      if (i === 0) return 0;
+    }
+    return 0;
+  };
+  const levelOf = (y) => { let k = 0; out.forEach((l, i) => { if (l.y <= y + 0.9) k = i; }); return k; };
+  const roof = new THREE.Group(); // 표시 전환용 묶음(실제 메시는 각 층 그룹 안)
+  return { group, levels: out, surfaces, ceilings, roofs, roof, bounds, roomAt, groundAt, levelOf, stairs, rooms: allRooms.filter((r) => !r.void) };
 }
 
 // 사각형 a 에서 b 를 뺀 나머지(최대 4조각)
@@ -204,7 +306,8 @@ export function buildSite(bounds, site = {}, roomAt = () => null) {
     // 세대 아래 건물 몸체와 테라스 유리 난간
     const ext = (site.terrace || []).reduce((b, [x0, z0, x1, z1]) => ({ x0: Math.min(b.x0, x0), z0: Math.min(b.z0, z0), x1: Math.max(b.x1, x1), z1: Math.max(b.z1, z1) }), { ...bounds });
     const body = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.6, metalness: 0.2 });
-    boxM(ext.x0, ext.z0, ext.x1, ext.z1, -160, -0.02, body, false);
+    const DROP = site.drop ?? 150; // 세대 바닥이 땅에서 얼마나 높은지(m)
+    boxM(ext.x0, ext.z0, ext.x1, ext.z1, -DROP - 10, -0.02, body, false);
     const railGlass = new THREE.MeshPhysicalMaterial({ color: 0xcfe3ea, roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
     const cap = new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.45, metalness: 0.4 });
     // 테라스 바깥 변을 0.25m 단위로 훑어, 집과 맞닿지 않은 구간에만 난간을 세운다
@@ -232,16 +335,16 @@ export function buildSite(bounds, site = {}, roomAt = () => null) {
       for (const p of (site.terrace || []).reduce((acc, t) => acc.flatMap((r) => subtract(r, t)), [[a, b, c, d]])) colliders.push(p);
     }
     // 아래로 보이는 풍경
-    const Y = -150, ground = new THREE.MeshStandardMaterial({ color: 0x7c8466, roughness: 1 });
+    const Y = -DROP, low = DROP < 40, ground = new THREE.MeshStandardMaterial({ color: 0x7c8466, roughness: 1 });
     plane(4000, 4000, ground, cx, Y, cz).receiveShadow = false;
     const city = new THREE.MeshStandardMaterial({ color: 0xb9bdc2, roughness: 0.8 }), cityDark = new THREE.MeshStandardMaterial({ color: 0x7d838b, roughness: 0.7, metalness: 0.2 });
     const geo = new THREE.BoxGeometry(1, 1, 1), N = 900, inst = [new THREE.InstancedMesh(geo, city, N), new THREE.InstancedMesh(geo, cityDark, N)];
     const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), counts = [0, 0];
     const isWater = site.view === 'ocean' ? (x, z) => z > cz + 60 : (x, z) => z > cz + 120 && z < cz + 330;
     for (let i = 0; i < N * 2; i++) {
-      const a = R() * Math.PI * 2, d = 90 + Math.pow(R(), 0.7) * 1100, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+      const a = R() * Math.PI * 2, d = (low ? 45 : 90) + Math.pow(R(), 0.7) * 1100, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
       if (isWater(x, z)) continue;
-      const w = 18 + R() * 30, h = 15 + R() * (d < 300 ? 120 : 70), k = R() > 0.6 ? 1 : 0;
+      const w = 18 + R() * 30, h = low ? 8 + R() * (d < 200 ? 30 : 60) : 15 + R() * (d < 300 ? 120 : 70), k = R() > 0.6 ? 1 : 0;
       if (counts[k] >= N) continue;
       inst[k].setMatrixAt(counts[k]++, mtx.compose(new THREE.Vector3(x, Y + h / 2, z), q, new THREE.Vector3(w, h, w * (0.6 + R() * 0.8))));
     }

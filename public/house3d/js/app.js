@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
 import { HOMES, homeById } from './homes.js';
 import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy } from './materials.js';
-import { buildHouse, buildSite } from './builder.js';
+import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
 
@@ -37,7 +37,10 @@ sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
 scene.add(hemi, sun, sun.target);
 
-const house = buildHouse(PLAN), site = buildSite(house.bounds, SITE, house.roomAt), furn = buildFurniture(PLAN.furniture, PLAN.height);
+const house = buildHome(PLAN), site = buildSite(house.bounds, SITE, (x, z) => house.roomAt(x, z, 0));
+const LV = house.levels, ROOMS = house.rooms, MULTI = LV.length > 1;
+// 가구는 층마다 따로 (층 높이만큼 올린다)
+const furns = LV.map((l) => { const f = buildFurniture(l.furniture, l.height); f.group.position.y = l.y; return f; });
 const CX = (house.bounds.x0 + house.bounds.x1) / 2, CZ = (house.bounds.z0 + house.bounds.z1) / 2;
 { // 해와 그림자 범위를 집 크기에 맞춘다
   const half = Math.max(house.bounds.x1 - house.bounds.x0, house.bounds.z1 - house.bounds.z0) / 2 + 7;
@@ -45,19 +48,20 @@ const CX = (house.bounds.x0 + house.bounds.x1) / 2, CZ = (house.bounds.z0 + hous
   Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 1, far: 80 });
 }
 scene.fog = new THREE.Fog(SKY.day.clone(), ...(site.fog || [45, 130]));
-scene.add(house.group, site.group, furn.group);
-const colliders = [...house.colliders, ...site.colliders, ...furn.colliders];
+scene.add(house.group, site.group, ...furns.map((f) => f.group));
+// 충돌은 층별로 — 발 높이로 지금 층을 정한다
+const COL = LV.map((l, i) => [...l.colliders, ...furns[i].colliders, ...(i === 0 ? site.colliders : [])]);
 const surfaces = house.surfaces;
 const SURF = Object.fromEntries(surfaces.map((s) => [s.id, s]));
 const pickables = surfaces.map((s) => s.mesh);
 const blockers = [];
-[furn.group, house.roof].forEach((g) => g.traverse((o) => o.isMesh && blockers.push(o)));
+[...furns.map((f) => f.group), ...house.roofs].forEach((g) => g.traverse((o) => o.isMesh && blockers.push(o)));
 
 // 밤 조명: 방마다 천장 아래 따뜻한 점광원
-const roomLights = PLAN.rooms.map((r) => {
+const roomLights = ROOMS.map((r) => {
   const area = (r.x1 - r.x0) * (r.z1 - r.z0);
   const l = new THREE.PointLight(0xffcf96, 0, 0, 2);
-  l.position.set((r.x0 + r.x1) / 2, PLAN.height - 0.35, (r.z0 + r.z1) / 2);
+  l.position.set((r.x0 + r.x1) / 2, LV[r.level].y + LV[r.level].height - 0.35, (r.z0 + r.z1) / 2);
   l.userData.power = 3.4 * Math.pow(area, 0.75);
   return l;
 });
@@ -71,7 +75,7 @@ function initialState() {
   for (const [f, v] of Object.entries(PLAN.accents || {})) { const k = PLAN.features?.[f]; if (SURF[k]) over[k] = v; }
   return { room: {}, over };
 }
-const ROOM = Object.fromEntries(PLAN.rooms.map((r) => [r.id, r]));
+const ROOM = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
 // 기본 마감: 방 id → 방 종류('@type') → 집 전체('*') 순으로 찾는다
 const defaultFor = (room, kind) => PLAN.defaults[room]?.[kind] ?? PLAN.defaults['@' + ROOM[room]?.type]?.[kind] ?? PLAN.defaults['*'][kind];
 function matIdOf(s) {
@@ -113,7 +117,9 @@ applyAll();
 const persp = new THREE.PerspectiveCamera(70, 1, 0.05, site.far || 300);
 const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
 let camera = persp, mode = 'walk';
-const player = { x: PLAN.start.x, z: PLAN.start.z, yaw: PLAN.start.yaw, pitch: -0.04, eye: 1.6, r: 0.28 };
+// y = 발 높이(층·계단), 눈높이 = y + eye
+const player = { x: PLAN.start.x, z: PLAN.start.z, y: LV[PLAN.start.level || 0].y, yaw: PLAN.start.yaw, pitch: -0.04, eye: 1.6, r: 0.28 };
+const curLevel = () => house.levelOf(player.y);
 const orbit = { theta: 0.5, phi: 0.95, dist: 34, tx: CX, tz: CZ };
 const plan2d = { cx: CX, cz: CZ, zoom: 10 };
 
@@ -132,8 +138,10 @@ function setMode(m, opts = {}) {
   mode = m;
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
   const inside = m === 'walk';
-  house.roof.visible = inside;
+  house.roofs.forEach((r) => (r.visible = inside));
   house.ceilings.forEach((c) => (c.visible = inside));
+  if (inside) viewLevel = 'all'; else if (m === 'plan' && viewLevel === 'all') viewLevel = curLevel();
+  showLevels();
   marker.visible = !inside;
   camera = m === 'plan' ? ortho : persp;
   persp.fov = inside ? 70 : 40; persp.updateProjectionMatrix();
@@ -169,23 +177,25 @@ addEventListener('resize', resize);
 function updateCamera() {
   if (mode === 'walk') {
     const cp = Math.cos(player.pitch);
-    persp.position.set(player.x, player.eye, player.z);
-    persp.lookAt(player.x + Math.sin(player.yaw) * cp, player.eye + Math.sin(player.pitch), player.z + Math.cos(player.yaw) * cp);
+    const ey = player.y + player.eye;
+    persp.position.set(player.x, ey, player.z);
+    persp.lookAt(player.x + Math.sin(player.yaw) * cp, ey + Math.sin(player.pitch), player.z + Math.cos(player.yaw) * cp);
   } else if (mode === 'doll') {
     const { theta, phi, dist, tx, tz } = orbit;
-    persp.position.set(tx + dist * Math.cos(phi) * Math.sin(theta), dist * Math.sin(phi), tz + dist * Math.cos(phi) * Math.cos(theta));
-    persp.lookAt(tx, 0, tz);
+    const ty = viewY();
+    persp.position.set(tx + dist * Math.cos(phi) * Math.sin(theta), ty + dist * Math.sin(phi), tz + dist * Math.cos(phi) * Math.cos(theta));
+    persp.lookAt(tx, ty, tz);
   } else {
-    ortho.position.set(plan2d.cx, 60, plan2d.cz); ortho.up.set(0, 0, -1); ortho.lookAt(plan2d.cx, 0, plan2d.cz);
+    ortho.position.set(plan2d.cx, 80, plan2d.cz); ortho.up.set(0, 0, -1); ortho.lookAt(plan2d.cx, 0, plan2d.cz);
   }
-  marker.position.set(player.x, 0, player.z); marker.rotation.y = player.yaw;
+  marker.position.set(player.x, player.y, player.z); marker.rotation.y = player.yaw;
 }
 
 // ── 이동과 충돌 ──
 function collide(x, z) {
   const r = player.r;
   for (let it = 0; it < 3; it++) {
-    for (const [x0, z0, x1, z1] of colliders) {
+    for (const [x0, z0, x1, z1] of COL[curLevel()]) {
       const cx = Math.max(x0, Math.min(x, x1)), cz = Math.max(z0, Math.min(z, z1));
       const dx = x - cx, dz = z - cz, d2 = dx * dx + dz * dz;
       if (d2 >= r * r) continue;
@@ -203,7 +213,7 @@ function moveBy(dx, dz) { [player.x, player.z] = collide(player.x + dx, player.z
 
 const keys = new Set();
 addEventListener('keydown', (e) => {
-  if (e.target.closest('input, textarea, select, dialog')) return;
+  if (e.target.closest?.('input, textarea, select, dialog')) return;
   keys.add(e.code);
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'Escape') select(null);
@@ -240,9 +250,12 @@ function stepWalk(dt) {
       else autoWalk.stuck = 0;
     }
   }
+  // 발밑 바닥 높이를 따라간다(계단을 오르내리고, 층이 바뀐다)
+  const g = house.groundAt(player.x, player.z, player.y), d = g - player.y;
+  player.y = Math.abs(d) < 0.005 ? g : player.y + d * Math.min(1, dt * (d < 0 ? 9 : 14));
 }
-function teleport(x, z, yaw) {
-  fadeTo(() => { [player.x, player.z] = collide(x, z); if (yaw != null) player.yaw = yaw; autoWalk = null; });
+function teleport(x, z, yaw, level) {
+  fadeTo(() => { if (level != null) player.y = LV[level].y; [player.x, player.z] = collide(x, z); player.y = house.groundAt(player.x, player.z, player.y); if (yaw != null) player.yaw = yaw; autoWalk = null; });
 }
 
 // ── 입력: 드래그 = 둘러보기/회전/이동, 짧게 누름 = 면 선택 ──
@@ -312,7 +325,7 @@ function onTap(x, y) {
     if (mode === 'walk') { if (hit?.surface?.kind === 'floor' || !hit?.surface) autoWalk = { x: p.x, z: p.z, stuck: 0 }; }
     else {  // 3D 전체·2D에서 두 번 누르면 그 자리로 들어가 걷기
       const look = Math.atan2(orbit.tx - p.x, orbit.tz - p.z);
-      fadeTo(() => { [player.x, player.z] = collide(p.x, p.z); player.yaw = mode === 'plan' ? player.yaw : look + Math.PI; player.pitch = -0.05; setMode('walk'); });
+      fadeTo(() => { player.y = LV[house.levelOf(p.y + 0.05)].y; [player.x, player.z] = collide(p.x, p.z); player.y = house.groundAt(player.x, player.z, player.y); player.yaw = mode === 'plan' ? player.yaw : look + Math.PI; player.pitch = -0.05; setMode('walk'); });
     }
     return;
   }
@@ -325,7 +338,8 @@ const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(x, y) {
   ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const objs = [...pickables, ...blockers].filter((o) => o.visible);
+  const shown = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  const objs = [...pickables, ...blockers].filter(shown);
   const hit = ray.intersectObjects(objs, false)[0];
   if (!hit) return null;
   return { point: hit.point, surface: hit.object.userData.surface || null };
@@ -418,7 +432,7 @@ function applyMat(id, noHistory) {
   const run = () => {
     if (s.room === 'exterior') { setRoom('exterior', 'wall', id); for (const k in state.over) if (SURF[k]?.room === 'exterior') delete state.over[k]; return; }
     if (scope === 'surface') { state.over[s.id] = id; return; }
-    const rooms = scope === 'house' ? PLAN.rooms.map((r) => r.id) : [s.room];
+    const rooms = scope === 'house' ? ROOMS.map((r) => r.id) : [s.room];
     rooms.forEach((r) => setRoom(r, s.kind, id));
     for (const k in state.over) { const o = SURF[k]; if (o && o.kind === s.kind && rooms.includes(o.room)) delete state.over[k]; }
   };
@@ -437,7 +451,7 @@ $('#preset').onchange = (e) => {
   const p = PRESETS[e.target.value]; e.target.value = ''; if (!p) return;
   commit(() => {
     state = { room: {}, over: {} };
-    for (const r of PLAN.rooms) {
+    for (const r of ROOMS) {
       const base = { ...p.all, ...(r.wet ? p.wet : {}), ...(p.types?.[r.type] || {}) };
       for (const k of ['floor', 'wall', 'ceiling']) if (base[k]) setRoom(r.id, k, base[k]);
     }
@@ -469,57 +483,76 @@ $('#shareBtn').onclick = async () => {
 };
 function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => (el.style.opacity = 0), 1800); }
 
-// ── 미니맵 ──
-const svg = $('#miniSvg'), NS = 'http://www.w3.org/2000/svg';
-{
-  const b = house.bounds, pad = 0.6;
+// ── 미니맵 (지금 서 있는 층) ──
+const svg = $('#miniSvg');
+let miniLevel = -1, meEl = null, lastRoom = null;
+function drawMini(i) {
+  miniLevel = i; lastRoom = null;
+  const L = LV[i], b = house.bounds, pad = 0.6;
   svg.setAttribute('viewBox', `${b.x0 - pad} ${b.z0 - pad} ${b.x1 - b.x0 + pad * 2} ${b.z1 - b.z0 + pad * 2}`);
   let html = '';
-  for (const r of PLAN.rooms) html += `<rect class="room" data-r="${r.id}" x="${r.x0}" y="${r.z0}" width="${r.x1 - r.x0}" height="${r.z1 - r.z0}"/>`;
-  for (const w of PLAN.walls) {
+  for (const r of L.rooms) html += `<rect class="room${r.void ? ' void' : ''}" data-r="${r.id}" x="${r.x0}" y="${r.z0}" width="${r.x1 - r.x0}" height="${r.z1 - r.z0}"/>`;
+  for (const w of L.walls) {
     const horiz = w.a[1] === w.b[1], s0 = horiz ? w.a[0] : w.a[1], s1 = horiz ? w.b[0] : w.b[1];
     const gaps = (w.openings || []).filter((o) => o.type !== 'window' && o.type !== 'glass').map((o) => [s0 + o.at, s0 + o.at + o.w]).sort((a, b) => a[0] - b[0]);
     let s = s0; const segs = [];
     for (const [g0, g1] of gaps) { segs.push([s, g0]); s = g1; } segs.push([s, s1]);
     for (const [p, q] of segs) {
       const [x1, y1, x2, y2] = horiz ? [p, w.a[1], q, w.a[1]] : [w.a[0], p, w.a[0], q];
-      html += `<line class="wall" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${w.ext ? 0.25 : 0.15}"/>`;
+      html += `<line class="wall${w.rail ? ' rail' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${w.rail ? 0.08 : w.ext ? 0.25 : 0.15}"/>`;
     }
   }
-  for (const r of PLAN.rooms) if (r.x1 - r.x0 > 2.4) html += `<text x="${(r.x0 + r.x1) / 2}" y="${(r.z0 + r.z1) / 2}">${r.name}</text>`;
+  for (const r of L.rooms) if (r.x1 - r.x0 > 2.4) html += `<text x="${(r.x0 + r.x1) / 2}" y="${(r.z0 + r.z1) / 2}">${r.void ? '오픈' : r.name}</text>`;
   html += `<g id="me"><path class="cone" d="M0 0 L-1.6 3.2 A3.6 3.6 0 0 0 1.6 3.2 Z"/><circle class="me" r="0.38"/></g>`;
-  svg.innerHTML = html;
-  svg.addEventListener('click', (e) => {
-    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-    teleport(p.x, p.y);
-  });
+  svg.innerHTML = html; meEl = svg.querySelector('#me');
+  $('#miniLevel').textContent = MULTI ? L.name + ' · ' : '';
 }
-const meEl = svg.querySelector('#me');
-let lastRoom = null;
+svg.addEventListener('click', (e) => {
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  teleport(p.x, p.y, null, miniLevel);
+});
 function updateMini() {
+  const li = curLevel(); if (li !== miniLevel) drawMini(li);
   meEl.setAttribute('transform', `translate(${player.x} ${player.z}) rotate(${(-player.yaw * 180) / Math.PI})`);
-  const r = house.roomAt(player.x, player.z), name = r ? r.name : '외부';
+  const r = house.roomAt(player.x, player.z, li), name = r ? (r.void ? '오픈 공간' : r.name) : '외부';
   if (name !== lastRoom) {
-    lastRoom = name; $('#roomName').textContent = name; $('#miniRoom').textContent = name;
+    lastRoom = name; $('#roomName').textContent = (MULTI ? LV[li].name + ' · ' : '') + name; $('#miniRoom').textContent = name;
     svg.querySelectorAll('.room').forEach((el) => el.classList.toggle('here', el.dataset.r === r?.id));
   }
 }
 
+// ── 층 보기 (3D 전체·2D 에서 위층을 걷어 낸다) ──
+let viewLevel = 'all';
+const viewY = () => (viewLevel === 'all' ? 0 : LV[viewLevel].y);
+function showLevels() {
+  const top = viewLevel === 'all' ? LV.length - 1 : viewLevel;
+  LV.forEach((l, i) => { l.group.visible = furns[i].group.visible = i <= top; });
+  document.querySelectorAll('#levels button').forEach((b) => b.classList.toggle('on', String(viewLevel) === b.dataset.l));
+}
+if (MULTI) {
+  $('#levels').innerHTML = `<button data-l="all">전체</button>` + LV.map((l, i) => `<button data-l="${i}">${l.name}</button>`).join('');
+  $('#levels').querySelectorAll('button').forEach((b) => (b.onclick = () => {
+    if (mode === 'walk') setMode('doll');
+    viewLevel = b.dataset.l === 'all' ? (mode === 'plan' ? LV.length - 1 : 'all') : +b.dataset.l; showLevels();
+  }));
+} else $('#levels').remove();
+
 // ── 방 이름표 (3D 전체·2D) ──
-const labelEls = PLAN.rooms.map((r) => {
+var labelEls = ROOMS.map((r) => {
   const el = document.createElement('div'); el.className = 'rl';
   const a = (r.x1 - r.x0) * (r.z1 - r.z0);
   el.innerHTML = `${r.name}<small>${a.toFixed(1)}㎡ · ${(a / 3.3058).toFixed(1)}평</small>`;
   $('#labels').appendChild(el);
-  return { el, p: new THREE.Vector3((r.x0 + r.x1) / 2, 0.1, (r.z0 + r.z1) / 2) };
+  return { el, level: r.level, lv: true, p: new THREE.Vector3((r.x0 + r.x1) / 2, LV[r.level].y + 0.1, (r.z0 + r.z1) / 2) };
 });
 const tmp = new THREE.Vector3();
 function updateLabels() {
   if (mode === 'walk') return;
-  for (const { el, p } of labelEls) {
+  const top = viewLevel === 'all' ? LV.length - 1 : viewLevel;
+  for (const { el, p, level } of labelEls) {
     tmp.copy(p).project(camera);
-    const vis = tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
+    const vis = level === top && tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
     el.style.display = vis ? '' : 'none';
     if (vis) el.style.transform = `translate(${(tmp.x + 1) / 2 * innerWidth}px, ${(1 - tmp.y) / 2 * innerHeight}px) translate(-50%, -50%)`;
   }
@@ -544,7 +577,7 @@ function updateLabels() {
 // ── 마감 사양서 ──
 function specData() {
   const rows = [], totals = new Map();
-  const places = [...PLAN.rooms.map((r) => ({ id: r.id, name: r.name })), { id: 'exterior', name: '외관' }];
+  const places = [...ROOMS.map((r) => ({ id: r.id, name: MULTI ? `${LV[r.level].name} ${r.name}` : r.name })), { id: 'exterior', name: '외관' }];
   for (const pl of places) for (const kind of ['floor', 'wall', 'ceiling']) {
     const list = surfaces.filter((s) => s.room === pl.id && s.kind === kind);
     if (!list.length) continue;
@@ -611,4 +644,4 @@ setMode('walk');
 requestAnimationFrame(() => { frame(); const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 450); });
 
 // 점검용
-window.__app = { setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
+window.__app = { house, curLevel, setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
