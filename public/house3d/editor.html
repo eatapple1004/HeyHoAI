@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko" data-v="?v=585de230">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>평면 편집기 · 도면 위에 방 그리기</title>
+<meta name="description" content="도면 이미지를 올리고 그 위에 방을 그리면 벽이 자동으로 만들어지고, 바로 3D로 걸어 볼 수 있습니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238a6a45'/><path d='M8 24V13l8-6 8 6v11h-6v-6h-4v6z' fill='%23fff'/></svg>">
+<!-- stamp:importmap -->
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/admin.js": "./js/admin.js?v=4ef72fd8", "./js/app.js": "./js/app.js?v=628b6b0f", "./js/builder.js": "./js/builder.js?v=5eb3171f", "./js/editor.js": "./js/editor.js?v=14321b8c", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=d8018b6b", "./js/materials.js": "./js/materials.js?v=0834790d", "./js/planmake.js": "./js/planmake.js?v=9bdc071a", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./js/store.js": "./js/store.js?v=113319c5", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
+<!-- /stamp -->
+<style>
+:root {
+  --ink: #1d1c1a; --ink2: #5e5a54; --ink3: #8f8a82; --line: #e2ddd4; --paper: #f8f6f2; --card: #fff;
+  --accent: #8a6a45; --sel: #c99a5b; --shadow: 0 6px 24px rgba(20, 16, 10, .10); --r: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.app { display: grid; grid-template-rows: 60px 1fr; height: 100%; }
+header { display: flex; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line); background: #fff; }
+header a.back { color: var(--ink2); text-decoration: none; font-size: 13px; }
+header input.name { font-size: 17px; font-weight: 700; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; width: min(320px, 40vw); background: none; }
+header input.name:hover, header input.name:focus { border-color: var(--line); outline: none; background: #fff; }
+header .sp { flex: 1; }
+.btn { border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 13px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.btn:hover { border-color: var(--ink3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.sm { padding: 5px 9px; font-size: 12px; }
+.btn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn:disabled { opacity: .4; cursor: default; }
+.main { display: grid; grid-template-columns: 64px 1fr 320px; min-height: 0; }
+.tools { display: flex; flex-direction: column; gap: 6px; padding: 12px 8px; border-right: 1px solid var(--line); background: #fff; }
+.tools button { border: 0; background: none; border-radius: 10px; padding: 8px 0 6px; font-size: 10.5px; font-weight: 600; color: var(--ink2); display: grid; justify-items: center; gap: 3px; }
+.tools button svg { width: 22px; height: 22px; }
+.tools button.on { background: var(--ink); color: #fff; }
+.tools button kbd { font: inherit; font-size: 9.5px; opacity: .6; }
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #f1eee8; }
+canvas#cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(29, 28, 26, .82); color: #fff; font-size: 12.5px; padding: 8px 14px; border-radius: 99px; white-space: nowrap; pointer-events: none; }
+.zoom { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; }
+.side { border-left: 1px solid var(--line); background: #fff; overflow: auto; padding: 4px 0 24px; }
+.side section { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.side h3 { font-size: 12px; color: var(--ink3); font-weight: 700; margin: 0 0 10px; letter-spacing: .02em; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.field { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink2); }
+.field input, .field select { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 13.5px; font-weight: 500; color: var(--ink); background: #fff; width: 100%; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.rooms { display: grid; gap: 2px; max-height: 240px; overflow: auto; }
+.rooms button { display: flex; justify-content: space-between; border: 0; background: none; text-align: left; padding: 7px 8px; border-radius: 8px; font-size: 13px; }
+.rooms button:hover { background: var(--paper); } .rooms button.on { background: #f3e9db; }
+.rooms small { color: var(--ink3); }
+.muted { font-size: 12px; color: var(--ink3); line-height: 1.5; margin: 6px 0 0; }
+.warn { font-size: 12px; color: #a3412d; background: #fbeee9; border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.stat { display: flex; gap: 14px; font-size: 13px; } .stat b { font-size: 16px; }
+input[type=range] { width: 100%; }
+.plans { display: grid; gap: 6px; } .plans .it { display: flex; align-items: center; gap: 6px; font-size: 13px; } .plans .it span { flex: 1; }
+#toast { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: 13px; padding: 9px 16px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
+@media (max-width: 900px) {
+  .main { grid-template-columns: 52px 1fr; grid-template-rows: 1fr auto; }
+  .side { grid-column: 1 / -1; max-height: 42vh; border-left: 0; border-top: 1px solid var(--line); }
+  header { gap: 8px; padding: 0 10px; } header input.name { width: auto; flex: 1; min-width: 0; font-size: 15px; } header .sp, header .hide-m, .vb-long { display: none; }
+  .app { overflow-x: hidden; } .main { min-width: 0; }
+  .hint { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <a class="back" href="./">← 홈</a>
+    <input class="name" id="planName" value="새 평면" maxlength="40" aria-label="평면 이름">
+    <span class="sp"></span>
+    <button class="btn hide-m" id="undoBtn" disabled>되돌리기</button>
+    <button class="btn" id="saveBtn">저장</button>
+    <button class="btn primary" id="viewBtn">3D<span class="vb-long">로 걸어 보기</span> →</button>
+  </header>
+  <div class="main">
+    <nav class="tools" aria-label="도구">
+      <button data-tool="select" title="선택·이동·크기 조절 (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3l14 8-6 2-2 6z"/></svg>선택<kbd>V</kbd></button>
+      <button data-tool="room" title="방 그리기: 드래그 (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M4 12h7v7"/></svg>방<kbd>R</kbd></button>
+      <button data-tool="door" title="문·창: 벽을 클릭 (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16M7 20V5h8v15"/><path d="M15 5l3 2v13"/></svg>문·창<kbd>D</kbd></button>
+      <button data-tool="scale" title="축척 맞추기: 도면 위 두 점 클릭 (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>축척<kbd>S</kbd></button>
+      <button data-tool="pan" title="화면 이동 (스페이스 + 드래그)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>이동<kbd>␣</kbd></button>
+    </nav>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint"></div>
+      <div class="zoom"><button class="btn sm" id="fitBtn">전체 보기</button></div>
+    </div>
+    <aside class="side">
+      <section>
+        <h3>도면 이미지</h3>
+        <div class="row"><label class="btn sm">이미지 불러오기<input type="file" id="bgFile" accept="image/*" hidden></label><button class="btn sm" id="bgMove">도면 위치 옮기기</button><button class="btn sm" id="bgDel">지우기</button></div>
+        <div class="field" style="margin-top:10px">투명도<input type="range" id="bgOp" min="0.1" max="1" step="0.05" value="0.6"></div>
+        <p class="muted" id="bgInfo">평면도 사진·PDF 캡처를 올리고 <b>축척</b> 도구로 길이를 아는 두 점(예: 외벽 끝과 끝)을 찍으면 실제 크기로 맞춰집니다.</p>
+      </section>
+      <section id="selBox">
+        <h3>선택한 항목</h3>
+        <div id="selBody"><p class="muted">방이나 문·창을 누르면 여기서 이름·종류·치수를 고칠 수 있습니다.</p></div>
+      </section>
+      <section>
+        <h3>방 목록</h3>
+        <div class="stat"><span><b id="sRooms">0</b> 개</span><span><b id="sArea">0</b> ㎡</span><span><b id="sPy">0</b> 평</span></div>
+        <div class="rooms" id="roomList" style="margin-top:8px"></div>
+        <div id="warn"></div>
+      </section>
+      <section>
+        <h3>평면 설정</h3>
+        <div class="g2">
+          <label class="field">천장고 (m)<input type="number" id="ceilH" min="2.2" max="6" step="0.05" value="2.7"></label>
+          <label class="field">구분<select id="kind"><option>시공</option><option>분양</option></select></label>
+        </div>
+        <label class="field" style="margin-top:8px">지역·설명<input id="region" placeholder="예: 인천 송도 · 단독주택"></label>
+      </section>
+      <section>
+        <h3>내 평면</h3>
+        <div class="plans" id="plans"></div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" id="newBtn">새 평면</button><button class="btn sm" id="sampleBtn">예시 평면 불러오기</button><button class="btn sm" id="expBtn">JSON 내보내기</button><label class="btn sm">JSON 가져오기<input type="file" id="impFile" accept="application/json" hidden></label></div>
+        <p class="muted">시연 단계라 평면은 이 브라우저에만 저장됩니다.</p>
+      </section>
+    </aside>
+  </div>
+</div>
+<div id="toast"></div>
+<script type="module" src="./js/editor.js?v=14321b8c"></script><!-- stamp:entry -->
+</body>
+</html>
