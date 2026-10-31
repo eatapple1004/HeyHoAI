@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
 import { HOMES, homeById, planArea, customHomes } from './homes.js';
-import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans, priceOf } from './materials.js';
-import { addRequest, getCombos, saveCombos, won, wonShort } from './store.js';
+import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans, priceOf, applyAdmin } from './materials.js';
+import { submitRequest, loadAdminSettings, getCombos, saveCombos, won, wonShort } from './store.js';
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
@@ -25,7 +25,8 @@ renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
-await loadScans(); // 실사 스캔 색 지도(못 읽으면 그린 무늬로)
+const [, adminSettings] = await Promise.all([loadScans(), loadAdminSettings()]); // 실사 스캔 색 지도(못 읽으면 그린 무늬로) · 업체 단가·사진
+applyAdmin(adminSettings);
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
@@ -736,14 +737,18 @@ function download(name, obj) {
   a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 $('#jsonBtn').onclick = () => download('마감사양.json', payload());
-$('#reqForm').onsubmit = (e) => {
+$('#reqForm').onsubmit = async (e) => {
   e.preventDefault();
   const req = payload({ request: Object.fromEntries(new FormData(e.target)) });
-  // 접수 API 연결 전 시안: 요청 내용을 이 브라우저에 보관하고 파일로 내려 준다
-  addRequest({ ...req, type: req.request.type, homeName: PLAN.name, source: 'tour' });
+  const btn = e.target.querySelector('[type=submit]'), ok = $('#reqOk');
+  btn.disabled = true;
+  const r = await submitRequest({ ...req, type: req.request.type, homeName: PLAN.name, source: 'tour' });
+  btn.disabled = false; ok.style.display = 'block';
+  if (!r.ok) { ok.textContent = `보내지 못했습니다: ${r.error}`; return; }
+  if (r.server) { ok.textContent = `상담 요청이 접수되었습니다 (마감 ${req.finishes.length}건·견적 ${wonShort(req.estimate.total)} 첨부). 담당자가 확인 후 연락드립니다.`; e.target.reset(); return; }
+  // 서버가 없는 곳(로컬 시연): 이 브라우저에 보관하고 파일로도 내려 준다
   download('시공상담요청.json', req);
-  const ok = $('#reqOk'); ok.style.display = 'block';
-  ok.textContent = `요청 내용이 정리되었습니다 (마감 ${req.finishes.length}건). 시안 단계라 아직 서버로 보내지 않고 파일로 저장했습니다. 접수 연동 후 담당자에게 바로 전달됩니다.`;
+  ok.textContent = `요청 내용이 정리되었습니다 (마감 ${req.finishes.length}건). 접수 서버가 없는 환경이라 이 브라우저와 파일에만 저장했습니다.`;
 };
 
 // ── 루프 ──

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
 <!-- stamp:importmap -->
-<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/admin.js": "./js/admin.js?v=4ef72fd8", "./js/app.js": "./js/app.js?v=628b6b0f", "./js/builder.js": "./js/builder.js?v=5eb3171f", "./js/editor.js": "./js/editor.js?v=14321b8c", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=d8018b6b", "./js/materials.js": "./js/materials.js?v=0834790d", "./js/planmake.js": "./js/planmake.js?v=9bdc071a", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./js/store.js": "./js/store.js?v=113319c5", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/admin.js": "./js/admin.js?v=e50d785b", "./js/app.js": "./js/app.js?v=ae4540d9", "./js/builder.js": "./js/builder.js?v=5eb3171f", "./js/editor.js": "./js/editor.js?v=14321b8c", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=d8018b6b", "./js/materials.js": "./js/materials.js?v=4dfcd239", "./js/planmake.js": "./js/planmake.js?v=9bdc071a", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./js/store.js": "./js/store.js?v=e39e78db", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
 <!-- /stamp -->
 <style>
 :root {
@@ -323,7 +323,7 @@ footer a { color: #d9d1c4; }
   <div class="wrap">
     <div class="logo">아틀리에 하우스 <small>가칭 · 시안</small></div>
     <p><a href="./editor.html" style="color:#d9d1c4">평면 편집기</a> · <a href="./admin.html" style="color:#d9d1c4">업체 관리자(시연)</a></p>
-    <p>이 페이지는 기능 검증용 시안입니다. 상담 요청은 아직 서버로 전송되지 않으며, 입력 내용은 이 브라우저와 내려받은 파일에만 남습니다.</p>
+    <p>이 페이지는 기능 검증용 시안입니다. 상담 요청은 시연 서버에 접수되어 업체 관리자 화면에서 확인합니다.</p>
     <p>소개된 여섯 주택은 공개 보도·분양 정보에 나온 규모(면적·층·유형)만 참고해 <b>새로 그린 시연용 평면</b>입니다. 실제 단지·건물의 도면이나 분양 정보가 아니며, 특정 단지와 관계가 없습니다.</p>
     <details>
       <summary>규모를 참고한 공개 자료</summary>
@@ -342,7 +342,7 @@ footer a { color: #d9d1c4; }
 
 <script type="module">
 import { HOMES, planArea } from './js/homes.js';
-import { addRequest } from './js/store.js';
+import { submitRequest } from './js/store.js';
 
 const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const V = document.documentElement.dataset.v || '';
@@ -401,14 +401,20 @@ function download(name, obj) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }));
   a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
-$$('form.f').forEach((f) => (f.onsubmit = (e) => {
+$$('form.f').forEach((f) => (f.onsubmit = async (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(f)), h = HOMES.find((x) => x.plan.id === data.home);
   const req = { type: f.dataset.kind, createdAt: new Date().toISOString(), home: data.home || null, homeName: h?.plan.name || null, request: data, source: 'homepage' };
-  addRequest(req);
-  download(`${f.dataset.kind.replace(' ', '')}.json`, req);
+  const btn = f.querySelector('[type=submit]'); if (btn) btn.disabled = true;
+  const r = await submitRequest(req);
+  if (btn) btn.disabled = false;
   const ok = $('#okMsg'); ok.style.display = 'block';
-  ok.textContent = `${f.dataset.kind} 내용이 정리되었습니다. 시안 단계라 아직 서버로 보내지 않고 파일로 저장했습니다. 접수 연동 후 담당자에게 바로 전달됩니다.`;
+  if (!r.ok) { ok.textContent = `보내지 못했습니다: ${r.error}`; return; }
+  if (r.server) ok.textContent = `${f.dataset.kind} 요청이 접수되었습니다. 담당자가 확인 후 연락드립니다.`;
+  else { // 접수 서버가 없는 환경(로컬 시연): 이 브라우저와 파일에 저장
+    download(`${f.dataset.kind.replace(' ', '')}.json`, req);
+    ok.textContent = `${f.dataset.kind} 내용이 정리되었습니다. 접수 서버가 없는 환경이라 이 브라우저와 파일에만 저장했습니다.`;
+  }
   f.reset();
 }));
 

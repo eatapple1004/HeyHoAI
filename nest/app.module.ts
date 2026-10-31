@@ -23,6 +23,7 @@ import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
 import { DiagnoseModule } from './diagnose/diagnose.module';
+import { House3dModule } from './house3d/house3d.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
@@ -77,6 +78,7 @@ import { MessengerModule } from './messenger/messenger.module';
     MessengerModule,     // (2026-10-18) 메신저 입구 — LINE 웹훅(/api/messenger), 카톡은 뒤에
     AdminPaymentsModule, // 환경별 결제 조회(/api/admin/payments)
     DiagnoseModule,      // 진단 퍼널 저장(/api/diagnose 공개 · /api/admin/diagnose 관리자)
+    House3dModule,       // (2026-10-31) 3D 마감 체험 시안 접수·업체 설정(/api/house3d 공개 · /api/admin/house3d 관리자) — dev 전용
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],
