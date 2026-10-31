@@ -1,8 +1,8 @@
 // 업체 관리자 — 자재·단가·사진, 상담 접수함, 편집기로 만든 평면.
 //   dev 서버에서 Doppia 관리자로 로그인하면 서버 데이터(접수·설정)를 다루고(mode 'server'),
-//   로그인 전이면 안내를 띄우고('login'), 서버가 없는 곳에서는 이 브라우저 저장을 쓴다('local'). 평면은 아직 브라우저에만.
+//   로그인 전이면 안내를 띄우고('login'), 서버가 없는 곳에서는 이 브라우저 저장을 쓴다('local').
 import { CATALOG, thumb, loadScans } from './materials.js';
-import { getAdmin, saveAdmin, getRequests, saveRequests, addRequest, getPlans, savePlans, won, wonShort, adminApi, loadAdminSettings } from './store.js';
+import { getAdmin, saveAdmin, getRequests, saveRequests, addRequest, getPlans, savePlans, won, wonShort, adminApi, loadAdminSettings, plansApi } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -164,16 +164,27 @@ $('#rDemo').onclick = () => {
 };
 
 // ── 내 평면 ──
+let srvPlans = mode === 'server' ? await plansApi.list().catch(() => []) : [];
 function renderPlans() {
-  const list = getPlans();
-  if (!list.length) { $('#pTable').innerHTML = '<tr><td class="empty">평면 편집기로 만든 평면이 없습니다.</td></tr>'; return; }
-  $('#pTable').innerHTML = '<tr><th>이름</th><th>방</th><th style="text-align:right">면적</th><th class="hide-m">수정</th><th></th></tr>' + list.map((p, i) => {
-    const a = p.plan.rooms.reduce((s, r) => s + (r.x1 - r.x0) * (r.z1 - r.z0), 0), d = new Date(p.meta?.updated);
-    return `<tr><td><b>${esc(p.plan.name)}</b><br><small>${esc(p.meta?.region || '')}</small></td><td>${p.plan.rooms.length}개</td><td class="num">${a.toFixed(1)}㎡ · ${(a / 3.3058).toFixed(1)}평</td>
+  const items = mode === 'server'
+    ? srvPlans.map((p) => ({ id: p.id, name: p.name, region: p.meta?.region, rooms: p.meta?.rooms, area: p.meta?.area, at: p.updated_at }))
+    : getPlans().map((p) => ({ id: p.plan.id, name: p.plan.name, region: p.meta?.region, rooms: p.plan.rooms.length,
+      area: p.plan.rooms.reduce((s, r) => s + (r.x1 - r.x0) * (r.z1 - r.z0), 0), at: p.meta?.updated }));
+  if (!items.length) { $('#pTable').innerHTML = '<tr><td class="empty">평면 편집기로 만든 평면이 없습니다.</td></tr>'; return; }
+  $('#pTable').innerHTML = '<tr><th>이름</th><th>방</th><th style="text-align:right">면적</th><th class="hide-m">수정</th><th></th></tr>' + items.map((p) => {
+    const d = new Date(p.at);
+    return `<tr><td><b>${esc(p.name)}</b><br><small>${esc(p.region || '')}</small></td><td>${p.rooms ?? '—'}개</td><td class="num">${p.area != null ? `${(+p.area).toFixed(1)}㎡ · ${(p.area / 3.3058).toFixed(1)}평` : '—'}</td>
       <td class="hide-m">${isNaN(d) ? '—' : d.toLocaleDateString('ko-KR')}</td>
-      <td class="num"><a class="btn sm" href="./editor.html?p=${p.plan.id}">편집</a> <a class="btn sm" href="./tour.html?h=${p.plan.id}">3D</a> <button class="btn sm" data-d="${i}">삭제</button></td></tr>`;
+      <td class="num"><a class="btn sm" href="./editor.html?p=${p.id}">편집</a> <a class="btn sm" href="./tour.html?h=${p.id}">3D</a> <button class="btn sm" data-d="${p.id}">삭제</button></td></tr>`;
   }).join('');
-  $('#pTable').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { const p = list.at(+b.dataset.d); if (!confirm(`'${p.plan.name}' 평면을 삭제할까요?`)) return; savePlans(list.filter((x) => x !== p)); renderPlans(); }));
+  $('#pTable').querySelectorAll('[data-d]').forEach((b) => (b.onclick = async () => {
+    const p = items.find((x) => x.id === b.dataset.d); if (!confirm(`'${p.name}' 평면을 삭제할까요?`)) return;
+    if (mode === 'server') {
+      try { await plansApi.remove(p.id); } catch (e) { return toast('삭제하지 못했습니다: ' + e.message); }
+      srvPlans = srvPlans.filter((x) => x.id !== p.id);
+    } else savePlans(getPlans().filter((x) => x.plan.id !== p.id));
+    renderPlans();
+  }));
 }
 
 renderMat(); renderReq(); renderPlans();

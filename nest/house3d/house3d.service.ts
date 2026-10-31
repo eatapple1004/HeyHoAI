@@ -1,6 +1,6 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { House3dRepository, House3dRequestRow } from './house3d.repository';
+import { House3dPlanRow, House3dRepository, House3dRequestRow } from './house3d.repository';
 
 /** 에러는 LegacyErrorFilter가 그대로 내보내므로 레거시 형식 `{success:false,error}`로 던진다 */
 function fail(status: number, error: string): never {
@@ -17,6 +17,12 @@ const MAT_ID_RE = /^[a-z0-9-]{1,40}$/;
 const MAX_PAYLOAD = 200 * 1024;          // 요청 1건(마감 목록·견적 포함) 상한
 const MAX_SETTINGS = 6 * 1024 * 1024;    // 업체 설정 전체(자재 사진 포함) 상한
 const MAX_PHOTO = 400 * 1024;            // 자재 사진 1장(data URL) 상한 — 화면에서 768px JPEG로 줄여 올린다
+const PLAN_ID_RE = /^custom-[a-z0-9]{4,24}$/;
+const MAX_PLAN = 300 * 1024;             // 평면 데이터(방·벽·문) 상한
+const MAX_SRC = 4 * 1024 * 1024;         // 편집 원본 상한(도면 이미지 2000px JPEG 포함)
+const MAX_PLANS = 200;
+/** 이름·방 이름은 체험 화면에 그대로 찍히므로 태그 문자를 지운다 */
+const clean = (v: unknown, max: number): string => String(v ?? '').replace(/[<>&"`]/g, '').trim().slice(0, max);
 
 /**
  * IP당 횟수 제한 — 무인증 공개 엔드포인트라 봇·반복 호출을 막는다(diagnose와 같은 방식, 프로세스 메모리 기준).
@@ -124,5 +130,53 @@ export class House3dService {
     if (hidden.length > 200 || hidden.some((x: unknown) => typeof x !== 'string' || !MAT_ID_RE.test(x))) fail(400, 'invalid hidden');
     out.hidden = [...new Set(hidden as string[])];
     return { updatedAt: await this.repo.putSetting('materials', out, userId) };
+  }
+
+  // ── 평면 편집기 평면 ──
+  /** 공개 목록(이름·요약)·단건(평면) — 체험 화면이 custom-* 주택을 그릴 때. 편집 원본은 제외 */
+  listPlans(): Promise<House3dPlanRow[]> {
+    return this.repo.listPlans();
+  }
+
+  async getPlan(id: string, withSrc: boolean): Promise<House3dPlanRow> {
+    if (!PLAN_ID_RE.test(id)) fail(400, 'invalid id');
+    const p = await this.repo.getPlan(id, withSrc);
+    if (!p) fail(404, 'not found');
+    return p;
+  }
+
+  /**
+   * 저장(관리자). 체험 화면이 그대로 읽는 데이터라 모양을 확인하고, 화면에 찍히는 이름의 태그 문자는 지운다.
+   *   벽·문 계산은 화면(planmake.js)이 한다 — 서버는 크기·모양만 본다.
+   */
+  async putPlan(id: string, body: any, userId: string): Promise<{ updatedAt: string }> {
+    if (!PLAN_ID_RE.test(id)) fail(400, 'invalid id');
+    const plan = body?.plan;
+    if (!plan || typeof plan !== 'object' || !Array.isArray(plan.rooms) || !Array.isArray(plan.walls)) fail(400, 'invalid plan');
+    if (plan.rooms.length < 1 || plan.rooms.length > 200 || plan.walls.length > 2000) fail(400, 'invalid plan size');
+    for (const r of plan.rooms) {
+      if (!r || typeof r !== 'object' || ![r.x0, r.z0, r.x1, r.z1].every((v) => Number.isFinite(v) && Math.abs(v) < 1000)) fail(400, 'invalid room');
+      r.name = clean(r.name, 30) || '방';
+      r.id = clean(r.id, 40) || 'r';
+    }
+    plan.id = id;
+    plan.name = clean(plan.name, 60) || '새 평면';
+    if (JSON.stringify(plan).length > MAX_PLAN) fail(413, '평면이 너무 큽니다');
+    let src = body.src ?? null;
+    if (src != null) {
+      if (typeof src !== 'object' || Array.isArray(src)) fail(400, 'invalid src');
+      if (JSON.stringify(src).length > MAX_SRC) fail(413, '도면 이미지가 너무 큽니다');
+      src = { ...src, id, name: plan.name };
+    }
+    const m = body.meta && typeof body.meta === 'object' ? body.meta : {};
+    const area = plan.rooms.reduce((a: number, r: any) => a + Math.abs((r.x1 - r.x0) * (r.z1 - r.z0)), 0);
+    const meta = { kind: m.kind === '분양' ? '분양' : '시공', region: clean(m.region, 60), rooms: plan.rooms.length, area: Math.round(area * 10) / 10 };
+    if (!(await this.repo.getPlan(id, false)) && (await this.repo.countPlans()) >= MAX_PLANS) fail(400, `평면은 ${MAX_PLANS}개까지 저장할 수 있습니다`);
+    return { updatedAt: await this.repo.upsertPlan({ id, name: plan.name, plan, src, meta, userId }) };
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    if (!PLAN_ID_RE.test(id)) fail(400, 'invalid id');
+    if (!(await this.repo.deletePlan(id))) fail(404, 'not found');
   }
 }

@@ -8,7 +8,7 @@
 // features: 프리셋이 바꾸는 대표 벽면(tv = 거실 아트월, bed = 안방 침대 헤드월)
 // furniture: [종류, x, z, 바라보는 방향(도: 0=남, 90=동, 180=북, 270=서), 옵션]
 
-import { getPlans } from './store.js';
+import { getPlans, plansApi } from './store.js';
 
 const R = (id, name, type, x0, z0, x1, z1, extra) => ({ id, name, type, x0, z0, x1, z1, ...(type === 'bath' ? { wet: true } : {}), ...extra });
 const W = (id, a, b, openings, ext) => ({ id, a, b, ...(ext ? { ext: true } : {}), ...(openings ? { openings } : {}) });
@@ -471,12 +471,24 @@ export const HOMES = [
     tagline: '30m 일자형 평면 앞으로 이어지는 인피니티 풀과 현무암 외벽',
     ref: '서귀포 단층·복층 혼합 고급 빌라(전용 약 285㎡) 공개 매물 정보 참고' },
 ];
-// 평면 편집기(editor.html)로 만든 집 — 이 브라우저에 저장된 것
-export const customHomes = () => getPlans().map(({ plan, meta = {} }) => ({
-  plan, custom: true, region: meta.region || '직접 만든 평면', kind: meta.kind || '시공', type: meta.type || '평면 편집기',
+// 평면 편집기(editor.html)로 만든 집 — 서버(업체가 저장, 모든 방문자)와 이 브라우저(로그인 전 저장) 두 곳
+const toHome = (plan, meta = {}, server = false) => ({
+  plan, custom: true, server, region: meta.region || '직접 만든 평면', kind: meta.kind || '시공', type: meta.type || '평면 편집기',
   beds: plan.rooms.filter((r) => r.type === 'master' || r.type === 'bed').length, baths: plan.rooms.filter((r) => r.type === 'bath').length,
   tagline: meta.tagline || '도면 위에 방을 그려 만든 평면', ref: '평면 편집기',
-}));
-export const homeById = (id) => HOMES.find((h) => h.plan.id === id) || customHomes().find((h) => h.plan.id === id) || HOMES[0];
+});
+// 주택 고르기 상자용 목록 [{ id, name }] — 서버 것 먼저, 같은 id 는 하나만
+export async function customList() {
+  let srv = []; try { srv = await plansApi.list(); } catch {}
+  const ids = new Set(srv.map((p) => p.id));
+  return [...srv.map((p) => ({ id: p.id, name: p.name })), ...getPlans().filter((p) => !ids.has(p.plan.id)).map((p) => ({ id: p.plan.id, name: p.plan.name }))];
+}
+// custom-* 주택 하나 — 서버에 있으면 서버 것(업체가 고친 최신), 없으면 이 브라우저 것
+export async function loadCustomHome(id) {
+  try { const r = await plansApi.get(id); return toHome(r.plan, r.meta, true); } catch {}
+  const l = getPlans().find((p) => p.plan.id === id);
+  return l ? toHome(l.plan, l.meta) : null;
+}
+export const homeById = (id) => HOMES.find((h) => h.plan.id === id) || HOMES[0];
 // 평면 면적(벽 중심선 기준, ㎡)
 export const planArea = (plan) => (plan.levels ? plan.levels.flatMap((l) => l.rooms) : plan.rooms).filter((r) => !r.void).reduce((a, r) => a + (r.x1 - r.x0) * (r.z1 - r.z0), 0);

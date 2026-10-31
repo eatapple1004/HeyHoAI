@@ -3,7 +3,7 @@ import { AdminGuard } from '../auth/admin.guard';
 import { ApiOk, ApiResponse } from '../common/dto/api-response.dto';
 import { House3dDevOnlyGuard } from './dev-only.guard';
 import { House3dService, House3dSettings } from './house3d.service';
-import { House3dRequestRow } from './house3d.repository';
+import { House3dPlanRow, House3dRequestRow } from './house3d.repository';
 
 // /api/house3d — 공개(무인증). 3D 마감 체험 시안(public/house3d)이 호출한다. 횟수 제한은 서비스에서.
 @Controller('api/house3d')
@@ -22,6 +22,18 @@ export class House3dController {
   @Get('settings')
   async settings(): Promise<ApiResponse<{ value: House3dSettings | null; updatedAt: string | null }>> {
     return { success: true, data: await this.svc.getSettings() };
+  }
+
+  // GET /api/house3d/plans — 업체가 평면 편집기로 만든 주택(편집 원본 제외). 체험 화면의 주택 목록에 나온다
+  @Get('plans')
+  async plans(): Promise<ApiResponse<House3dPlanRow[]>> {
+    return { success: true, data: await this.svc.listPlans() };
+  }
+
+  // GET /api/house3d/plans/:id
+  @Get('plans/:id')
+  async plan(@Param('id') id: string): Promise<ApiResponse<House3dPlanRow>> {
+    return { success: true, data: await this.svc.getPlan(id, false) };
   }
 }
 
@@ -48,6 +60,25 @@ export class AdminHouse3dController {
   @Delete('requests/:id')
   async remove(@Param('id') id: string): Promise<ApiOk> {
     await this.svc.deleteRequest(id);
+    return { success: true };
+  }
+
+  // GET /api/admin/house3d/plans/:id — 편집 원본(src, 도면 이미지 포함)까지
+  @Get('plans/:id')
+  async planWithSrc(@Param('id') id: string): Promise<ApiResponse<House3dPlanRow>> {
+    return { success: true, data: await this.svc.getPlan(id, true) };
+  }
+
+  // PUT /api/admin/house3d/plans/:id { plan, src, meta }
+  @Put('plans/:id')
+  async putPlan(@Param('id') id: string, @Body() body: any, @Req() req: any): Promise<ApiResponse<{ updatedAt: string }>> {
+    return { success: true, data: await this.svc.putPlan(id, body, req.user.id) };
+  }
+
+  // DELETE /api/admin/house3d/plans/:id
+  @Delete('plans/:id')
+  async removePlan(@Param('id') id: string): Promise<ApiOk> {
+    await this.svc.deletePlan(id);
     return { success: true };
   }
 

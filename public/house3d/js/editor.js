@@ -1,7 +1,8 @@
 // 평면 편집기 — 도면 이미지 위에 방(사각형)을 그리면 벽이 자동으로 생기고, 벽을 눌러 문·창을 단다.
-// 저장하면 hw-plans 에 평면 데이터(genPlan 결과)와 편집 원본이 함께 들어가고, tour.html?h=<id> 로 바로 걸어 볼 수 있다.
+// 저장하면 평면 데이터(genPlan 결과)와 편집 원본(도면 이미지 포함)이 함께 들어가고, tour.html?h=<id> 로 바로 걸어 볼 수 있다.
+//   Doppia 관리자로 로그인했으면 서버(모든 방문자가 봄), 아니면 이 브라우저(hw-plans)에 저장한다.
 import { genPlan, makeWalls, overlaps, ROOM_TYPES, OP_TYPES, OP_WIDTH } from './planmake.js';
-import { getPlans, savePlans } from './store.js';
+import { getPlans, savePlans, adminMode, plansApi } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#cv'), g = cv.getContext('2d'), stage = $('#stage');
@@ -351,27 +352,68 @@ $('#bgOp').oninput = (e) => { if (doc.bg) { doc.bg.op = +e.target.value; draw();
 $('#bgOp').onchange = () => changed();
 
 // ── 저장·불러오기 ──
-function save(quiet) {
+let mode = 'local', srvPlans = []; // 'server' | 'login' | 'local'
+async function refreshServer() { if (mode === 'server') srvPlans = await plansApi.list().catch(() => srvPlans); renderPlans(); }
+async function save(quiet) {
   if (!doc.rooms.length) { toast('방을 하나 이상 그려 주세요'); return false; }
-  const plan = genPlan(doc), list = getPlans().filter((p) => p.plan.id !== doc.id);
-  list.unshift({ plan, meta: { kind: doc.kind, region: doc.region || '직접 만든 평면', updated: new Date().toISOString() }, src: doc });
+  const plan = genPlan(doc), meta = { kind: doc.kind, region: doc.region || '직접 만든 평면' };
+  if (mode === 'server') {
+    try { await plansApi.save(doc.id, { plan, src: doc, meta }); }
+    catch (e) {
+      if (e.status !== 413) { toast('저장하지 못했습니다: ' + e.message); return false; }
+      // 도면 이미지가 너무 크면 빼고 다시
+      try { await plansApi.save(doc.id, { plan, src: { ...doc, bg: null }, meta }); toast('도면 이미지가 커서 빼고 저장했습니다'); }
+      catch (e2) { toast('저장하지 못했습니다: ' + e2.message); return false; }
+    }
+    if (!quiet) toast('서버에 저장했습니다 · 모든 방문자가 3D로 볼 수 있습니다');
+    await refreshServer(); return true;
+  }
+  const list = getPlans().filter((p) => p.plan.id !== doc.id);
+  list.unshift({ plan, meta: { ...meta, updated: new Date().toISOString() }, src: doc });
   if (!savePlans(list)) {
     // 저장 공간이 모자라면 도면 이미지를 빼고 다시 시도
     list[0].src = { ...doc, bg: null };
     if (!savePlans(list)) { toast('브라우저 저장 공간이 부족합니다. 다른 평면을 지워 주세요'); return false; }
     toast('저장 공간이 부족해 도면 이미지는 빼고 저장했습니다');
-  } else if (!quiet) toast('저장했습니다');
+  } else if (!quiet) toast(mode === 'login' ? '이 브라우저에 저장했습니다 · 로그인하면 서버에 저장됩니다' : '저장했습니다');
   renderPlans(); return true;
 }
-$('#saveBtn').onclick = () => save();
-$('#viewBtn').onclick = () => { if (save(true)) location.href = `./tour.html?h=${doc.id}`; };
+const busy = async (btn, fn) => { btn.disabled = true; try { return await fn(); } finally { btn.disabled = false; } };
+$('#saveBtn').onclick = () => busy($('#saveBtn'), () => save());
+$('#viewBtn').onclick = () => busy($('#viewBtn'), async () => { if (await save(true)) location.href = `./tour.html?h=${doc.id}`; });
 function open(src) { doc = { ...blank(), ...JSON.parse(JSON.stringify(src)) }; undo.length = 0; sel = null; loadBg(doc.bg?.src, () => { changed(); fit(); }); changed(); }
+async function openId(id) {
+  if (mode === 'server') {
+    try { const r = await plansApi.adminGet(id); open(r.src || fromPlan(r.plan)); return true; } catch (e) { toast('열지 못했습니다: ' + e.message); }
+  }
+  const l = getPlans().find((p) => p.plan.id === id);
+  if (l) { open(l.src || fromPlan(l.plan)); return true; }
+  return false;
+}
 function renderPlans() {
-  const list = getPlans();
-  $('#plans').innerHTML = list.map((p, i) => `<div class="it"><span>${p.plan.id === doc.id ? '<b>' : ''}${esc(p.plan.name)}${p.plan.id === doc.id ? '</b>' : ''} <small class="muted">${p.plan.rooms.length}개 방</small></span>
-    <button class="btn sm" data-o="${i}">열기</button><a class="btn sm" href="./tour.html?h=${p.plan.id}">3D</a><button class="btn sm" data-d="${i}">삭제</button></div>`).join('') || '<p class="muted">저장한 평면이 없습니다.</p>';
-  $('#plans').querySelectorAll('[data-o]').forEach((b) => (b.onclick = () => { const p = list.at(+b.dataset.o); open(p.src || fromPlan(p.plan)); }));
-  $('#plans').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { const p = list.at(+b.dataset.d); if (!confirm(`'${p.plan.name}' 평면을 삭제할까요?`)) return; savePlans(list.filter((x) => x !== p)); renderPlans(); }));
+  const local = getPlans(), next = encodeURIComponent(location.pathname + location.search);
+  const items = mode === 'server' ? srvPlans.map((p) => ({ id: p.id, name: p.name, rooms: p.meta?.rooms }))
+    : local.map((p) => ({ id: p.plan.id, name: p.plan.name, rooms: p.plan.rooms.length }));
+  $('#planMode').innerHTML = mode === 'server' ? '<b>서버에 저장</b> · 저장한 평면은 모든 방문자의 주택 목록에 나옵니다.'
+    : mode === 'login' ? `이 브라우저에만 저장됩니다. <a href="/login?next=${next}">Doppia 관리자로 로그인</a>하면 서버에 저장되어 모든 방문자가 볼 수 있습니다.`
+    : '이 브라우저에만 저장됩니다(접수 서버가 없는 환경).';
+  $('#plans').innerHTML = items.map((p) => `<div class="it"><span>${p.id === doc.id ? '<b>' : ''}${esc(p.name)}${p.id === doc.id ? '</b>' : ''} <small class="muted">${p.rooms ?? '?'}개 방</small></span>
+    <button class="btn sm" data-o="${p.id}">열기</button><a class="btn sm" href="./tour.html?h=${p.id}">3D</a><button class="btn sm" data-d="${p.id}">삭제</button></div>`).join('') || '<p class="muted">저장한 평면이 없습니다.</p>';
+  if (mode === 'server' && local.length) $('#plans').insertAdjacentHTML('beforeend', `<button class="btn sm" id="upLocal">이 브라우저 평면 ${local.length}개 서버로 올리기</button>`);
+  $('#plans').querySelectorAll('[data-o]').forEach((b) => (b.onclick = () => openId(b.dataset.o)));
+  $('#plans').querySelectorAll('[data-d]').forEach((b) => (b.onclick = async () => {
+    const it = items.find((x) => x.id === b.dataset.d); if (!confirm(`'${it.name}' 평면을 삭제할까요?`)) return;
+    if (mode === 'server') { try { await plansApi.remove(it.id); } catch (e) { return toast('삭제하지 못했습니다: ' + e.message); } await refreshServer(); }
+    else { savePlans(local.filter((x) => x.plan.id !== it.id)); renderPlans(); }
+  }));
+  const up = $('#upLocal');
+  if (up) up.onclick = () => busy(up, async () => {
+    if (!confirm(`이 브라우저에 있는 평면 ${local.length}개를 서버로 올릴까요? 올린 뒤 브라우저 사본은 지웁니다.`)) return;
+    const left = [];
+    for (const p of local) { try { await plansApi.save(p.plan.id, { plan: p.plan, src: p.src || null, meta: p.meta || {} }); } catch { left.push(p); } }
+    savePlans(left); await refreshServer();
+    toast(left.length ? `${local.length - left.length}개 올림 · ${left.length}개 실패(브라우저에 남김)` : `${local.length}개 모두 서버로 올렸습니다`);
+  });
 }
 // 편집 원본이 없는 평면(JSON 가져오기 등) → 방만 되살린다
 const fromPlan = (plan) => ({ id: plan.id || newId(), name: plan.name, height: plan.height, rooms: plan.rooms.map((r) => ({ ...r })), ops: [], bg: null });
@@ -410,11 +452,10 @@ let fitted = false;
 new ResizeObserver(() => { resize(); if (!fitted && W > 120) { fitted = true; fit(); } }).observe(stage);
 {
   const pid = new URLSearchParams(location.search).get('p');
-  const saved = pid && getPlans().find((p) => p.plan.id === pid);
+  mode = await adminMode();
+  if (mode === 'server') srvPlans = await plansApi.list().catch(() => []);
   let draft = null; try { draft = JSON.parse(localStorage.getItem(DRAFT)); } catch {}
-  if (saved) open(saved.src || fromPlan(saved.plan));
-  else if (draft?.rooms) open(draft);
-  else changed();
+  if (!(pid && (await openId(pid)))) { if (draft?.rooms) open(draft); else changed(); }
   setTool(doc.rooms.length ? 'select' : 'room');
   requestAnimationFrame(fit);
 }
