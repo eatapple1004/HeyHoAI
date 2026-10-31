@@ -1,7 +1,7 @@
 // 3D 마감 체험 — 걷기 · 3D 전체 · 2D 평면 세 가지 보기에서 면을 눌러 마감을 바로 바꾼다.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
-import { HOMES, homeById, planArea, customHomes } from './homes.js';
+import { HOMES, homeById, planArea, customList, loadCustomHome } from './homes.js';
 import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans, priceOf, applyAdmin } from './materials.js';
 import { submitRequest, loadAdminSettings, getCombos, saveCombos, won, wonShort } from './store.js';
 import { buildHome, buildSite } from './builder.js';
@@ -10,7 +10,8 @@ import { PRESETS } from './presets.js';
 
 const $ = (s) => document.querySelector(s);
 // 어떤 주택을 보여 줄지: tour.html?h=주택id
-const HOME = homeById(new URLSearchParams(location.search).get('h')), PLAN = HOME.plan;
+const QID = new URLSearchParams(location.search).get('h') || '';
+const HOME = (QID.startsWith('custom-') && await loadCustomHome(QID)) || homeById(QID), PLAN = HOME.plan;
 const SITE = PLAN.site || {};
 const isTouch = matchMedia('(pointer: coarse)').matches;
 if (isTouch) document.body.classList.add('touch');
@@ -767,7 +768,13 @@ $('#planMeta').textContent = `${HOME.region} · ${HOME.type} · ${HOME.kind}형 
 $('#reqForm [name=type]').value = HOME.kind === '분양' ? '분양 상담' : '신축 시공';
 // 다른 주택으로 바꾸기
 $('#homeSel').innerHTML = HOMES.map((h) => `<option value="${h.plan.id}" ${h.plan.id === PLAN.id ? 'selected' : ''}>${h.region} · ${h.plan.name}</option>`).join('')
-  + (customHomes().length ? `<optgroup label="평면 편집기로 만든 집">${customHomes().map((h) => `<option value="${h.plan.id}" ${h.plan.id === PLAN.id ? 'selected' : ''}>${h.plan.name}</option>`).join('')}</optgroup>` : '');
+  + (HOME.custom ? `<optgroup label="평면 편집기로 만든 집"><option value="${PLAN.id}" selected>${PLAN.name}</option></optgroup>` : '');
+// 편집기로 만든 집 목록은 서버에서 받아 뒤에 채운다(첫 화면을 늦추지 않게)
+customList().then((l) => {
+  if (!l.length) return;
+  const g = $('#homeSel').querySelector('optgroup') || $('#homeSel').appendChild(Object.assign(document.createElement('optgroup'), { label: '평면 편집기로 만든 집' }));
+  g.innerHTML = l.map((p) => `<option value="${p.id}" ${p.id === PLAN.id ? 'selected' : ''}>${String(p.name).replace(/[<>&"]/g, '')}</option>`).join('');
+});
 $('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
 // 뷰어 아래 소개와 다른 주택
 {

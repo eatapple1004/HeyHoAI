@@ -3,7 +3,7 @@
 //   브라우저(대체):
 //   hw-admin    : 업체 관리자 설정 { prices: {재질id: 원/㎡}, edits: {재질id: {name, spec, src}}, hidden: [재질id] }
 //   hw-requests : 상담·시공 요청 목록(홈페이지·체험 화면에서 쌓임), 관리자 화면에서 상태를 바꾼다
-//   hw-plans    : 평면 편집기로 만든 주택 [{ plan, meta }]
+//   hw-plans    : 평면 편집기로 만든 주택 [{ plan, meta, src }] — 관리자 로그인 전·서버 없는 곳에서만(로그인하면 서버에 저장)
 //   hw-combos:<주택id> : 비교용으로 저장한 마감 조합 [{ name, state, at }]
 const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
@@ -66,4 +66,19 @@ export const adminApi = {
   remove: (id) => api(`/admin/house3d/requests/${id}`, { method: 'DELETE' }),
   saveSettings: (a) => api('/admin/house3d/settings', { method: 'PUT', body: { prices: a.prices, edits: a.edits, hidden: a.hidden }, timeout: 20000 }),
   noServer,
+};
+
+// 관리자 로그인 상태 — 'server'(로그인한 Doppia 관리자) | 'login'(서버는 있으나 로그인 전) | 'local'(서버 없음)
+export async function adminMode() {
+  try { await api('/admin/house3d/requests?limit=1', { timeout: 4000 }); return 'server'; }
+  catch (e) { return e.status === 401 || e.status === 403 ? 'login' : 'local'; }
+}
+
+// 평면 편집기 평면 — 공개 목록(이름·요약)·단건(평면), 관리자 저장(편집 원본·도면 이미지 포함)
+export const plansApi = {
+  list: () => api('/house3d/plans', { timeout: 4000 }),
+  get: (id) => api(`/house3d/plans/${id}`, { timeout: 6000 }),
+  adminGet: (id) => api(`/admin/house3d/plans/${id}`, { timeout: 15000 }),
+  save: (id, d) => api(`/admin/house3d/plans/${id}`, { method: 'PUT', body: d, timeout: 30000 }),
+  remove: (id) => api(`/admin/house3d/plans/${id}`, { method: 'DELETE' }),
 };
