@@ -8,7 +8,7 @@
 <title>3D 마감 체험</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <!-- stamp:importmap -->
-<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/app.js": "./js/app.js?v=e41af49c", "./js/builder.js": "./js/builder.js?v=5eb3171f", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=ca1faf9a", "./js/materials.js": "./js/materials.js?v=9fb67f95", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js?v=3f776a49", "./js/admin.js": "./js/admin.js?v=4ef72fd8", "./js/app.js": "./js/app.js?v=628b6b0f", "./js/builder.js": "./js/builder.js?v=5eb3171f", "./js/editor.js": "./js/editor.js?v=14321b8c", "./js/furniture.js": "./js/furniture.js?v=e9f9559f", "./js/homes.js": "./js/homes.js?v=d8018b6b", "./js/materials.js": "./js/materials.js?v=0834790d", "./js/planmake.js": "./js/planmake.js?v=9bdc071a", "./js/presets.js": "./js/presets.js?v=4b322ddf", "./js/store.js": "./js/store.js?v=113319c5", "./vendor/RoomEnvironment.js": "./vendor/RoomEnvironment.js?v=f42528ac", "./vendor/three.core.js": "./vendor/three.core.js?v=6bdce60e", "./vendor/three.module.js": "./vendor/three.module.js?v=3f776a49" } }</script>
 <!-- /stamp -->
 <style>
 :root {
@@ -120,6 +120,13 @@ td .sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; b
 .form label { font-size: 12px; font-weight: 600; color: var(--ink2); display: grid; gap: 4px; }
 .form input, .form textarea, .form select { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; }
 .form .wide { grid-column: 1 / -1; }
+tr.sum td { font-weight: 700; border-top: 2px solid var(--ink); }
+tr.sum2 td { color: var(--ink2); font-size: 12.5px; }
+td.num.up { color: var(--accent); font-weight: 700; }
+td.acts { text-align: right; white-space: nowrap; } .btn.sm { padding: 5px 9px; font-size: 12px; }
+.combo { display: flex; gap: 8px; margin: 10px 0 0; } .combo input { flex: 1; font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+#estChip { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; padding-top: 6px; padding-bottom: 6px; }
+#estChip b { font-size: 14px; } #estChip span { font-size: 10.5px; color: var(--ink3); font-weight: 500; }
 .ok { background: #f2efe8; border-radius: 12px; padding: 14px 16px; font-size: 13px; margin-top: 12px; display: none; }
 
 #fade { position: absolute; inset: 0; background: #f4f1ec; opacity: 0; pointer-events: none; z-index: 8; transition: opacity .22s; }
@@ -180,6 +187,7 @@ section.info { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; paddi
   section.info { grid-template-columns: 1fr; padding: 20px 0 40px; }
   .seg button { padding: 6px 9px; font-size: 12px; }
   .btn { padding: 8px 10px; font-size: 12px; }
+  #estChip span { display: none; } .combo { flex-direction: column; }
   .top .spacer { display: none; }
   #roomName { top: auto; bottom: 168px; }
   #hint { display: none; }
@@ -194,7 +202,7 @@ section.info { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; paddi
   body > *:not(dialog) { display: none !important; }
   dialog { position: static; width: 100%; max-height: none; box-shadow: none; }
   dialog::backdrop { display: none; }
-  .dh .btn, #reqForm, #reqForm + .ok, .db h3:nth-last-of-type(1) { display: none; }
+  .dh .btn, #reqForm, #reqForm + .ok, .db h3:nth-last-of-type(1), .noprint { display: none !important; }
 }
 </style>
 </head>
@@ -225,7 +233,8 @@ section.info { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; paddi
     <option value="">스타일 프리셋</option>
   </select>
   <button class="btn" id="shareBtn">링크 복사</button>
-  <button class="btn primary" id="specBtn">마감 사양서</button>
+  <button class="btn" id="estChip" title="지금 마감 기준 예상 마감 공사비 · 눌러서 견적 보기"></button>
+  <button class="btn primary" id="specBtn">마감 사양서 · 견적</button>
 </div>
 
 <div class="vtools">
@@ -267,13 +276,19 @@ section.info { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; paddi
 </main>
 
 <dialog id="spec">
-  <div class="dh"><h2>마감 사양서</h2><button class="btn" id="jsonBtn">JSON 저장</button><button class="btn" id="printBtn">인쇄 · PDF</button><button class="btn" id="specX">닫기</button></div>
+  <div class="dh"><h2>마감 사양서 · 견적</h2><button class="btn" id="jsonBtn">JSON 저장</button><button class="btn" id="printBtn">인쇄 · PDF</button><button class="btn" id="specX">닫기</button></div>
   <div class="db">
     <h3>공간별 마감</h3>
     <table id="specRooms"></table>
     <h3>자재별 물량</h3>
     <table id="specTotals"></table>
     <p class="note">면적은 벽 중심선 기준으로 계산한 참고값이며 창·문 개구부를 뺀 값입니다. 발주 물량은 실측 후 확정합니다. 규격은 참고 표기입니다.</p>
+    <h3>예상 마감 공사비</h3>
+    <table id="estTable"></table>
+    <p class="note">시공비 포함 ㎡당 <b>예시 단가</b>로 계산한 참고 금액입니다(할증 10% 포함, 부가세·철거·설비 별도). 실제 단가는 업체 관리자 화면에서 바꿀 수 있습니다.</p>
+    <h3 class="noprint">마감 조합 비교</h3>
+    <table id="comboTable" class="noprint"></table>
+    <div class="combo noprint"><input id="comboName" placeholder="조합 이름 (예: 원목·대리석 안)" maxlength="30"><button class="btn" id="comboSave" type="button">지금 마감을 조합으로 저장</button></div>
     <h3>이 마감으로 시공 상담 요청</h3>
     <form class="form" id="reqForm">
       <label>이름<input name="name" required autocomplete="name"></label>
@@ -288,6 +303,6 @@ section.info { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; paddi
   </div>
 </dialog>
 
-<script type="module" src="./js/app.js?v=e41af49c"></script><!-- stamp:entry -->
+<script type="module" src="./js/app.js?v=628b6b0f"></script><!-- stamp:entry -->
 </body>
 </html>

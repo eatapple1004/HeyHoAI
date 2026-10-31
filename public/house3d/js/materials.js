@@ -6,6 +6,7 @@
 // 실제 자재 사진이 들어오면 entry.src 에 이미지 경로를 넣으면 그림 대신 그 이미지를 쓴다.
 // size = 텍스처 한 장이 덮는 실제 크기(m). 모든 면의 UV가 m 단위라서 규격이 실제 비율로 깔린다.
 import * as THREE from 'three';
+import { getAdmin } from './store.js';
 
 const PX = 512; // 줄눈 요철 지도 해상도
 const HI = 1024; // 색 텍스처 한 변 해상도
@@ -389,12 +390,36 @@ export const CATALOG = [
     gen: draw.speckle({ base: '#45464a', cols: 2, rows: 2, seed: 65, grout: '#2c2d30', dots: 2600, dot: ['#1b1b1d', '#6a6b70', '#0f0f10'] }), bump: groutBump(PX, PX, 2, 2, 2) },
 ];
 
+// 시공비 포함 ㎡당 예시 단가(원). 실제 업체 단가는 관리자 화면(admin.html)에서 바꾼다.
+const BASE_PRICE = {
+  'marble-white': 160000, 'marble-checker': 220000, 'stone-grey': 140000, 'stone-travertine': 230000, terrazzo: 260000, 'hex-white': 150000,
+  'oak-plank': 180000, 'oak-smoked': 200000, 'chevron-walnut': 280000, 'chevron-oak': 240000,
+  'linen-paper': 30000, 'linen-grey': 30000, 'stripe-paper': 38000, 'damask-paper': 45000, 'damask-ivory': 45000,
+  'marble-slab': 380000, 'marble-nero': 420000, 'wood-slat': 210000, concrete: 160000, 'subway-white': 120000, 'subway-green': 130000,
+  'ceil-white': 22000, 'ceil-oak': 190000,
+  'ext-stucco': 90000, 'ext-limestone': 260000, 'ext-brick': 170000, 'ext-cedar': 190000, 'ext-basalt': 240000,
+};
+const PAINT_PRICE = 25000;
+for (const m of CATALOG) m.basePrice = BASE_PRICE[m.id] ?? (m.paint ? PAINT_PRICE : 100000);
+
+// 관리자 화면에서 바꾼 이름·규격·단가·사진·숨김을 반영한다(이 브라우저에 저장된 값)
+export const ADMIN = getAdmin();
+for (const m of CATALOG) {
+  const e = ADMIN.edits[m.id] || {};
+  if (e.name) m.name = e.name;
+  if (e.spec) m.spec = e.spec;
+  if (e.src) m.src = e.src;
+  m.price = ADMIN.prices[m.id] ?? m.basePrice;
+  m.hidden = ADMIN.hidden.includes(m.id);
+}
+export const priceOf = (id) => resolveEntry(id).price ?? PAINT_PRICE;
+
 export const BY_ID = Object.fromEntries(CATALOG.map((m) => [m.id, m]));
 
 // 사용자가 고른 임의 색 도장: 'paint#rrggbb'
 export function resolveEntry(id) {
   if (BY_ID[id]) return BY_ID[id];
-  if (id.startsWith('paint#')) return { id, name: '맞춤 도장 ' + id.slice(5).toUpperCase(), group: '도장', cats: ['wall', 'ceiling'], color: id.slice(5), spec: '조색 · 친환경 수성 무광', rough: 0.92, paint: true };
+  if (id.startsWith('paint#')) return { id, name: '맞춤 도장 ' + id.slice(5).toUpperCase(), group: '도장', cats: ['wall', 'ceiling'], color: id.slice(5), spec: '조색 · 친환경 수성 무광', rough: 0.92, paint: true, price: ADMIN.prices['paint-white'] ?? PAINT_PRICE };
   return BY_ID['paint-white'];
 }
 
@@ -496,6 +521,7 @@ export function thumb(id) {
   if (thumbs.has(id)) return thumbs.get(id);
   const e = resolveEntry(id);
   const c = canvas(120, 120), g = c.getContext('2d');
+  if (e.src) { thumbs.set(id, e.src); return e.src; } // 업체가 올린 실제 자재 사진
   if (e.paint) { g.fillStyle = e.color; g.fillRect(0, 0, 120, 120); }
   else {
     const src = baseCanvas(e);

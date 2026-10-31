@@ -8,6 +8,8 @@
 // features: 프리셋이 바꾸는 대표 벽면(tv = 거실 아트월, bed = 안방 침대 헤드월)
 // furniture: [종류, x, z, 바라보는 방향(도: 0=남, 90=동, 180=북, 270=서), 옵션]
 
+import { getPlans } from './store.js';
+
 const R = (id, name, type, x0, z0, x1, z1, extra) => ({ id, name, type, x0, z0, x1, z1, ...(type === 'bath' ? { wet: true } : {}), ...extra });
 const W = (id, a, b, openings, ext) => ({ id, a, b, ...(ext ? { ext: true } : {}), ...(openings ? { openings } : {}) });
 const door = (at, w = 0.9, head = 2.4) => ({ at, w, type: 'door', head });
@@ -469,6 +471,12 @@ export const HOMES = [
     tagline: '30m 일자형 평면 앞으로 이어지는 인피니티 풀과 현무암 외벽',
     ref: '서귀포 단층·복층 혼합 고급 빌라(전용 약 285㎡) 공개 매물 정보 참고' },
 ];
-export const homeById = (id) => HOMES.find((h) => h.plan.id === id) || HOMES[0];
+// 평면 편집기(editor.html)로 만든 집 — 이 브라우저에 저장된 것
+export const customHomes = () => getPlans().map(({ plan, meta = {} }) => ({
+  plan, custom: true, region: meta.region || '직접 만든 평면', kind: meta.kind || '시공', type: meta.type || '평면 편집기',
+  beds: plan.rooms.filter((r) => r.type === 'master' || r.type === 'bed').length, baths: plan.rooms.filter((r) => r.type === 'bath').length,
+  tagline: meta.tagline || '도면 위에 방을 그려 만든 평면', ref: '평면 편집기',
+}));
+export const homeById = (id) => HOMES.find((h) => h.plan.id === id) || customHomes().find((h) => h.plan.id === id) || HOMES[0];
 // 평면 면적(벽 중심선 기준, ㎡)
 export const planArea = (plan) => (plan.levels ? plan.levels.flatMap((l) => l.rooms) : plan.rooms).filter((r) => !r.void).reduce((a, r) => a + (r.x1 - r.x0) * (r.z1 - r.z0), 0);

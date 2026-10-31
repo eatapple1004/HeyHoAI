@@ -1,8 +1,9 @@
 // 3D 마감 체험 — 걷기 · 3D 전체 · 2D 평면 세 가지 보기에서 면을 눌러 마감을 바로 바꾼다.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
-import { HOMES, homeById, planArea } from './homes.js';
-import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans } from './materials.js';
+import { HOMES, homeById, planArea, customHomes } from './homes.js';
+import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans, priceOf } from './materials.js';
+import { addRequest, getCombos, saveCombos, won, wonShort } from './store.js';
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
@@ -80,9 +81,24 @@ function initialState() {
 const ROOM = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
 // 기본 마감: 방 id → 방 종류('@type') → 집 전체('*') 순으로 찾는다
 const defaultFor = (room, kind) => PLAN.defaults[room]?.[kind] ?? PLAN.defaults['@' + ROOM[room]?.type]?.[kind] ?? PLAN.defaults['*'][kind];
-function matIdOf(s) {
-  const kind = s.kind;
-  return state.over[s.id] ?? state.room[s.room]?.[kind] ?? defaultFor(s.room, kind);
+function matIdOf(s, st = state) {
+  return st.over[s.id] ?? st.room[s.room]?.[s.kind] ?? defaultFor(s.room, s.kind);
+}
+// ── 견적: 면적(할증 10%) × ㎡당 단가. 기본 마감(처음 상태)과 비교한다 ──
+const WASTE = 1.1;
+function estimate(st = state) {
+  const lines = new Map(); let total = 0;
+  for (const s of surfaces) {
+    if (!s.area) continue;
+    const id = matIdOf(s, st), amt = s.area * WASTE * priceOf(id);
+    const l = lines.get(id) || { id, area: 0, amount: 0 }; l.area += s.area; l.amount += amt; lines.set(id, l); total += amt;
+  }
+  return { total, lines: [...lines.values()].sort((a, b) => b.amount - a.amount) };
+}
+const BASE_TOTAL = () => estimate(initialState()).total;
+function updateEstimate() {
+  const t = estimate().total, d = t - BASE_TOTAL();
+  $('#estChip').innerHTML = `<b>${wonShort(t)}</b><span>${Math.abs(d) < 5000 ? '기본 마감' : `기본 대비 ${d > 0 ? '+' : '−'}${wonShort(Math.abs(d))}`}</span>`;
 }
 function applyAll() { for (const s of surfaces) s.mesh.material = getMaterial(matIdOf(s)); }
 
@@ -92,7 +108,7 @@ function commit(fn) {
   fn(); applyAll(); afterChange();
 }
 function afterChange() {
-  $('#undoBtn').disabled = !undoStack.length;
+  $('#undoBtn').disabled = !undoStack.length; updateEstimate();
   if (selected) renderPanel();
   saveLocal();
 }
@@ -480,7 +496,7 @@ function renderPanel() {
   const s = selected, cur = resolveEntry(matIdOf(s)), cat = catOf(s);
   $('#pWhere').textContent = surfaceTitle(s) + (s.area ? ` · 약 ${s.area.toFixed(1)}㎡` : '');
   $('#pName').textContent = cur.name;
-  $('#pSpec').textContent = `${cur.group} · ${cur.spec} (참고)`;
+  $('#pSpec').textContent = `${cur.group} · ${cur.spec} (참고) · ${won(priceOf(cur.id))}/㎡` + (s.area ? ` · 이 면 약 ${wonShort(s.area * WASTE * priceOf(cur.id))}` : '');
 
   const scopes = s.room === 'exterior' ? [] : s.kind === 'wall'
     ? [['surface', '이 벽면만'], ['room', '방 전체 벽'], ['house', '집 전체 벽']]
@@ -492,10 +508,10 @@ function renderPanel() {
   $('#pTabs').innerHTML = groups.map((g) => `<button class="${g === tab ? 'on' : ''}">${g}</button>`).join('');
   $('#pTabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { tab = b.textContent; renderPanel(); }));
 
-  const items = CATALOG.filter((m) => m.group === tab && m.cats.includes(cat));
+  const items = CATALOG.filter((m) => m.group === tab && m.cats.includes(cat) && (!m.hidden || m.id === cur.id));
   const grid = $('#pGrid');
   grid.innerHTML = items.map((m) => `<button class="chip ${m.id === cur.id ? 'on' : ''}" data-id="${m.id}">
-      <i style="background-image:url(${thumb(m.id)})"></i><span>${m.name}</span><small>${m.spec}</small></button>`).join('')
+      <i style="background-image:url(${thumb(m.id)})"></i><span>${m.name}</span><small>${m.spec} · ${(m.price / 10000).toFixed(m.price < 100000 ? 1 : 0)}만/㎡</small></button>`).join('')
     + (tab === '도장' ? `<label class="chip custom ${cur.id.startsWith('paint#') ? 'on' : ''}"><i><input type="color" value="${cur.paint ? cur.color : '#d8cfc0'}"></i><span>직접 조색</span><small>원하는 색</small></label>` : '');
   grid.querySelectorAll('button.chip').forEach((b) => (b.onclick = () => applyMat(b.dataset.id)));
   const ci = grid.querySelector('input[type=color]');
@@ -513,7 +529,7 @@ function applyMat(id, noHistory) {
     rooms.forEach((r) => setRoom(r, s.kind, id));
     for (const k in state.over) { const o = SURF[k]; if (o && o.kind === s.kind && rooms.includes(o.room)) delete state.over[k]; }
   };
-  if (noHistory) { run(); applyAll(); $('#undoBtn').disabled = !undoStack.length; saveLocal();
+  if (noHistory) { run(); applyAll(); $('#undoBtn').disabled = !undoStack.length; saveLocal(); updateEstimate();
     $('#pName').textContent = resolveEntry(matIdOf(s)).name; return; }
   commit(run);
 }
@@ -674,8 +690,37 @@ function openSpec() {
     `<tr><td>${i && rows[i - 1].room === r.room ? '' : r.room}</td><td>${r.part}</td><td><span class="sw" style="background-image:url(${thumb(r.id)})"></span>${r.name}</td><td>${r.spec}</td><td class="num">${r.area.toFixed(1)}㎡</td></tr>`).join('');
   $('#specTotals').innerHTML = '<tr><th>자재</th><th>구분</th><th style="text-align:right">면적</th><th style="text-align:right">할증 10% 포함</th></tr>' + totals.map((t) =>
     `<tr><td><span class="sw" style="background-image:url(${thumb(t.id)})"></span>${t.name}</td><td>${t.group}</td><td class="num">${t.area.toFixed(1)}㎡</td><td class="num">${(t.area * 1.1).toFixed(1)}㎡</td></tr>`).join('');
+  renderEstimate();
+  renderCombos();
   $('#spec').showModal();
 }
+function renderEstimate() {
+  const e = estimate(), base = estimate(initialState()), d = e.total - base.total;
+  $('#estTable').innerHTML = '<tr><th>자재</th><th style="text-align:right">물량(할증 10%)</th><th style="text-align:right">단가 /㎡</th><th style="text-align:right">금액</th></tr>' + e.lines.map((l) => {
+    const m = resolveEntry(l.id);
+    return `<tr><td><span class="sw" style="background-image:url(${thumb(l.id)})"></span>${m.name}</td><td class="num">${(l.area * WASTE).toFixed(1)}㎡</td><td class="num">${won(priceOf(l.id))}</td><td class="num">${won(l.amount)}</td></tr>`;
+  }).join('') + `<tr class="sum"><td>마감 공사비 합계</td><td></td><td></td><td class="num">${won(e.total)}</td></tr>`
+    + `<tr class="sum2"><td>기본 마감일 때</td><td></td><td></td><td class="num">${won(base.total)}</td></tr>`
+    + `<tr class="sum2"><td>기본 대비 ${d >= 0 ? '추가' : '절감'}</td><td></td><td></td><td class="num ${d > 0 ? 'up' : ''}">${d >= 0 ? '+' : '−'}${won(Math.abs(d))}</td></tr>`;
+}
+// 조합 비교: 지금 마감을 이름 붙여 저장하고 금액을 나란히 본다
+function renderCombos() {
+  const list = getCombos(PLAN.id), base = BASE_TOTAL(), cur = estimate().total;
+  const rows = [{ name: '지금 화면', total: cur, now: true }, ...list.map((c, i) => ({ ...c, i, total: estimate(c.state).total }))];
+  $('#comboTable').innerHTML = '<tr><th>조합</th><th style="text-align:right">마감 공사비</th><th style="text-align:right">기본 대비</th><th></th></tr>' + rows.map((r) => {
+    const d = r.total - base;
+    return `<tr><td>${r.now ? '<b>지금 화면</b>' : r.name}</td><td class="num">${won(r.total)}</td><td class="num">${Math.abs(d) < 5000 ? '—' : (d > 0 ? '+' : '−') + wonShort(Math.abs(d))}</td>
+      <td class="acts">${r.now ? '' : `<button class="btn sm" data-load="${r.i}">불러오기</button><button class="btn sm" data-del="${r.i}">삭제</button>`}</td></tr>`;
+  }).join('');
+  $('#comboTable').querySelectorAll('[data-load]').forEach((b) => (b.onclick = () => { const c = list.at(+b.dataset.load); commit(() => { state = JSON.parse(JSON.stringify(c.state)); }); openSpec(); toast(`'${c.name}' 조합을 불러왔습니다`); }));
+  $('#comboTable').querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => { list.splice(+b.dataset.del, 1); saveCombos(PLAN.id, list); renderCombos(); }));
+}
+$('#comboSave').onclick = () => {
+  const list = getCombos(PLAN.id), name = ($('#comboName').value || '').trim() || `조합 ${String.fromCharCode(65 + list.length % 26)}`;
+  list.push({ name, state: JSON.parse(JSON.stringify(state)), at: new Date().toISOString() }); if (list.length > 6) list.shift();
+  saveCombos(PLAN.id, list); $('#comboName').value = ''; renderCombos(); toast(`'${name}' 조합을 저장했습니다`);
+};
+$('#estChip').onclick = () => openSpec();
 $('#specBtn').onclick = openSpec;
 $('#specX').onclick = () => $('#spec').close();
 $('#printBtn').onclick = () => window.print();
@@ -683,7 +728,8 @@ function payload(extra) {
   const { rows, totals } = specData();
   return { home: PLAN.id, plan: PLAN.name, region: HOME.region, kind: HOME.kind, createdAt: new Date().toISOString(), link: location.href.split('#')[0] + '#s=' + enc(state),
     finishes: rows.map(({ room, part, name, spec, area }) => ({ room, part, material: name, spec, area: +area.toFixed(2) })),
-    totals: totals.map((t) => ({ material: t.name, area: +t.area.toFixed(2) })), state, ...extra };
+    totals: totals.map((t) => ({ material: t.name, area: +t.area.toFixed(2) })), state,
+    estimate: (() => { const e = estimate(); return { total: Math.round(e.total), base: Math.round(BASE_TOTAL()), lines: e.lines.map((l) => ({ material: resolveEntry(l.id).name, area: +(l.area * WASTE).toFixed(2), price: priceOf(l.id), amount: Math.round(l.amount) })) }; })(), ...extra };
 }
 function download(name, obj) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }));
@@ -694,7 +740,7 @@ $('#reqForm').onsubmit = (e) => {
   e.preventDefault();
   const req = payload({ request: Object.fromEntries(new FormData(e.target)) });
   // 접수 API 연결 전 시안: 요청 내용을 이 브라우저에 보관하고 파일로 내려 준다
-  try { const l = JSON.parse(localStorage.getItem('hw-requests') || '[]'); l.push(req); localStorage.setItem('hw-requests', JSON.stringify(l)); } catch {}
+  addRequest({ ...req, type: req.request.type, homeName: PLAN.name, source: 'tour' });
   download('시공상담요청.json', req);
   const ok = $('#reqOk'); ok.style.display = 'block';
   ok.textContent = `요청 내용이 정리되었습니다 (마감 ${req.finishes.length}건). 시안 단계라 아직 서버로 보내지 않고 파일로 저장했습니다. 접수 연동 후 담당자에게 바로 전달됩니다.`;
@@ -715,7 +761,8 @@ document.title = `${PLAN.name} · 3D 마감 체험`;
 $('#planMeta').textContent = `${HOME.region} · ${HOME.type} · ${HOME.kind}형 시연 평면`;
 $('#reqForm [name=type]').value = HOME.kind === '분양' ? '분양 상담' : '신축 시공';
 // 다른 주택으로 바꾸기
-$('#homeSel').innerHTML = HOMES.map((h) => `<option value="${h.plan.id}" ${h === HOME ? 'selected' : ''}>${h.region} · ${h.plan.name}</option>`).join('');
+$('#homeSel').innerHTML = HOMES.map((h) => `<option value="${h.plan.id}" ${h.plan.id === PLAN.id ? 'selected' : ''}>${h.region} · ${h.plan.name}</option>`).join('')
+  + (customHomes().length ? `<optgroup label="평면 편집기로 만든 집">${customHomes().map((h) => `<option value="${h.plan.id}" ${h.plan.id === PLAN.id ? 'selected' : ''}>${h.plan.name}</option>`).join('')}</optgroup>` : '');
 $('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
 // 뷰어 아래 소개와 다른 주택
 {
@@ -726,13 +773,14 @@ $('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
     <div class="facts"><div><b>${Math.round(a)}㎡</b><span>약 ${(a / 3.3058).toFixed(0)}평 · 벽 중심</span></div><div><b>${HOME.beds}</b><span>침실</span></div>
       <div><b>${HOME.baths}</b><span>욕실</span></div><div><b>${(MULTI ? top.y + top.height : PLAN.height).toFixed(1)}m</b><span>${MULTI ? '거실 층고 · 복층' : '천장고'}</span></div></div>
     <div class="acts"><button class="btn primary" id="specBtn2">마감 사양서 · 상담 요청</button><a class="btn" href="./?home=${PLAN.id}#request">${HOME.kind === '분양' ? '분양 상담' : '시공 요청'} 페이지로</a></div>
-    <p class="note" style="margin-top:14px">공개 보도에 나온 규모만 참고해 새로 그린 시연용 평면입니다. 실제 단지의 도면이 아닙니다. (${HOME.ref})</p>`;
+    <p class="note" style="margin-top:14px">${HOME.custom ? `평면 편집기로 만든 평면입니다. <a href="./editor.html?p=${PLAN.id}">편집기에서 고치기</a>` : `공개 보도에 나온 규모만 참고해 새로 그린 시연용 평면입니다. 실제 단지의 도면이 아닙니다. (${HOME.ref})`}</p>`;
   $('#specBtn2').onclick = () => openSpec();
   $('#otherHomes').innerHTML = HOMES.filter((h) => h !== HOME).slice(0, 4).map((h) =>
     `<a href="?h=${h.plan.id}"><img src="./images/${h.plan.id}.jpg${V}" alt="" loading="lazy"><span>${h.plan.name}<small>${h.region} · ${h.kind}</small></span></a>`).join('');
 }
 setMode('walk');
+updateEstimate();
 requestAnimationFrame(() => { frame(); const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 450); });
 
 // 점검용
-window.__app = { house, curLevel, setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
+window.__app = { estimate, house, curLevel, setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
