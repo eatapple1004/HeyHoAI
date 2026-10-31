@@ -402,16 +402,20 @@ const BASE_PRICE = {
 const PAINT_PRICE = 25000;
 for (const m of CATALOG) m.basePrice = BASE_PRICE[m.id] ?? (m.paint ? PAINT_PRICE : 100000);
 
-// 관리자 화면에서 바꾼 이름·규격·단가·사진·숨김을 반영한다(이 브라우저에 저장된 값)
-export const ADMIN = getAdmin();
-for (const m of CATALOG) {
-  const e = ADMIN.edits[m.id] || {};
-  if (e.name) m.name = e.name;
-  if (e.spec) m.spec = e.spec;
-  if (e.src) m.src = e.src;
-  m.price = ADMIN.prices[m.id] ?? m.basePrice;
-  m.hidden = ADMIN.hidden.includes(m.id);
+// 업체가 바꾼 이름·규격·단가·사진·숨김을 반영한다. 처음엔 이 브라우저 값으로, 체험 화면은 서버 값을 받아 다시 부른다.
+for (const m of CATALOG) m.base = { name: m.name, spec: m.spec };
+export let ADMIN = { prices: {}, edits: {}, hidden: [] };
+export function applyAdmin(a = {}) {
+  ADMIN = { prices: {}, edits: {}, hidden: [], ...a };
+  for (const m of CATALOG) {
+    const e = ADMIN.edits[m.id] || {};
+    m.name = e.name || m.base.name; m.spec = e.spec || m.base.spec;
+    if (e.src) m.src = e.src; else delete m.src;
+    m.price = ADMIN.prices[m.id] ?? m.basePrice;
+    m.hidden = ADMIN.hidden.includes(m.id);
+  }
 }
+applyAdmin(getAdmin());
 export const priceOf = (id) => resolveEntry(id).price ?? PAINT_PRICE;
 
 export const BY_ID = Object.fromEntries(CATALOG.map((m) => [m.id, m]));
