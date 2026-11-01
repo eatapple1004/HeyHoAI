@@ -192,7 +192,8 @@ export function buildHome(plan) {
     const next = levels[i + 1], prev = levels[i - 1];
     const lp = { ...plan, ...l };
     const b = buildHouse(lp, {
-      wallH: next ? next.y - l.y : l.height, allRooms,
+      // 위층이 있으면 위층 바닥 1cm 아래에서 멈춘다 — 벽 윗면이 위층 바닥과 같은 높이면 두 면이 번갈아 보인다(z-fighting)
+      wallH: next ? next.y - l.y - 0.01 : l.height, allRooms,
       slab: prev ? l.y - prev.y - prev.height : 0.4,
       covered: (r) => !!next && next.rooms.some((u) => inside(u, (r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2)),
     });

@@ -7,6 +7,7 @@ import { submitRequest, loadAdminSettings, getCombos, saveCombos, won, wonShort 
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
+import { createFX } from './fx.js';
 
 const $ = (s) => document.querySelector(s);
 // 어떤 주택을 보여 줄지: tour.html?h=주택id
@@ -203,6 +204,17 @@ function resize() {
   persp.aspect = w / h; persp.updateProjectionMatrix();
   const a = w / h, z = plan2d.zoom;
   Object.assign(ortho, { left: -z * a, right: z * a, top: z, bottom: -z }); ortho.updateProjectionMatrix();
+  fx?.setSize(w, h, renderer.getPixelRatio());
+}
+// ── 고화질 효과(구석 그림자·빛 번짐·멀티샘플, js/fx.js) — 데스크톱 기본 켬, 휴대폰 기본 끔. 처음 켤 때 만든다 ──
+let fx = null, fxOn = (() => { try { const v = localStorage.getItem('hw-fx'); return v ? v === '1' : !isTouch; } catch { return !isTouch; } })();
+function ensureFX() {
+  if (fx) return;
+  fx = createFX(renderer, scene, persp); fx.setSize(VW, VH, renderer.getPixelRatio()); fx.setNight(night);
+}
+function setFX(on) {
+  fxOn = on; $('#fxBtn').classList.toggle('on', on);
+  try { localStorage.setItem('hw-fx', on ? '1' : '0'); } catch {}
 }
 addEventListener('resize', resize);
 new ResizeObserver(() => resize()).observe(viewer);
@@ -568,6 +580,7 @@ function setNight(n) {
   hemi.intensity = n ? 0.08 : 0.9;
   scene.environmentIntensity = n ? 0.18 : 1;
   scene.background.copy(n ? SKY.night : SKY.day); scene.fog.color.copy(scene.background);
+  fx?.setNight(n);
 }
 
 // 공유 링크
@@ -759,7 +772,7 @@ function frame() {
   if (mode === 'walk') { stepWalk(dt); updateMini(); }
   updateCamera(); updateHover(); updateLabels();
   hlSel.opacity = 0.16 + Math.sin(performance.now() / 260) * 0.08;
-  renderer.render(scene, camera);
+  if (fxOn && camera === persp) { ensureFX(); fx.render(); } else renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 $('#planName').textContent = PLAN.name;
@@ -792,7 +805,9 @@ $('#homeSel').onchange = (e) => { location.href = `?h=${e.target.value}`; };
 }
 setMode('walk');
 updateEstimate();
+setFX(fxOn);
+$('#fxBtn').onclick = () => { setFX(!fxOn); toast(fxOn ? '고화질 효과를 켰습니다' : '고화질 효과를 껐습니다(가볍게)'); };
 requestAnimationFrame(() => { frame(); const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 450); });
 
 // 점검용
-window.__app = { estimate, house, curLevel, setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
+window.__app = { setFX, fx: () => fx, estimate, house, curLevel, setMode, select, applyMat, SURF, player, orbit, plan2d, state: () => state, setNight, openSpec, PRESETS, teleport, renderer };
