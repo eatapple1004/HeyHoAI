@@ -319,7 +319,7 @@ document.addEventListener('pointerlockchange', () => {
   viewer.classList.toggle('locked', on);
   $('#lookBtn')?.classList.toggle('on', on);
   if (on) { mouse.x = VW / 2; mouse.y = VH / 2; mouse.dirty = true; select(null); }
-  else { tip.style.display = 'none'; hoverSurface(null); }
+  else { tip.style.display = 'none'; }
   showHint();
 });
 canvas.addEventListener('pointerdown', (e) => {
@@ -459,13 +459,12 @@ function groundAt(x, y) {
 // 마우스를 올린 면 안내
 const mouse = { x: 0, y: 0, dirty: false };
 const tip = $('#tip');
-canvas.addEventListener('pointerleave', () => { tip.style.display = 'none'; hoverSurface(null); });
+canvas.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
 function updateHover() {
   if (isTouch || !mouse.dirty || pointers.size) return;
   mouse.dirty = false;
   if (locked()) { mouse.x = VW / 2; mouse.y = VH / 2; }
   const s = pick(mouse.x, mouse.y)?.surface;
-  hoverSurface(s);
   if (s) {
     tip.innerHTML = `${surfaceTitle(s)}<small>${resolveEntry(matIdOf(s)).name}</small>`;
     tip.style.left = mouse.x + 'px'; tip.style.top = mouse.y + 'px'; tip.style.display = 'block';
@@ -473,17 +472,11 @@ function updateHover() {
   } else { tip.style.display = 'none'; canvas.classList.remove('pick'); }
 }
 
-// 선택·마우스 올림 표시: 면 위에 반투명 막을 한 겹 덮는다
+// 선택 표시: 고른 면 위에 반투명 막을 한 겹 덮는다. 마우스를 올린 면은 색을 바꾸지 않고 안내 문구만 띄운다(사용자 요청)
 const hlSel = new THREE.MeshBasicMaterial({ color: 0xffc46b, transparent: true, opacity: 0.25, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-const hlHover = hlSel.clone(); hlHover.color.set(0xffffff); hlHover.opacity = 0.12;
-const selMesh = new THREE.Mesh(undefined, hlSel), hoverMesh = new THREE.Mesh(undefined, hlHover);
-selMesh.visible = hoverMesh.visible = false; selMesh.renderOrder = hoverMesh.renderOrder = 3;
-selMesh.userData.noPick = hoverMesh.userData.noPick = true;
-scene.add(selMesh, hoverMesh);
-function hoverSurface(s) {
-  hoverMesh.visible = !!s && s !== selected;
-  if (s) hoverMesh.geometry = s.mesh.geometry;
-}
+const selMesh = new THREE.Mesh(undefined, hlSel);
+selMesh.visible = false; selMesh.renderOrder = 3; selMesh.userData.noPick = true;
+scene.add(selMesh);
 
 // ── 마감 패널 ──
 let selected = null, scope = 'room', tab = null;
@@ -492,7 +485,7 @@ const catOf = (s) => (s.room === 'exterior' ? 'exterior' : s.kind);
 
 function select(s) {
   selected = s;
-  selMesh.visible = !!s; hoverMesh.visible = false;
+  selMesh.visible = !!s;
   if (!s) { $('#panel').classList.remove('open'); return; }
   selMesh.geometry = s.mesh.geometry;
   scope = s.kind === 'wall' && s.room !== 'exterior' && state.over[s.id] ? 'surface' : 'room';
