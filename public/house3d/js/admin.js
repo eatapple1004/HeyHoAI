@@ -1,7 +1,7 @@
 // 업체 관리자 — 자재·단가·사진, 상담 접수함, 편집기로 만든 평면.
 //   dev 서버에서 Doppia 관리자로 로그인하면 서버 데이터(접수·설정)를 다루고(mode 'server'),
 //   로그인 전이면 안내를 띄우고('login'), 서버가 없는 곳에서는 이 브라우저 저장을 쓴다('local').
-import { CATALOG, thumb, loadScans } from './materials.js';
+import { CATALOG, thumb, loadScans, PRICE_SOURCES } from './materials.js';
 import { getAdmin, saveAdmin, getRequests, saveRequests, addRequest, getPlans, savePlans, won, wonShort, adminApi, loadAdminSettings, plansApi } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -49,7 +49,7 @@ function renderMat() {
         <td><input type="text" data-f="name" value="${esc(e.name || m.base.name)}"></td>
         <td class="grp hide-m">${m.group}</td>
         <td class="hide-m"><input type="text" data-f="spec" value="${esc(e.spec || m.base.spec)}"></td>
-        <td><input type="number" data-f="price" min="0" step="1000" value="${price ?? ''}" placeholder="${m.basePrice}"><div class="base">기본 ${won(m.basePrice)}</div></td>
+        <td><input type="number" data-f="price" min="0" step="1000" value="${price ?? ''}" placeholder="${m.basePrice}"><div class="base">기본 ${won(m.basePrice)}${m.priceEst ? ' · <b class="est">추정</b>' : ''}${PRICE_SOURCES[m.priceSrc] ? ` · <a href="${PRICE_SOURCES[m.priceSrc].url}" target="_blank" rel="noopener" title="${esc(PRICE_SOURCES[m.priceSrc].note)}">${esc(PRICE_SOURCES[m.priceSrc].name.split(' ')[0])}</a>` : ''}</div></td>
         <td><label class="btn sm">${src ? '바꾸기' : '사진 올리기'}<input type="file" accept="image/*" data-f="photo" hidden></label>${src ? ' <button class="btn sm" data-f="nophoto">지우기</button>' : ''}</td>
         <td><input type="checkbox" data-f="show" ${draft.hidden.includes(m.id) ? '' : 'checked'}></td></tr>`;
     }).join('');
