@@ -2,12 +2,13 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
 import { HOMES, homeById, planArea, customList, loadCustomHome } from './homes.js';
-import { CATALOG, resolveEntry, getMaterial, thumb, setAnisotropy, loadScans, priceOf, applyAdmin } from './materials.js';
+import { CATALOG, resolveEntry, getMaterial, onMaterialLoad, thumb, setAnisotropy, loadScans, priceOf, applyAdmin } from './materials.js';
 import { submitRequest, loadAdminSettings, getCombos, saveCombos, won, wonShort } from './store.js';
 import { buildHome, buildSite } from './builder.js';
 import { buildFurniture } from './furniture.js';
 import { PRESETS } from './presets.js';
 import { createFX } from './fx.js';
+import { createProbes } from './probes.js';
 
 const $ = (s) => document.querySelector(s);
 // 어떤 주택을 보여 줄지: tour.html?h=주택id
@@ -32,7 +33,13 @@ applyAdmin(adminSettings);
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const studioEnv = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // 기본 환경광(가상 스튜디오) — 3D 전체·2D·바깥
+scene.environment = studioEnv;
+const NIGHT_PROBE = 0.3;
+// 방별 반사(js/probes.js) — 벽·바닥·천장은 자기 방 프로브. 프로브는 그 방의 실제 밝기를 담고 있어 낮에는 스튜디오 환경보다 어두워
+//   흰 면이 회색으로 보이므로 1.35 로 올리고(실측), 밤에는 천장 조명이 아주 밝은 점으로 찍혀 그대로 쓰면 조명이 두 번 더해져 하얗게 날아가므로 낮춘다(실측).
+const probes = createProbes(renderer, scene, pmrem, studioEnv, () => (night ? 0.18 : 1), () => (night ? NIGHT_PROBE : 1.35));
+onMaterialLoad((id, m) => probes.sync(id, m));
 const SKY = { day: new THREE.Color(0xcfdde6), night: new THREE.Color(0x10151d) };
 scene.background = SKY.day.clone();
 
@@ -103,7 +110,21 @@ function updateEstimate() {
   const t = estimate().total, d = t - BASE_TOTAL();
   $('#estChip').innerHTML = `<b>${wonShort(t)}</b><span>${Math.abs(d) < 5000 ? '기본 마감' : `기본 대비 ${d > 0 ? '+' : '−'}${wonShort(Math.abs(d))}`}</span>`;
 }
-function applyAll() { for (const s of surfaces) s.mesh.material = getMaterial(matIdOf(s)); }
+// 방마다 프로브 등록(찍는 자리 = 방 가운데 눈높이, 상자 = 바닥~천장)
+for (const r of ROOMS) {
+  const li = r.level, top = r.open && LV[li + 1] ? LV[li + 1].y + LV[li + 1].height : LV[li].y + LV[li].height;
+  probes.add(`${li}:${r.id}`, new THREE.Vector3((r.x0 + r.x1) / 2, Math.min(LV[li].y + 1.5, top - 0.3), (r.z0 + r.z1) / 2),
+    [new THREE.Vector3(r.x0, LV[li].y, r.z0), new THREE.Vector3(r.x1, top, r.z1)]);
+}
+// 면의 방 프로브 — 트인 곳 천장(of)은 아래층 방 이름이라 같은 층에 없으면 아래층에서 찾는다. 외벽 바깥면은 없음(스튜디오 환경)
+function probeKey(s) {
+  for (let li = s.level ?? 0; li >= 0; li--) if (probes.has(`${li}:${s.room}`)) return `${li}:${s.room}`;
+  return null;
+}
+for (const s of surfaces) s.probe = probeKey(s);
+function applyAll() {
+  for (const s of surfaces) { const id = matIdOf(s), base = getMaterial(id); s.mesh.material = s.probe ? probes.material(s.probe, id, base) : base; }
+}
 
 const undoStack = [];
 function commit(fn) {
@@ -111,7 +132,7 @@ function commit(fn) {
   fn(); applyAll(); afterChange();
 }
 function afterChange() {
-  $('#undoBtn').disabled = !undoStack.length; updateEstimate();
+  $('#undoBtn').disabled = !undoStack.length; updateEstimate(); probes.dirtyAll();
   if (selected) renderPanel();
   saveLocal();
 }
@@ -152,7 +173,7 @@ const marker = new THREE.Group();
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 12), m); head.position.y = 1.72;
   const nose = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.4, 16), m); nose.rotation.x = Math.PI / 2; nose.position.set(0, 1.0, 0.38);
   marker.add(body, head, nose); marker.traverse((o) => { o.castShadow = true; o.userData.noPick = true; });
-  scene.add(marker);
+  scene.add(marker); probes.setHide([marker, ...furns.map((f) => f.group)]); // 가구는 프로브에 안 찍는다 — 방 상자 밖 물체라 반사 자리가 어긋나 벽·바닥에 하얀 얼룩으로 번진다(실측)
 }
 
 function setMode(m, opts = {}) {
@@ -472,11 +493,7 @@ function updateHover() {
   } else { tip.style.display = 'none'; canvas.classList.remove('pick'); }
 }
 
-// 선택 표시: 고른 면 위에 반투명 막을 한 겹 덮는다. 마우스를 올린 면은 색을 바꾸지 않고 안내 문구만 띄운다(사용자 요청)
-const hlSel = new THREE.MeshBasicMaterial({ color: 0xffc46b, transparent: true, opacity: 0.25, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-const selMesh = new THREE.Mesh(undefined, hlSel);
-selMesh.visible = false; selMesh.renderOrder = 3; selMesh.userData.noPick = true;
-scene.add(selMesh);
+// 고른 면에 색을 덮는 강조는 쓰지 않는다(사용자 요청) — 마감 패널 제목에 어느 면인지 나온다
 
 // ── 마감 패널 ──
 let selected = null, scope = 'room', tab = null;
@@ -485,9 +502,7 @@ const catOf = (s) => (s.room === 'exterior' ? 'exterior' : s.kind);
 
 function select(s) {
   selected = s;
-  selMesh.visible = !!s;
   if (!s) { $('#panel').classList.remove('open'); return; }
-  selMesh.geometry = s.mesh.geometry;
   scope = s.kind === 'wall' && s.room !== 'exterior' && state.over[s.id] ? 'surface' : 'room';
   const cur = resolveEntry(matIdOf(s));
   const groups = groupsFor(s);
@@ -536,7 +551,7 @@ function applyMat(id, noHistory) {
     rooms.forEach((r) => setRoom(r, s.kind, id));
     for (const k in state.over) { const o = SURF[k]; if (o && o.kind === s.kind && rooms.includes(o.room)) delete state.over[k]; }
   };
-  if (noHistory) { run(); applyAll(); $('#undoBtn').disabled = !undoStack.length; saveLocal(); updateEstimate();
+  if (noHistory) { run(); applyAll(); $('#undoBtn').disabled = !undoStack.length; saveLocal(); updateEstimate(); probes.dirtyAll();
     $('#pName').textContent = resolveEntry(matIdOf(s)).name; return; }
   commit(run);
 }
@@ -571,9 +586,8 @@ function setNight(n) {
   roomLights.forEach((l) => (l.intensity = n ? l.userData.power : 0));
   sun.intensity = n ? 0.25 : 3.0; sun.color.set(n ? 0x8fa6d6 : 0xfff1dc);
   hemi.intensity = n ? 0.08 : 0.9;
-  scene.environmentIntensity = n ? 0.18 : 1;
   scene.background.copy(n ? SKY.night : SKY.day); scene.fog.color.copy(scene.background);
-  fx?.setNight(n);
+  fx?.setNight(n); probes.refresh(); probes.dirtyAll();
 }
 
 // 공유 링크
@@ -758,13 +772,20 @@ $('#reqForm').onsubmit = async (e) => {
   ok.textContent = `요청 내용이 정리되었습니다 (마감 ${req.finishes.length}건). 접수 서버가 없는 환경이라 이 브라우저와 파일에만 저장했습니다.`;
 };
 
+// 반사·주변광: 벽·바닥·천장은 자기 방 프로브(재질에 붙어 있다), 가구·바깥은 기본 스튜디오 환경(밤 0.18).
+//   낡은 프로브는 한 프레임에 하나씩 — 걷기 중엔 내 쪽 방부터 다시 찍는다
+const _near = new THREE.Vector3();
+function updateEnv() {
+  scene.environmentIntensity = night ? 0.18 : 1;
+  probes.tick(mode === 'walk' ? _near.set(player.x, player.y + 1.5, player.z) : null);
+}
+
 // ── 루프 ──
 const timer = new THREE.Timer();
 function frame() {
   timer.update(); const dt = Math.min(timer.getDelta(), 0.05);
   if (mode === 'walk') { stepWalk(dt); updateMini(); }
-  updateCamera(); updateHover(); updateLabels();
-  hlSel.opacity = 0.16 + Math.sin(performance.now() / 260) * 0.08;
+  updateCamera(); updateHover(); updateLabels(); updateEnv();
   if (fxOn && camera === persp) { ensureFX(); fx.render(); } else renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }

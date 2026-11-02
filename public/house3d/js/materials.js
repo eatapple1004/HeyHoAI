@@ -390,17 +390,54 @@ export const CATALOG = [
     gen: draw.speckle({ base: '#45464a', cols: 2, rows: 2, seed: 65, grout: '#2c2d30', dots: 2600, dot: ['#1b1b1d', '#6a6b70', '#0f0f10'] }), bump: groutBump(PX, PX, 2, 2, 2) },
 ];
 
-// 시공비 포함 ㎡당 예시 단가(원). 실제 업체 단가는 관리자 화면(admin.html)에서 바꾼다.
-const BASE_PRICE = {
-  'marble-white': 160000, 'marble-checker': 220000, 'stone-grey': 140000, 'stone-travertine': 230000, terrazzo: 260000, 'hex-white': 150000,
-  'oak-plank': 180000, 'oak-smoked': 200000, 'chevron-walnut': 280000, 'chevron-oak': 240000,
-  'linen-paper': 30000, 'linen-grey': 30000, 'stripe-paper': 38000, 'damask-paper': 45000, 'damask-ivory': 45000,
-  'marble-slab': 380000, 'marble-nero': 420000, 'wood-slat': 210000, concrete: 160000, 'subway-white': 120000, 'subway-green': 130000,
-  'ceil-white': 22000, 'ceil-oak': 190000,
-  'ext-stucco': 90000, 'ext-limestone': 260000, 'ext-brick': 170000, 'ext-cedar': 190000, 'ext-basalt': 240000,
+// ㎡당 기본 단가(원, 자재 + 시공, 부가세·철거·하지 별도) — 공개 시세 기준 참고값(2026-11 조사). 실제 업체 단가는 관리자 화면(admin.html)에서 바꾼다.
+//   평당 자료는 1평 = 3.3058㎡ 로 나눴다. 자료의 범위 안에서 마감 등급(규격·수종·패턴)에 따라 위치를 정했고,
+//   국내 공개 시세를 찾지 못한 항목은 가장 가까운 자료에서 추정했다(est: true — 화면에 '추정'으로 표시).
+export const PRICE_SOURCES = {
+  mungori: { name: '문고리 인테리어 비용 가이드(2026)', url: 'https://www.mungori.com/interior-cost-guide-2026/', note: '타일 ㎡당 5~12만, 페인트 평당 2~5만' },
+  lifebase: { name: 'LifeBase 원목·강마루 가이드(2026-04)', url: 'https://lifebase.kr/blog/0471-interior-flooring-wood-laminate-guide/', note: '원목마루 평당 자재 10~25만 + 시공 5~8만' },
+  tilnote: { name: 'Tilnote 벽지 시공 가격(2026-09)', url: 'https://tilnote.io/pages/6ab0096df1c8b22ee472c548', note: '실크벽지 평당 3만~4.5만 이상' },
+  miso: { name: '미소 석공사·대리석 시공 비용', url: 'https://miso.kr/blog/%EA%B1%B0%EC%A0%9C-%EC%84%9D%EA%B3%B5%EC%82%AC-%EB%8C%80%EB%A6%AC%EC%84%9D-%EC%8B%9C%EA%B3%B5-%EB%B9%84%EC%9A%A9', note: '천연 대리석 ㎡당 20만~45만' },
+  gogang: { name: '고강타일 포세린 시공 비용(2023-07)', url: 'https://inblog.ai/gogangtile/how-much-is-porcelain-tile-install-work', note: '포세린 600×600 평당 30~50만(공간 완성 기준)' },
+  nexttile: { name: '넥스트건축자재 외장재 공사비', url: 'https://nexttile.kr/blog-3/', note: '롱브릭 ㎡당 8~10만, 화이버우드 10~17만, 세라믹 사이딩 9~12만(자재·시공)' },
 };
-const PAINT_PRICE = 25000;
-for (const m of CATALOG) m.basePrice = BASE_PRICE[m.id] ?? (m.paint ? PAINT_PRICE : 100000);
+// [단가, 근거, 추정 여부]
+const P = (price, src, est = false) => ({ price, src, est });
+const BASE_PRICE = {
+  // 타일 — 문고리 ㎡당 5~12만, 고강타일 600×600 ㎡당 약 9~15만
+  'marble-white': P(120000, 'mungori'),        // 600×1200 대형 폴리싱 → 범위 상단
+  'stone-grey': P(90000, 'mungori'),           // 600×600 무광
+  'hex-white': P(100000, 'mungori'),           // 소형 헥사곤(줄눈·절단 많음)
+  'subway-white': P(90000, 'mungori'), 'subway-green': P(95000, 'mungori'),
+  // 천연석 — 미소 ㎡당 20~45만
+  'marble-checker': P(250000, 'miso'),         // 천연 대리석 600×600 2색 패턴
+  'stone-travertine': P(220000, 'miso'),       // 천연 트래버틴 혼드
+  terrazzo: P(180000, 'miso', true),           // 국내 공개 시세 미확인 → 천연석 하단 근처로 추정
+  // 마루 — LifeBase 평당 15만~33만(자재+시공) = ㎡당 약 4.5만~10만
+  'oak-plank': P(73000, 'lifebase'),           // 190mm 광폭 → 범위 중상
+  'oak-smoked': P(82000, 'lifebase'),          // 오일 마감 스모크
+  'chevron-oak': P(100000, 'lifebase'),        // 쉐브론 패턴(로스·인건비) → 범위 상단
+  'chevron-walnut': P(115000, 'lifebase', true), // 월넛 수종 → 범위 상단을 넘겨 추정
+  // 벽지 — Tilnote 실크 평당 3만~4.5만 = ㎡당 약 0.9만~1.4만
+  'linen-paper': P(12000, 'tilnote'), 'linen-grey': P(12000, 'tilnote'), 'stripe-paper': P(13500, 'tilnote'),
+  'damask-paper': P(25000, 'tilnote', true), 'damask-ivory': P(25000, 'tilnote', true), // 수입벽지급 — 공개 시세 미확인, 실크 상단의 약 2배로 추정
+  // 대판·패널 — 공개 시세 미확인
+  'marble-slab': P(150000, 'mungori', true), 'marble-nero': P(150000, 'mungori', true), // 1200×2400 포세린 대판: 타일 상단 + 대판 시공 난이도
+  concrete: P(110000, 'nexttile', true),       // 노출 콘크리트 패널: 세라믹 사이딩(9~12만)급으로 추정
+  'wood-slat': P(150000, 'nexttile', true), 'ceil-oak': P(150000, 'nexttile', true), // 원목 루버: 화이버우드(10~17만)급으로 추정
+  // 천장·도장 — 문고리 페인트 평당 2~5만 = ㎡당 약 0.6만~1.5만
+  'ceil-white': P(12000, 'mungori'),
+  // 외장
+  'ext-brick': P(100000, 'nexttile'),          // 고벽돌 치장 → 롱브릭 범위 상단
+  'ext-cedar': P(150000, 'nexttile', true),    // 원목 시더 사이딩: 화이버우드 상단 근처로 추정
+  'ext-stucco': P(60000, 'nexttile', true),    // 외단열 스타코: 사이딩(4~6만)급으로 추정
+  'ext-limestone': P(200000, 'miso', true), 'ext-basalt': P(180000, 'miso', true), // 외장 천연석 건식: 천연석 하단으로 추정
+};
+const PAINT_PRICE = 15000; // 친환경 수성 도장 — 문고리 범위(㎡당 0.6만~1.5만) 상단(고급 주택)
+for (const m of CATALOG) {
+  const b = BASE_PRICE[m.id] || (m.paint ? P(PAINT_PRICE, 'mungori') : P(100000, null, true));
+  m.basePrice = b.price; m.priceSrc = b.src; m.priceEst = b.est;
+}
 
 // 업체가 바꾼 이름·규격·단가·사진·숨김을 반영한다. 처음엔 이 브라우저 값으로, 체험 화면은 서버 값을 받아 다시 부른다.
 for (const m of CATALOG) m.base = { name: m.name, spec: m.spec };
@@ -497,21 +534,52 @@ function tex(c, e, srgb) {
   t.anisotropy = maxAniso; if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+// 재료별 표면 성질 — 거칠기 하나로는 부족한 것들.
+//   coat  : 표면 위 투명 반사 층(클리어코트). 폴리싱 석재·유광 타일·우레탄 마루는 바탕은 조금 무디고 그 위에 선명한 반사가 한 겹 있다
+//   sheen : 비스듬히 볼 때 은은히 빛나는 결 — 실크 벽지·직물
+//   rough : 바탕 거칠기(코트가 있으면 바탕은 무디게 두는 편이 실제에 가깝다)
+const FINISH = {
+  'marble-white': { coat: 0.75, coatRough: 0.04, rough: 0.28 },   // 폴리싱 포세린
+  'marble-checker': { coat: 0.7, coatRough: 0.05, rough: 0.3 },   // 연마 대리석
+  'marble-slab': { coat: 0.8, coatRough: 0.03, rough: 0.25 },     // 대판 폴리싱
+  'marble-nero': { coat: 0.8, coatRough: 0.03, rough: 0.25 },
+  'subway-white': { coat: 0.7, coatRough: 0.04, rough: 0.3 },     // 유약 타일
+  'subway-green': { coat: 0.7, coatRough: 0.04, rough: 0.3 },
+  'hex-white': { coat: 0.5, coatRough: 0.08, rough: 0.35 },
+  terrazzo: { coat: 0.4, coatRough: 0.1, rough: 0.4 },            // 연마 테라조
+  'chevron-oak': { coat: 0.35, coatRough: 0.18, rough: 0.55 },    // 우레탄 코팅 마루(반광)
+  'chevron-walnut': { coat: 0.35, coatRough: 0.18, rough: 0.55 },
+  'oak-plank': { coat: 0.2, coatRough: 0.3, rough: 0.6 },         // 저광 코팅
+  // 오일 마감(스모크 오크)·혼드 석재·무광 타일·도장·외장은 코트 없이 거칠기만
+  'linen-paper': { sheen: 0.5, sheenRough: 0.45, sheenColor: 0xfff6e8 },  // 실크 벽지
+  'linen-grey': { sheen: 0.45, sheenRough: 0.45, sheenColor: 0xf2f2f2 },
+  'stripe-paper': { sheen: 0.5, sheenRough: 0.4, sheenColor: 0xfff6e8 },
+  'damask-paper': { sheen: 0.6, sheenRough: 0.35, sheenColor: 0xe9f0e4 },
+  'damask-ivory': { sheen: 0.6, sheenRough: 0.35, sheenColor: 0xfff3dc },
+};
+
+// 지도가 늦게 붙을 때 알림(방별 반사가 방 전용 복제본에 옮겨 붙이도록)
+let loaded = () => {};
+export function onMaterialLoad(fn) { loaded = fn; }
 export function getMaterial(id) {
   if (materials.has(id)) return materials.get(id);
-  const e = resolveEntry(id);
-  // 광택 마감은 환경 반사가 덩어리져 보이지 않게 약간 무디게
-  const rough = e.rough ?? 0.8;
-  const m = new THREE.MeshStandardMaterial({ roughness: Math.max(rough, 0.2), metalness: 0, envMapIntensity: rough < 0.3 ? 0.55 : 1 });
+  const e = resolveEntry(id), f = FINISH[e.id] || {};
+  const rough = f.rough ?? e.rough ?? 0.8;
+  // 코트·결이 있는 재료만 물리 재질(조금 더 무겁다)
+  const m = f.coat || f.sheen
+    ? new THREE.MeshPhysicalMaterial({ roughness: rough, metalness: 0,
+      clearcoat: f.coat || 0, clearcoatRoughness: f.coatRough ?? 0.1,
+      sheen: f.sheen || 0, sheenRoughness: f.sheenRough ?? 0.5, sheenColor: new THREE.Color(f.sheenColor ?? 0xffffff) })
+    : new THREE.MeshStandardMaterial({ roughness: Math.max(rough, 0.2), metalness: 0 });
   if (e.paint) m.color.set(e.color);
-  else if (e.src) { new THREE.TextureLoader().load(e.src, (t) => { Object.assign(t, tex(t.image, e, true)); m.map = t; m.needsUpdate = true; }); }
+  else if (e.src) { new THREE.TextureLoader().load(e.src, (t) => { Object.assign(t, tex(t.image, e, true)); m.map = t; m.needsUpdate = true; loaded(id, m); }); }
   else {
     m.map = tex(baseCanvas(e), e, true);
     if (e.scan && SCANS.has(e.scan.a)) { // 요철·광택 지도는 받는 대로 붙인다
       scanExtras(e.scan.a).then(({ n, r }) => {
         if (n) { m.normalMap = tex(scanCanvas(e, n, 'n'), e, false); const k = e.scan.ns ?? 0.7; m.normalScale.set(k, k); }
         if (r) { m.roughnessMap = tex(scanCanvas(e, r, 'r'), e, false); m.roughness = Math.min(1, Math.max(rough, 0.2) / Math.max(0.15, meanLuma(r))); }
-        m.needsUpdate = true;
+        m.needsUpdate = true; loaded(id, m);
       });
     } else if (e.bump) { m.bumpMap = tex(e.bump, e, false); m.bumpScale = 1.2; }
   }
