@@ -168,6 +168,23 @@ app.use('/house3d', (req, res, next) => {
   next();
 });
 
+// /inu/* = 인천대 동문회 시안(동문회 앨범 /inu/album/ · 입력 양식 예시 /inu/forms/) — **dev 전용**. /house3d 와 같은 방식(nest/main.ts·src/index.js 양쪽 동일 가드 — 한쪽만 고치지 말 것).
+//   페이지 안 사진·스크립트가 상대경로라 폴더 주소는 끝에 `/`가 있어야 한다 → `/inu/album` 은 `/inu/album/` 로 301(쿼리 `?to=` 유지).
+app.use('/inu', (req, res, next) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  if (req.originalUrl === '/inu' || req.originalUrl.startsWith('/inu?')) return res.redirect(301, '/inu/' + req.originalUrl.slice(4));
+  const root = path.join(PUBLIC_DIR, 'inu');
+  const dir = path.join(root, path.normalize(req.path));
+  if (dir !== root && !dir.startsWith(root + path.sep)) return res.status(404).end();
+  const index = path.join(dir, 'index.html');
+  if (!req.path.endsWith('/') && !path.extname(req.path) && fs.existsSync(index)) {
+    const q = req.originalUrl.indexOf('?');
+    return res.redirect(301, (q < 0 ? req.originalUrl : req.originalUrl.slice(0, q)) + '/' + (q < 0 ? '' : req.originalUrl.slice(q)));
+  }
+  if (req.path.endsWith('/') && fs.existsSync(index)) return res.sendFile(index);
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, setHeaders: require('./lib/staticCache').setStaticCache })); // (10-18) 사진·영상 CDN 캐시
