@@ -121,6 +121,24 @@ async function bootstrap() {
     return next();
   });
 
+  // /inu/* = 인천대 동문회 시안(동문회 앨범 /inu/album/ · 입력 양식 예시 /inu/forms/) — **dev 전용**. /house3d 와 같은 방식(nest/main.ts·src/index.js 양쪽 동일 가드 — 한쪽만 고치지 말 것).
+  //   페이지 안 사진·스크립트가 상대경로라 폴더 주소는 끝에 `/`가 있어야 한다 → `/inu/album` 은 `/inu/album/` 로 301(쿼리 `?to=` 유지).
+  server.use('/inu', (req: any, res: any, next: any) => {
+    if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+    if (req.originalUrl === '/inu' || req.originalUrl.startsWith('/inu?')) return res.redirect(301, '/inu/' + req.originalUrl.slice(4));
+    const root = path.join(PUBLIC_DIR, 'inu');
+    const dir = path.join(root, path.normalize(req.path));
+    if (dir !== root && !dir.startsWith(root + path.sep)) return res.status(404).end();
+    const index = path.join(dir, 'index.html');
+    if (!req.path.endsWith('/') && !path.extname(req.path) && fs.existsSync(index)) {
+      const q = req.originalUrl.indexOf('?');
+      return res.redirect(301, (q < 0 ? req.originalUrl : req.originalUrl.slice(0, q)) + '/' + (q < 0 ? '' : req.originalUrl.slice(q)));
+    }
+    if (req.path.endsWith('/') && fs.existsSync(index)) return res.sendFile(index);
+    return next();
+  });
+
+
   // (10-18) 사진·영상·폰트는 Cloudflare 가 캐시하도록(기본 max-age=0 이라 매번 서버 재확인 → 장당 0.5~1초)
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   app.useStaticAssets(PUBLIC_DIR, { index: false, setHeaders: require(path.join(__dirname, '..', 'src', 'lib', 'staticCache.js')).setStaticCache });
