@@ -19,7 +19,7 @@ import {
   HqSnapshotDto,
 } from './dto/hq.dto';
 
-// /api/admin/hq — 운영 기록판 API. 도피아 관리자 로그인 또는 Cloudflare Access 메일 인증(HqGuard).
+// /api/admin/hq — 운영 기록판 API. 허용 메일 목록에 있는 사람만(도피아 로그인 또는 Access 메일 인증, HqGuard).
 @Controller('api/admin/hq')
 @UseGuards(HqGuard)
 export class AdminHqController {
@@ -93,7 +93,7 @@ export class AdminHqController {
   }
 }
 
-// /admin-hq 화면 — 관리자 화면들과 같은 페이지 응답(PageExceptionFilter). 입구는 HqPageGuard(관리자 로그인 또는 메일 인증).
+// /admin-hq 화면 — 관리자 화면들과 같은 페이지 응답(PageExceptionFilter). 입구는 HqPageGuard(허용 메일 목록).
 //   HqModule 이 PagesModule 보다 먼저 등록돼 있어 클린 URL(:name)보다 이 라우트가 먼저 잡힌다.
 const ADMIN_HQ_PAGE = path.join(__dirname, '..', '..', 'public', 'admin-hq.html');
 
