@@ -1,6 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { EnvDbService } from '../common/env-db.service';
 import { HqRepository } from './hq.repository';
+import { HqActor } from './hq.guard';
 import {
   HQ_DECISION_STATUSES,
   HQ_FLOW_STATUSES,
@@ -58,22 +59,24 @@ export class HqService {
     private readonly envDb: EnvDbService,
   ) {}
 
-  /** 기록에 남길 이름 — 관리자 토큰엔 id 만 있어 이메일을 한 번 찾아 기억한다 */
-  async who(userId: string): Promise<string> {
-    const cached = this.emails.get(userId);
+  /** 기록에 남길 이름 — 메일 인증이면 그 메일, 관리자 로그인이면 토큰엔 id 만 있어 메일을 한 번 찾아 기억한다 */
+  async who(actor: HqActor): Promise<string> {
+    if (actor.email) return actor.email;
+    const id = String(actor.id || '');
+    const cached = this.emails.get(id);
     if (cached) return cached;
-    const email = (await this.repo.emailOf(userId)) || userId;
-    this.emails.set(userId, email);
+    const email = (id && (await this.repo.emailOf(id))) || id || '알 수 없음';
+    this.emails.set(id, email);
     return email;
   }
 
-  async snapshot(userId: string): Promise<HqSnapshotDto> {
+  async snapshot(actor: HqActor): Promise<HqSnapshotDto> {
     const [state, decisions, leads, log, me] = await Promise.all([
       this.repo.getState(BOARD_KEY),
       this.repo.listDecisions(),
       this.repo.listLeads(),
       this.repo.listLog(LOG_LIMIT),
-      this.who(userId),
+      this.who(actor),
     ]);
     return { board: state ? (state.value as HqBoardDto) : null, decisions, leads, log, me, env: this.envDb.label(this.envDb.current()) };
   }
@@ -93,10 +96,10 @@ export class HqService {
   }
 
   /** 맥에서 쓰던 독립 HQ 기록을 한 번 옮겨 온다. 이미 판이 있으면 덮어쓰지 않는다. */
-  async importAll(body: HqImportDto, userId: string): Promise<void> {
+  async importAll(body: HqImportDto, actor: HqActor): Promise<void> {
     if (await this.repo.getState(BOARD_KEY)) fail(409, '이미 HQ 기록이 있습니다. 가져오기는 처음 한 번만 됩니다.');
     if (!body || !body.direction || !clean(body.direction.line)) fail(400, '가져올 파일에 방향(direction)이 없습니다');
-    const who = await this.who(userId);
+    const who = await this.who(actor);
     const flow: HqFlowStepDto[] = (body.flow || []).map((s) => ({
       id: clean(s.id, 40).replace(/[^a-z0-9_-]/gi, '') || `s${Math.random().toString(36).slice(2, 7)}`,
       name: clean(s.name, 60),
@@ -149,7 +152,7 @@ export class HqService {
     return s.value as HqBoardDto;
   }
 
-  async updateFlow(id: string, body: HqFlowUpdateDto, userId: string): Promise<HqFlowStepDto> {
+  async updateFlow(id: string, body: HqFlowUpdateDto, actor: HqActor): Promise<HqFlowStepDto> {
     const board = await this.board();
     const step = board.flow.find((s) => s.id === id);
     if (!step) fail(404, '없는 단계입니다');
@@ -158,23 +161,23 @@ export class HqService {
       step.status = body.status as HqFlowStepDto['status'];
     }
     if (body.note !== undefined) step.note = clean(body.note);
-    const who = await this.who(userId);
+    const who = await this.who(actor);
     await this.repo.putState(BOARD_KEY, board, who);
     await this.repo.insertLog({ who, kind: '흐름', text: `흐름 「${step.name}」 ${step.status}${body.note !== undefined ? ' · 메모 수정' : ''}` });
     return step;
   }
 
-  async createDecision(body: HqDecisionCreateDto, userId: string): Promise<HqDecisionDto> {
+  async createDecision(body: HqDecisionCreateDto, actor: HqActor): Promise<HqDecisionDto> {
     const question = clean(body.question, 300);
     if (!question) fail(400, '질문이 비어 있습니다');
     const item = await this.repo.insertDecision({
       code: await this.repo.nextDecisionCode(), question, options: clean(body.options, 1000), recommend: clean(body.recommend, 1000), status: '대기', answer: '',
     });
-    await this.repo.insertLog({ who: await this.who(userId), kind: '결정', text: `결정 ${item.code} 추가: ${question}` });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '결정', text: `결정 ${item.code} 추가: ${question}` });
     return item;
   }
 
-  async updateDecision(code: string, body: HqDecisionUpdateDto, userId: string): Promise<HqDecisionDto> {
+  async updateDecision(code: string, body: HqDecisionUpdateDto, actor: HqActor): Promise<HqDecisionDto> {
     const cur = await this.repo.findDecision(code);
     if (!cur) fail(404, '없는 결정입니다');
     const status = body.status === undefined ? cur.status : String(body.status);
@@ -183,7 +186,7 @@ export class HqService {
     if (status === '결정' && !answer) fail(400, '결론을 적어야 결정할 수 있습니다');
     const decidedAt = status === '결정' ? (cur.status === '결정' ? 'keep' : 'now') : 'clear';
     const item = await this.repo.updateDecision(code, status, answer, decidedAt);
-    await this.repo.insertLog({ who: await this.who(userId), kind: '결정', text: `결정 ${code} ${status}${answer ? `: ${answer}` : ''}` });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '결정', text: `결정 ${code} ${status}${answer ? `: ${answer}` : ''}` });
     return item;
   }
 
@@ -194,7 +197,7 @@ export class HqService {
     return id;
   }
 
-  async createLead(body: HqLeadCreateDto, userId: string): Promise<HqLeadDto> {
+  async createLead(body: HqLeadCreateDto, actor: HqActor): Promise<HqLeadDto> {
     const name = clean(body.name, 120);
     if (!name) fail(400, '이름이 비어 있습니다');
     const board = await this.board();
@@ -202,11 +205,11 @@ export class HqService {
       name, kind: clean(body.kind, 60), source: clean(body.source, 80), stage: board.leadStages[0],
       contact: clean(body.contact, 200), note: clean(body.note), businessId: await this.businessIdOrNull(body.businessId),
     });
-    await this.repo.insertLog({ who: await this.who(userId), kind: '고객', text: `고객 추가: ${name}${item.source ? ` (${item.source})` : ''}` });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '고객', text: `고객 추가: ${name}${item.source ? ` (${item.source})` : ''}` });
     return item;
   }
 
-  async updateLead(id: string, body: HqLeadUpdateDto, userId: string): Promise<HqLeadDto> {
+  async updateLead(id: string, body: HqLeadUpdateDto, actor: HqActor): Promise<HqLeadDto> {
     if (!UUID_RE.test(id)) fail(404, '없는 고객입니다');
     const cur = await this.repo.findLead(id);
     if (!cur) fail(404, '없는 고객입니다');
@@ -225,21 +228,21 @@ export class HqService {
     if (!next.name) fail(400, '이름이 비어 있습니다');
     const item = await this.repo.updateLead(id, next);
     const text = cur.stage !== stage ? `고객 ${item.name}: ${cur.stage} → ${stage}` : `고객 ${item.name} 수정`;
-    await this.repo.insertLog({ who: await this.who(userId), kind: '고객', text });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '고객', text });
     return item;
   }
 
-  async deleteLead(id: string, userId: string): Promise<void> {
+  async deleteLead(id: string, actor: HqActor): Promise<void> {
     if (!UUID_RE.test(id)) fail(404, '없는 고객입니다');
     const cur = await this.repo.findLead(id);
     if (!cur) fail(404, '없는 고객입니다');
     await this.repo.deleteLead(id);
-    await this.repo.insertLog({ who: await this.who(userId), kind: '고객', text: `고객 삭제: ${cur.name}` });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '고객', text: `고객 삭제: ${cur.name}` });
   }
 
-  async addLog(body: HqLogCreateDto, userId: string): Promise<void> {
+  async addLog(body: HqLogCreateDto, actor: HqActor): Promise<void> {
     const text = clean(body.text, 4000);
     if (!text) fail(400, '내용이 비어 있습니다');
-    await this.repo.insertLog({ who: await this.who(userId), kind: clean(body.kind, 20) || '메모', text });
+    await this.repo.insertLog({ who: await this.who(actor), kind: clean(body.kind, 20) || '메모', text });
   }
 }
