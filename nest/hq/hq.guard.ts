@@ -2,48 +2,52 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { TokenService } from '../common/security/token.service';
 import { AdminPageForbiddenException, PageRedirectException } from '../pages/page-auth.guard';
 import { HqAccessService } from './hq-access.service';
+import { HqRepository } from './hq.repository';
 
 /**
- * HQ 입구 — 둘 중 하나면 통과한다.
- *   ① 도피아 관리자 로그인(= AdminGuard 와 같은 판정)
- *   ② Cloudflare Access 메일 인증(HqAccessService) — 도피아 계정 없이 HQ 만 보는 사람
- * 통과하면 req.hqActor = { id?, email? } 를 남긴다. 서비스는 이걸로 기록의 '누가'를 적는다.
+ * HQ 입구 — **허용 메일 목록(HQ_ACCESS_EMAILS)에 있는 사람만** 들어온다. 도피아 관리자라도 목록에 없으면 막는다.
+ *   들어오는 길은 둘: ① 도피아 로그인(그 계정 메일이 목록에 있을 때) ② Cloudflare Access 메일 인증(HqAccessService)
+ *   목록이 비어 있으면 아무도 못 들어온다(fail closed).
+ * 통과하면 req.hqActor = { id?, email } 를 남긴다. 서비스는 이걸로 기록의 '누가'를 적는다.
  */
 export interface HqActor { id?: string; email?: string }
 
-async function resolve(req: any, tokens: TokenService, access: HqAccessService): Promise<{ actor: HqActor | null; loggedInNonAdmin: boolean }> {
+async function resolve(req: any, tokens: TokenService, access: HqAccessService, repo: HqRepository): Promise<{ actor: HqActor | null; loggedIn: boolean }> {
   const token = tokens.extract(req);
   const payload = token && tokens.verify(token);
-  if (payload && payload.role === 'admin') return { actor: { id: payload.id }, loggedInNonAdmin: false };
+  if (payload) {
+    const email = await repo.emailOf(payload.id);
+    if (access.allowed(email)) return { actor: { id: payload.id, email: String(email).toLowerCase() }, loggedIn: true };
+  }
   const email = await access.emailFrom(req);
-  if (email) return { actor: { email }, loggedInNonAdmin: false };
-  return { actor: null, loggedInNonAdmin: !!payload };
+  if (email) return { actor: { email }, loggedIn: !!payload };
+  return { actor: null, loggedIn: !!payload };
 }
 
-/** API — 실패하면 AdminGuard 와 같은 형식(401 / 403) */
+/** API — 실패하면 AdminGuard 와 같은 형식(비로그인 401 / 로그인했지만 목록 밖 403) */
 @Injectable()
 export class HqGuard implements CanActivate {
-  constructor(private readonly tokens: TokenService, private readonly access: HqAccessService) {}
+  constructor(private readonly tokens: TokenService, private readonly access: HqAccessService, private readonly repo: HqRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const { actor, loggedInNonAdmin } = await resolve(req, this.tokens, this.access);
+    const { actor, loggedIn } = await resolve(req, this.tokens, this.access, this.repo);
     if (actor) { req.hqActor = actor; return true; }
-    if (loggedInNonAdmin) throw new ForbiddenException({ success: false, error: 'Forbidden — admin only' });
+    if (loggedIn) throw new ForbiddenException({ success: false, error: 'Forbidden — HQ 허용 목록에 없는 계정입니다' });
     throw new UnauthorizedException({ success: false, error: 'Unauthorized' });
   }
 }
 
-/** 화면 — 실패하면 AdminPageGuard 와 같은 응답(비로그인 /login, 일반 사용자 403 안내) */
+/** 화면 — 실패하면 AdminPageGuard 와 같은 응답(비로그인 /login, 로그인했지만 목록 밖 403 안내) */
 @Injectable()
 export class HqPageGuard implements CanActivate {
-  constructor(private readonly tokens: TokenService, private readonly access: HqAccessService) {}
+  constructor(private readonly tokens: TokenService, private readonly access: HqAccessService, private readonly repo: HqRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const { actor, loggedInNonAdmin } = await resolve(req, this.tokens, this.access);
+    const { actor, loggedIn } = await resolve(req, this.tokens, this.access, this.repo);
     if (actor) { req.hqActor = actor; return true; }
-    if (loggedInNonAdmin) throw new AdminPageForbiddenException();
+    if (loggedIn) throw new AdminPageForbiddenException();
     throw new PageRedirectException(`/login?next=${encodeURIComponent(req.originalUrl)}`);
   }
 }
