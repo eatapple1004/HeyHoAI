@@ -123,6 +123,6 @@ function ago(t){const s=(Date.now()-new Date(t))/1000;return s<3600?Math.max(1,M
 $('#feat').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;pick=b.dataset.f||null;document.querySelectorAll('#feat .fc').forEach(x=>x.classList.toggle('on',x===b));renderEngines();});
 load();
 </script>
-<script src="/js/admin-nav.js?v=3" defer></script>
+<script src="/js/admin-nav.js?v=4" defer></script>
 </body>
 </html>

@@ -187,6 +187,10 @@ export class PagesController {
 
   /** 결제(환경 선택) — 조회 전용. 취소·환불은 /admin-refunds. */
   @UseGuards(AdminPageGuard)
+  @Get('admin-hq')
+  adminHq(@Res() res: any) { return res.sendFile(page('admin-hq.html')); }
+
+  @UseGuards(AdminPageGuard)
   @Get('admin-payments')
   adminPayments(@Res() res: any) { return res.sendFile(page('admin-payments.html')); }
 

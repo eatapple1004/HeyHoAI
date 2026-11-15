@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HQ · Doppia Admin</title>
+<style>
+/* 다른 관리자 화면(admin-payments 등)과 같은 색·글꼴 변수 */
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh;line-height:1.55}
+.wrap{max-width:1400px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+button,input,select,textarea{font-family:inherit;font-size:.88rem;color:var(--text)}
+button{font-weight:600;padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel);cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--accent2)}
+button.on,button.pri{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+button.sm{padding:5px 11px;font-size:.8rem}
+button.danger{color:var(--red)}
+input,select,textarea{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 12px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+a{color:var(--accent2);text-decoration:none} a:hover{text-decoration:underline}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:20px;background:var(--pink);color:#fff;font-size:.7rem;line-height:18px;text-align:center;margin-left:4px}
+.badge:empty{display:none}
+.tab{display:none}.tab.show{display:block}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.panel h2{font-size:1rem;margin-bottom:12px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.panel h2 small{color:var(--faint);font-weight:400;font-size:.78rem}
+.hero .kicker{color:var(--accent2);font-size:.78rem;font-weight:700;margin-bottom:6px}
+.hero .line{font-size:1.25rem;font-weight:800;margin-bottom:8px}
+.hero .why{color:var(--dim);font-size:.9rem;max-width:900px}
+
+.nums{display:flex;gap:22px;flex-wrap:wrap}
+.nums div span{display:block}
+.nums .n{font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums}
+.nums .n.none{color:var(--faint);font-size:.9rem;font-weight:600;padding-top:6px}
+.nums .l{color:var(--faint);font-size:.74rem;margin-top:2px}
+
+.flow{list-style:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;counter-reset:s}
+.flow li{counter-increment:s;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:150px}
+.flow li:hover{border-color:var(--accent2)}
+.flow .num::before{content:counter(s)}
+.flow .num{color:var(--faint);font-size:.72rem}
+.flow .nm{font-weight:800}
+.flow .what{color:var(--dim);font-size:.8rem;flex:1}
+
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;align-self:flex-start}
+.s-none,.s-hold{background:rgba(154,154,178,.16);color:var(--dim)}
+.s-wip,.s-wait{background:rgba(255,206,122,.16);color:var(--gold)}
+.s-have{background:rgba(124,82,232,.2);color:var(--accent2)}
+.s-live,.s-done{background:rgba(74,222,128,.14);color:var(--green)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+td{padding:8px 6px;border-top:1px solid var(--border);vertical-align:top}
+tr:first-child td{border-top:0}
+td:first-child{font-weight:700;width:40%;padding-right:12px}
+td.who{color:var(--dim);white-space:nowrap}
+ul.rules{padding-left:18px;color:var(--dim);font-size:.85rem}
+ul.rules li{margin:3px 0}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:.8rem}
+
+.cards{display:grid;gap:10px}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.card .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card .id{color:var(--faint);font-size:.75rem;font-weight:700}
+.card .q{font-weight:800;flex:1;min-width:200px}
+.card .meta{color:var(--dim);font-size:.82rem;margin-top:6px}
+.card .meta b{color:var(--text)}
+.card .ans{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.card .ans input{flex:1;min-width:220px;width:auto}
+.empty{color:var(--faint);font-size:.88rem;padding:6px 0}
+
+details.add summary{cursor:pointer;color:var(--accent2);font-weight:700}
+details.add[open] summary{margin-bottom:12px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--dim)}
+.form .wide{grid-column:1/-1}
+
+.board{display:grid;grid-template-columns:repeat(7,minmax(170px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
+.col{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px;min-height:160px}
+.col h3{font-size:.85rem;margin-bottom:10px;display:flex;justify-content:space-between}
+.col h3 span{color:var(--faint);font-weight:400}
+.lead{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer}
+.lead:hover{border-color:var(--accent2)}
+.lead .nm{font-weight:800;font-size:.85rem}
+.lead .sm{color:var(--dim);font-size:.74rem}
+
+.logform{display:grid;grid-template-columns:110px 1fr auto;gap:8px;margin-bottom:12px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filters button{padding:4px 11px;font-size:.78rem;font-weight:600;color:var(--dim)}
+.filters button.on{color:#fff}
+ul.log{list-style:none}
+ul.log li{display:grid;grid-template-columns:130px 60px 1fr;gap:12px;padding:9px 0;border-top:1px solid var(--border);font-size:.85rem}
+ul.log li:first-child{border-top:0}
+ul.log .at{color:var(--faint);font-size:.78rem}
+ul.log .k{color:var(--accent2);font-size:.75rem;font-weight:700}
+
+.import{border-color:#5b4a2e}
+.import p{color:var(--dim);font-size:.88rem;margin-bottom:12px}
+
+.drawer{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;justify-content:flex-end;z-index:20}
+.drawer[hidden]{display:none}
+.drawer .in{width:min(480px,100%);height:100%;background:var(--panel);border-left:1px solid var(--border);padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.drawer .hd{display:flex;justify-content:space-between;align-items:center}
+.drawer .hd h3{font-size:1.1rem}
+.drawer .x{border:0;background:none;font-size:1.6rem;line-height:1;color:var(--dim);padding:0 4px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--dim)}
+.field .v{color:var(--text);font-size:.88rem}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+
+.msg{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--border);padding:10px 16px;border-radius:11px;font-size:.88rem;z-index:30}
+.msg[hidden]{display:none}
+
+@media(max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+@media(max-width:640px){body{padding:16px}.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="adminNav"></div>
+  <h1><span class="dot"></span>HQ</h1>
+  <p class="sub">도피아를 어디로 끌고 가는지, 무엇을 정했고 무엇이 남았는지 한곳에 남깁니다. <span id="who"></span></p>
+
+  <section class="panel import" id="importBox" hidden>
+    <h2>처음 한 번: 기록 가져오기</h2>
+    <p>아직 HQ 기록이 없습니다. 맥에서 쓰던 독립 HQ 파일(hq.json)을 고르면 방향, 흐름, 결정, 고객, 기록이 그대로 옮겨집니다. 가져오기는 처음 한 번만 됩니다.</p>
+    <input type="file" id="importFile" accept="application/json,.json">
+  </section>
+
+  <div id="main" hidden>
+    <div class="tabs" id="tabs">
+      <button data-tab="home" class="on">한눈에</button>
+      <button data-tab="decisions">결정<span class="badge" id="decCount"></span></button>
+      <button data-tab="leads">고객</button>
+      <button data-tab="log">기록</button>
+    </div>
+
+    <section class="tab show" id="tab-home">
+      <div class="panel hero">
+        <div class="kicker">방향 · <span id="dirDate"></span> 결정</div>
+        <div class="line" id="dirLine"></div>
+        <div class="why" id="dirWhy"></div>
+      </div>
+      <div class="panel">
+        <h2>운영 숫자 <small id="numAt"></small></h2>
+        <div class="nums" id="nums"><span class="empty">불러오는 중…</span></div>
+      </div>
+      <div class="panel">
+        <h2>흐름 <small>단계를 누르면 상태를 바꾸고 메모를 남길 수 있습니다</small></h2>
+        <ol class="flow" id="flow"></ol>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h2>우리 무기</h2><table id="weapons"></table></div>
+        <div class="panel">
+          <h2>상품 초안</h2><table id="products"></table>
+          <h2 style="margin-top:18px">지키는 것</h2><ul class="rules" id="rules"></ul>
+          <h2 style="margin-top:18px">바로가기</h2><div class="links" id="links"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-decisions">
+      <div class="panel"><h2>정할 것</h2><div class="cards" id="decOpen"></div></div>
+      <div class="panel"><h2>정한 것</h2><div class="cards" id="decDone"></div></div>
+      <details class="panel add">
+        <summary>결정할 것 추가</summary>
+        <form class="form" id="decForm">
+          <label>질문<input name="question" required maxlength="300"></label>
+          <label>선택지<input name="options" maxlength="1000"></label>
+          <label class="wide">추천<input name="recommend" maxlength="1000"></label>
+          <button class="pri">추가</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="tab" id="tab-leads">
+      <div class="board" id="board"></div>
+      <details class="panel add">
+        <summary>고객 추가</summary>
+        <form class="form" id="leadForm">
+          <label>이름<input name="name" required maxlength="120"></label>
+          <label>업종<input name="kind" maxlength="60"></label>
+          <label>들어온 곳<input name="source" maxlength="80"></label>
+          <label>연락처<input name="contact" maxlength="200"></label>
+          <label class="wide">메모<textarea name="note" rows="2"></textarea></label>
+          <button class="pri">추가</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="tab" id="tab-log">
+      <div class="panel">
+        <form class="logform" id="logForm">
+          <select name="kind"><option>메모</option><option>진행</option><option>영업</option><option>전략</option><option>문제</option></select>
+          <input name="text" required maxlength="4000" placeholder="오늘 한 일, 알게 된 것, 막힌 것을 한 줄로">
+          <button class="pri">남기기</button>
+        </form>
+        <div class="filters" id="logFilters"></div>
+        <ul class="log" id="log"></ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" hidden><div class="in">
+  <div class="hd"><h3 id="drTitle"></h3><button class="x" id="drClose" aria-label="닫기">×</button></div>
+  <div id="drBody"></div>
+</div></div>
+<div class="msg" id="msg" hidden></div>
+
+<script src="/js/admin-nav.js?v=4" defer></script>
+<script>
+// 데이터는 GET /api/admin/hq 하나로 받고, 바꿀 때마다 다시 받는다. 운영 숫자는 /api/admin/hq/numbers(운영 DB 읽기 전용).
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const SC = { '없음': 's-none', '만드는 중': 's-wip', '있음': 's-have', '운영 중': 's-live', '대기': 's-wait', '결정': 's-done', '보류': 's-hold' };
+const pill = (s) => `<span class="pill ${SC[s] || 's-none'}">${esc(s)}</span>`;
+const DAY = (iso) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? esc(iso) : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+const TIME = (iso) => { const d = new Date(iso); return `${DAY(iso)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const NAME = (e) => String(e || '').split('@')[0];
+let D = null, logFilter = '전체';
+
+async function api(method, url, body) {
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await res.json().catch(() => ({}));
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  if (!res.ok || j.success === false) throw new Error(j.error || `요청 실패 (${res.status})`);
+  return j.data;
+}
+function say(t) { const m = $('#msg'); m.textContent = t; m.hidden = false; clearTimeout(say.t); say.t = setTimeout(() => { m.hidden = true; }, 2400); }
+async function load() { D = await api('GET', '/api/admin/hq'); render(); }
+async function act(method, url, body, done) { try { await api(method, url, body); await load(); if (done) say(done); return true; } catch (e) { say(e.message); return false; } }
+
+async function loadNumbers() {
+  try {
+    const n = await api('GET', '/api/admin/hq/numbers');
+    $('#numAt').textContent = `${n.env} 기준 · ${TIME(n.at)}`;
+    $('#nums').innerHTML = n.items.map((x) => `<div><span class="n ${x.value == null ? 'none' : ''}">${x.value == null ? '운영에 아직 없음' : x.value.toLocaleString()}</span><span class="l">${esc(x.label)}</span></div>`).join('');
+  } catch (e) { $('#nums').innerHTML = `<span class="empty">${esc(e.message)}</span>`; }
+}
+
+function render() {
+  $('#who').textContent = `지금 ${D.env} · ${NAME(D.me)}`;
+  if (!D.board) { $('#importBox').hidden = false; $('#main').hidden = true; return; }
+  $('#importBox').hidden = true; $('#main').hidden = false;
+  const b = D.board;
+  $('#dirLine').textContent = b.direction.line;
+  $('#dirWhy').textContent = b.direction.why;
+  $('#dirDate').textContent = DAY(b.direction.decided);
+  $('#flow').innerHTML = b.flow.map((s) => `<li data-flow="${esc(s.id)}"><span class="num"></span><span class="nm">${esc(s.name)}</span><span class="what">${esc(s.what)}</span>${pill(s.status)}</li>`).join('');
+  $('#weapons').innerHTML = b.weapons.map((w) => `<tr><td>${esc(w.name)}</td><td>${esc(w.use)}</td></tr>`).join('');
+  $('#products').innerHTML = b.products.map((p) => `<tr><td>${esc(p.name)}</td><td class="who">${esc(p.who)}</td><td>${esc(p.what)}</td></tr>`).join('');
+  $('#rules').innerHTML = b.rules.map((r) => `<li>${esc(r)}</li>`).join('');
+  $('#links').innerHTML = b.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`).join('');
+
+  const open = D.decisions.filter((x) => x.status !== '결정');
+  const done = D.decisions.filter((x) => x.status === '결정').sort((a, c) => String(c.decided_at).localeCompare(String(a.decided_at)));
+  $('#decCount').textContent = open.filter((x) => x.status === '대기').length || '';
+  $('#decOpen').innerHTML = open.length ? open.map(decCard).join('') : '<div class="empty">정할 것이 없습니다.</div>';
+  $('#decDone').innerHTML = done.length ? done.map(decCard).join('') : '<div class="empty">아직 없습니다.</div>';
+
+  $('#board').innerHTML = b.leadStages.map((st) => {
+    const items = D.leads.filter((l) => l.stage === st);
+    return `<div class="col"><h3>${esc(st)} <span>${items.length}</span></h3>${items.map((l) => `<div class="lead" data-lead="${l.id}"><div class="nm">${esc(l.name)}</div><div class="sm">${esc([l.kind, l.source].filter(Boolean).join(' · '))}</div></div>`).join('')}</div>`;
+  }).join('');
+
+  const kinds = ['전체', ...new Set(D.log.map((l) => l.kind))];
+  if (!kinds.includes(logFilter)) logFilter = '전체';
+  $('#logFilters').innerHTML = kinds.map((k) => `<button class="${k === logFilter ? 'on' : ''}" data-k="${esc(k)}">${esc(k)}</button>`).join('');
+  const rows = D.log.filter((l) => logFilter === '전체' || l.kind === logFilter);
+  $('#log').innerHTML = rows.length ? rows.map((l) => `<li><span class="at">${TIME(l.at)}<br>${esc(NAME(l.who))}</span><span class="k">${esc(l.kind)}</span><span>${esc(l.text)}</span></li>`).join('') : '<div class="empty">기록이 없습니다.</div>';
+}
+
+function decCard(x) {
+  const meta = [
+    x.options && `<div class="meta"><b>선택지</b> ${esc(x.options)}</div>`,
+    x.recommend && `<div class="meta"><b>추천</b> ${esc(x.recommend)}</div>`,
+    x.answer && `<div class="meta"><b>결론</b> ${esc(x.answer)}</div>`,
+    `<div class="meta">${x.status === '결정' ? `${DAY(x.decided_at)} 결정` : `${DAY(x.opened_at)} 열림`}</div>`,
+  ].filter(Boolean).join('');
+  const form = x.status === '결정'
+    ? `<div class="ans"><button class="sm" data-reopen="${esc(x.code)}">다시 열기</button></div>`
+    : `<div class="ans"><input data-ans="${esc(x.code)}" placeholder="결론을 적으세요" value="${esc(x.answer)}"><button class="sm pri" data-decide="${esc(x.code)}">결정</button><button class="sm" data-hold="${esc(x.code)}">${x.status === '보류' ? '대기로' : '보류'}</button></div>`;
+  return `<div class="card"><div class="row"><span class="id">${esc(x.code)}</span><span class="q">${esc(x.question)}</span>${pill(x.status)}</div>${meta}${form}</div>`;
+}
+
+function drawer(title, html, bind) { $('#drTitle').textContent = title; $('#drBody').innerHTML = html; $('#drawer').hidden = false; bind($('#drBody')); }
+function closeDrawer() { $('#drawer').hidden = true; }
+$('#drClose').onclick = closeDrawer;
+$('#drawer').onclick = (e) => { if (e.target.id === 'drawer') closeDrawer(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
+function flowDrawer(id) {
+  const s = D.board.flow.find((x) => x.id === id);
+  const opts = ['없음', '만드는 중', '있음', '운영 중'].map((o) => `<option ${o === s.status ? 'selected' : ''}>${o}</option>`).join('');
+  drawer(s.name, `
+    <div class="field">하는 일<div class="v">${esc(s.what)}</div></div>
+    <div class="field">쓰는 부품<div class="v">${esc(s.parts)}</div></div>
+    <label class="field">상태<select id="fS">${opts}</select></label>
+    <label class="field">메모<textarea id="fN" rows="5">${esc(s.note)}</textarea></label>
+    <div class="acts"><button class="pri" id="fSave">저장</button></div>`, (el) => {
+    $('#fSave', el).onclick = async () => { if (await act('PUT', `/api/admin/hq/flow/${encodeURIComponent(id)}`, { status: $('#fS', el).value, note: $('#fN', el).value }, '저장했습니다')) closeDrawer(); };
+  });
+}
+
+function leadDrawer(id) {
+  const l = D.leads.find((x) => x.id === id);
+  const opts = D.board.leadStages.map((o) => `<option ${o === l.stage ? 'selected' : ''}>${esc(o)}</option>`).join('');
+  const f = (k, label, ta) => `<label class="field">${label}${ta ? `<textarea id="l_${k}" rows="5">${esc(l[k])}</textarea>` : `<input id="l_${k}" value="${esc(l[k])}">`}</label>`;
+  drawer(l.name, `
+    <label class="field">단계<select id="l_stage">${opts}</select></label>
+    ${f('name', '이름')}${f('kind', '업종')}${f('source', '들어온 곳')}${f('contact', '연락처')}${f('note', '메모', true)}
+    <div class="field">사업체 연결${l.business_id ? `<div class="v"><a href="/admin-business/${encodeURIComponent(l.business_id)}">사업체 화면 열기</a></div>` : '<div class="v">연결 안 됨</div>'}</div>
+    <div class="field">마지막 수정<div class="v">${TIME(l.updated_at)}</div></div>
+    <div class="acts"><button class="pri" id="lSave">저장</button><button class="danger" id="lDel">삭제</button></div>`, (el) => {
+    $('#lSave', el).onclick = async () => {
+      const body = { stage: $('#l_stage', el).value };
+      for (const k of ['name', 'kind', 'source', 'contact', 'note']) body[k] = $(`#l_${k}`, el).value;
+      if (await act('PUT', `/api/admin/hq/leads/${l.id}`, body, '저장했습니다')) closeDrawer();
+    };
+    $('#lDel', el).onclick = async () => {
+      if (!confirm(`「${l.name}」을 지울까요? 되돌릴 수 없습니다.`)) return;
+      if (await act('DELETE', `/api/admin/hq/leads/${l.id}`, null, '지웠습니다')) closeDrawer();
+    };
+  });
+}
+
+$('#tabs').onclick = (e) => {
+  const b = e.target.closest('button[data-tab]'); if (!b) return;
+  document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('show', x.id === `tab-${b.dataset.tab}`));
+  try { localStorage.setItem('adminHq.tab', b.dataset.tab); } catch (_) {}
+};
+document.addEventListener('click', (e) => {
+  const fl = e.target.closest('[data-flow]'); if (fl) return flowDrawer(fl.dataset.flow);
+  const ld = e.target.closest('[data-lead]'); if (ld) return leadDrawer(ld.dataset.lead);
+  const t = e.target;
+  if (t.dataset.decide) {
+    const answer = $(`[data-ans="${t.dataset.decide}"]`).value.trim();
+    if (!answer) return say('결론을 먼저 적어 주세요');
+    return act('PUT', `/api/admin/hq/decisions/${t.dataset.decide}`, { status: '결정', answer }, `${t.dataset.decide} 결정했습니다`);
+  }
+  if (t.dataset.hold) {
+    const x = D.decisions.find((d) => d.code === t.dataset.hold);
+    return act('PUT', `/api/admin/hq/decisions/${x.code}`, { status: x.status === '보류' ? '대기' : '보류', answer: $(`[data-ans="${x.code}"]`).value }, '바꿨습니다');
+  }
+  if (t.dataset.reopen) return act('PUT', `/api/admin/hq/decisions/${t.dataset.reopen}`, { status: '대기' }, '다시 열었습니다');
+  if (t.closest('#logFilters') && t.dataset.k) { logFilter = t.dataset.k; render(); }
+});
+$('#decForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/decisions', Object.fromEntries(new FormData(e.target)), '추가했습니다')) e.target.reset(); };
+$('#leadForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/leads', Object.fromEntries(new FormData(e.target)), '추가했습니다')) e.target.reset(); };
+$('#logForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/log', Object.fromEntries(new FormData(e.target)), '남겼습니다')) e.target.text.value = ''; };
+$('#importFile').onchange = async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  let data; try { data = JSON.parse(await file.text()); } catch (_) { return say('JSON 파일이 아닙니다'); }
+  if (await act('POST', '/api/admin/hq/import', data, '가져왔습니다')) loadNumbers();
+};
+
+try { const t = localStorage.getItem('adminHq.tab'); if (t) { const b = document.querySelector(`#tabs button[data-tab="${t}"]`); if (b) b.click(); } } catch (_) {}
+load().then(loadNumbers).catch((e) => say(e.message));
+</script>
+</body>
+</html>
