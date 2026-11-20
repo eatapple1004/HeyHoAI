@@ -23,6 +23,7 @@ import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
 import { DiagnoseModule } from './diagnose/diagnose.module';
+import { HqModule } from './hq/hq.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
@@ -69,6 +70,7 @@ import { ShootModule } from './shoot/shoot.module';
     ShootModule,         // (2026-10-16) Doppia Shoot — 내 모델 만들기(Soul ID 학습 + 장면 뱅크, /api/shoot)
     AdminPaymentsModule, // 환경별 결제 조회(/api/admin/payments)
     DiagnoseModule,      // 진단 퍼널 저장(/api/diagnose 공개 · /api/admin/diagnose 관리자)
+    HqModule,            // 운영 기록판(/api/admin/hq 관리자 · 화면 /admin-hq)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],

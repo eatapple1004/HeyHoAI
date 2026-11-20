@@ -61,6 +61,13 @@ const envSchema = z.object({
   // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
   PUBLIC_URL: z.string().url().optional(),
 
+  // ── HQ(/admin-hq) 메일 인증 — Cloudflare Access ──
+  // HQ는 허용 메일 목록에 있는 사람만 들어온다(도피아 관리자라도 목록 밖이면 막음). 들어오는 길은
+  // 도피아 로그인(계정 메일이 목록에 있을 때) 또는 Access 메일 코드 인증(ADAM HQ와 같은 방식). 목록이 비면 아무도 못 들어온다.
+  HQ_ACCESS_TEAM: z.string().optional(),                     // Access 팀 도메인(예: xxx.cloudflareaccess.com)
+  HQ_ACCESS_AUD: z.string().optional(),                      // Access 앱의 AUD 태그
+  HQ_ACCESS_EMAILS: z.string().optional(),                   // 쉼표로 구분한 허용 메일(Access 정책과 같은 목록). HQ 입구의 유일한 기준
+
   // ── 미디어 오브젝트 스토리지 (S3 호환 — AWS S3 / Cloudflare R2) ──
   // 신규 영상/이미지를 로컬 tmp/images(비영속)뿐 아니라 영속 스토리지에도 저장해 재배포·메모리킬 시 404 방지.
   // MEDIA_S3_BUCKET 미설정 시 전부 로컬 동작(현행 무변경) — 로컬 개발/미설정 prod에 영향 없음.
