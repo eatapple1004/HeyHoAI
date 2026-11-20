@@ -12,11 +12,22 @@ import { HqRepository } from './hq.repository';
  */
 export interface HqActor { id?: string; email?: string }
 
+/** 계정 id → 메일. 요청마다 users 를 다시 읽지 않게 5분 동안 기억한다(메일이 바뀌어도 5분 뒤엔 반영) */
+const EMAIL_TTL_MS = 5 * 60_000;
+const emailCache = new Map<string, { at: number; email: string | null }>();
+async function emailOf(repo: HqRepository, id: string): Promise<string | null> {
+  const hit = emailCache.get(id);
+  if (hit && Date.now() - hit.at < EMAIL_TTL_MS) return hit.email;
+  const email = await repo.emailOf(id);
+  emailCache.set(id, { at: Date.now(), email });
+  return email;
+}
+
 async function resolve(req: any, tokens: TokenService, access: HqAccessService, repo: HqRepository): Promise<{ actor: HqActor | null; loggedIn: boolean }> {
   const token = tokens.extract(req);
   const payload = token && tokens.verify(token);
   if (payload) {
-    const email = await repo.emailOf(payload.id);
+    const email = await emailOf(repo, payload.id);
     if (access.allowed(email)) return { actor: { id: payload.id, email: String(email).toLowerCase() }, loggedIn: true };
   }
   const email = await access.emailFrom(req);

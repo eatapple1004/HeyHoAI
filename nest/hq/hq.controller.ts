@@ -5,6 +5,8 @@ import { HqGuard, HqPageGuard } from './hq.guard';
 import { PageExceptionFilter } from '../pages/page-exception.filter';
 import { ApiOk, ApiResponse } from '../common/dto/api-response.dto';
 import {
+  HqBoardDto,
+  HqBoardUpdateDto,
   HqDecisionCreateDto,
   HqDecisionDto,
   HqDecisionUpdateDto,
@@ -49,6 +51,12 @@ export class AdminHqController {
   @Put('flow/:id')
   async updateFlow(@Param('id') id: string, @Body() body: HqFlowUpdateDto, @Req() req: any): Promise<ApiResponse<HqFlowStepDto>> {
     return { success: true, data: await this.hq.updateFlow(id, body, req.hqActor) };
+  }
+
+  // PUT /api/admin/hq/board/:section — 판의 한 칸(direction·weapons·products·rules·links)을 통째로 고친다
+  @Put('board/:section')
+  async updateBoard(@Param('section') section: string, @Body() body: HqBoardUpdateDto, @Req() req: any): Promise<ApiResponse<HqBoardDto>> {
+    return { success: true, data: await this.hq.updateBoardSection(section, body, req.hqActor) };
   }
 
   // POST /api/admin/hq/decisions — 결정할 것 추가(D번호 자동)
