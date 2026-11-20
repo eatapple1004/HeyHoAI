@@ -28,6 +28,10 @@ export interface HqBoardDto {
   leadStages: string[];
 }
 
+/** 화면에서 통째로 고칠 수 있는 판의 칸 — 흐름은 단계별 PUT /flow/:id 로 따로 고친다 */
+export type HqBoardSection = 'direction' | 'weapons' | 'products' | 'rules' | 'links';
+export const HQ_BOARD_SECTIONS: HqBoardSection[] = ['direction', 'weapons', 'products', 'rules', 'links'];
+
 /** GET /api/admin/hq 응답 */
 export interface HqSnapshotDto {
   /** 아직 아무것도 가져오지 않았으면 null — 화면이 '가져오기'를 띄운다 */
@@ -65,10 +69,12 @@ export class HqImportDto {
 }
 
 export class HqFlowUpdateDto { status?: string; note?: string }
+/** PUT /api/admin/hq/board/:section — value 모양은 칸마다 HqBoardDto 의 그 칸과 같다 */
+export class HqBoardUpdateDto { value!: unknown }
 export class HqDecisionCreateDto { question!: string; options?: string; recommend?: string }
 export class HqDecisionUpdateDto { status?: string; answer?: string }
-export class HqLeadCreateDto { name!: string; kind?: string; source?: string; contact?: string; note?: string; businessId?: string }
-export class HqLeadUpdateDto { name?: string; kind?: string; source?: string; stage?: string; contact?: string; note?: string; businessId?: string | null }
+export class HqLeadCreateDto { name!: string; kind?: string; source?: string; contact?: string; note?: string; businessId?: string; nextAction?: string; nextDate?: string }
+export class HqLeadUpdateDto { name?: string; kind?: string; source?: string; stage?: string; contact?: string; note?: string; businessId?: string | null; nextAction?: string; nextDate?: string | null }
 export class HqLogCreateDto { kind?: string; text!: string }
 
 export type HqDecisionDto = HqDecisionRowVo;

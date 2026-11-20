@@ -8,10 +8,10 @@ import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqStateRowVo } from './vo/hq.
  *   3환경 공통 migrate.js를 건드리지 않아 다른 환경 배포에 영향이 없다.
  *   hq_state   : key 별 JSON(지금은 'board' 하나 — 방향·흐름·무기·상품·원칙·링크·고객 단계)
  *   hq_decisions: 결정할 것(code = D1, D2 …)
- *   hq_leads   : 고객·후보 보드. business_id 로 사업체(businesses)와 이을 수 있다(선택)
+ *   hq_leads   : 고객·후보 보드. business_id 로 사업체(businesses)와 이을 수 있다(선택). next_action·next_date = 다음 할 일
  *   hq_log     : 기록(사람이 쓴 메모 + 바뀐 것 자동 한 줄)
  */
-const SCHEMA_KEY = 'hq.v1';
+const SCHEMA_KEY = 'hq.v2';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS hq_state (
      key         VARCHAR(40) PRIMARY KEY,
@@ -50,7 +50,13 @@ const SCHEMA_SQL = [
      text  TEXT NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS idx_hq_log_at ON hq_log(at DESC)`,
+  // v2(2026-11-20) 고객 다음 할 일·날짜 — 영업 보드에서 "무엇을 언제" 를 놓치지 않게
+  `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS next_action TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS next_date DATE`,
 ];
+
+/** 고객 행 SELECT 목록 — 날짜는 시간대 밀림이 없게 'YYYY-MM-DD' 문자열로 낸다 */
+const LEAD_COLS = `id, name, kind, source, stage, contact, note, business_id, next_action, to_char(next_date, 'YYYY-MM-DD') AS next_date, created_at, updated_at`;
 
 @Injectable()
 export class HqRepository {
@@ -74,6 +80,31 @@ export class HqRepository {
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = now()`,
       [key, JSON.stringify(value), who],
     );
+  }
+
+  /**
+   * 판 한 덩어리를 **잠근 채** 읽고 고쳐 쓴다 — 두 사람이 동시에 다른 칸을 고쳐도 한쪽이 사라지지 않는다.
+   *   change 가 null 을 돌려주면 아무것도 쓰지 않는다. 행이 없으면 null.
+   */
+  async updateState<T>(key: string, who: string, change: (value: any) => T | null): Promise<T | null> {
+    await this.ensure();
+    const conn = await this.db.connect();
+    try {
+      await conn.query('BEGIN');
+      const r = await conn.query(`SELECT value FROM hq_state WHERE key = $1 FOR UPDATE`, [key]);
+      if (!r.rows[0]) { await conn.query('ROLLBACK'); return null; }
+      const value = r.rows[0].value;
+      const result = change(value);
+      if (result === null) { await conn.query('ROLLBACK'); return null; }
+      await conn.query(`UPDATE hq_state SET value = $2, updated_by = $3, updated_at = now() WHERE key = $1`, [key, JSON.stringify(value), who]);
+      await conn.query('COMMIT');
+      return result;
+    } catch (err) {
+      await conn.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    } finally {
+      conn.release();
+    }
   }
 
   // ─── 결정 ───
@@ -124,18 +155,18 @@ export class HqRepository {
   async listLeads(): Promise<HqLeadRowVo[]> {
     await this.ensure();
     const r = await this.db.query<HqLeadRowVo>(
-      `SELECT id, name, kind, source, stage, contact, note, business_id, created_at, updated_at FROM hq_leads ORDER BY updated_at DESC`,
+      `SELECT ${LEAD_COLS} FROM hq_leads ORDER BY updated_at DESC`,
     );
     return r.rows;
   }
 
-  async insertLead(d: { name: string; kind: string; source: string; stage: string; contact: string; note: string; businessId: string | null; createdAt?: string | null; updatedAt?: string | null }): Promise<HqLeadRowVo> {
+  async insertLead(d: { name: string; kind: string; source: string; stage: string; contact: string; note: string; businessId: string | null; nextAction?: string; nextDate?: string | null; createdAt?: string | null; updatedAt?: string | null }): Promise<HqLeadRowVo> {
     await this.ensure();
     const r = await this.db.query<HqLeadRowVo>(
-      `INSERT INTO hq_leads (name, kind, source, stage, contact, note, business_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, now()), COALESCE($9::timestamptz, now()))
-       RETURNING id, name, kind, source, stage, contact, note, business_id, created_at, updated_at`,
-      [d.name, d.kind, d.source, d.stage, d.contact, d.note, d.businessId, d.createdAt || null, d.updatedAt || null],
+      `INSERT INTO hq_leads (name, kind, source, stage, contact, note, business_id, next_action, next_date, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, COALESCE($10::timestamptz, now()), COALESCE($11::timestamptz, now()))
+       RETURNING ${LEAD_COLS}`,
+      [d.name, d.kind, d.source, d.stage, d.contact, d.note, d.businessId, d.nextAction || '', d.nextDate || null, d.createdAt || null, d.updatedAt || null],
     );
     return r.rows[0];
   }
@@ -143,16 +174,17 @@ export class HqRepository {
   async findLead(id: string): Promise<HqLeadRowVo | null> {
     await this.ensure();
     const r = await this.db.query<HqLeadRowVo>(
-      `SELECT id, name, kind, source, stage, contact, note, business_id, created_at, updated_at FROM hq_leads WHERE id = $1`, [id]);
+      `SELECT ${LEAD_COLS} FROM hq_leads WHERE id = $1`, [id]);
     return r.rows[0] || null;
   }
 
-  async updateLead(id: string, d: { name: string; kind: string; source: string; stage: string; contact: string; note: string; businessId: string | null }): Promise<HqLeadRowVo> {
+  async updateLead(id: string, d: { name: string; kind: string; source: string; stage: string; contact: string; note: string; businessId: string | null; nextAction: string; nextDate: string | null }): Promise<HqLeadRowVo> {
     const r = await this.db.query<HqLeadRowVo>(
-      `UPDATE hq_leads SET name = $2, kind = $3, source = $4, stage = $5, contact = $6, note = $7, business_id = $8, updated_at = now()
+      `UPDATE hq_leads SET name = $2, kind = $3, source = $4, stage = $5, contact = $6, note = $7, business_id = $8,
+              next_action = $9, next_date = $10::date, updated_at = now()
         WHERE id = $1
-       RETURNING id, name, kind, source, stage, contact, note, business_id, created_at, updated_at`,
-      [id, d.name, d.kind, d.source, d.stage, d.contact, d.note, d.businessId],
+       RETURNING ${LEAD_COLS}`,
+      [id, d.name, d.kind, d.source, d.stage, d.contact, d.note, d.businessId, d.nextAction, d.nextDate],
     );
     return r.rows[0];
   }

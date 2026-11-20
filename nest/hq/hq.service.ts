@@ -3,9 +3,12 @@ import { EnvDbService } from '../common/env-db.service';
 import { HqRepository } from './hq.repository';
 import { HqActor } from './hq.guard';
 import {
+  HQ_BOARD_SECTIONS,
   HQ_DECISION_STATUSES,
   HQ_FLOW_STATUSES,
   HqBoardDto,
+  HqBoardSection,
+  HqBoardUpdateDto,
   HqDecisionCreateDto,
   HqDecisionDto,
   HqDecisionUpdateDto,
@@ -28,6 +31,16 @@ function fail(status: number, error: string): never {
 
 const BOARD_KEY = 'board';
 const LOG_LIMIT = 300;
+/** 운영 숫자는 화면을 열 때마다 운영 DB에 10번 묻지 않게 1분 동안 재사용한다 */
+const NUMBERS_TTL_MS = 60_000;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** 'YYYY-MM-DD' 만 받는다. 비우면 null(날짜 지움) */
+const dateOrNull = (v: unknown): string | null => {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  if (!DATE_RE.test(s) || Number.isNaN(Date.parse(s))) fail(400, '날짜는 2026-11-20 같은 모양이어야 합니다');
+  return s;
+};
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** 사람이 쓴 글을 자르고 다듬는다 — 길이 상한은 화면 입력칸과 같게 */
@@ -53,6 +66,7 @@ const NUMBERS: Array<{ key: string; label: string; table: string; where?: string
 @Injectable()
 export class HqService {
   private emails = new Map<string, string>();
+  private numbersCache: { at: number; data: HqNumbersDto } | null = null;
 
   constructor(
     private readonly repo: HqRepository,
@@ -82,6 +96,7 @@ export class HqService {
   }
 
   async numbers(): Promise<HqNumbersDto> {
+    if (this.numbersCache && Date.now() - this.numbersCache.at < NUMBERS_TTL_MS) return this.numbersCache.data;
     const env = 'production' as const;
     const q = this.envDb.queryFn(env);
     const items: HqNumberDto[] = [];
@@ -92,7 +107,9 @@ export class HqService {
       const r = await q(`SELECT count(*)::int AS n FROM ${n.table}${n.where ? ` WHERE ${n.where}` : ''}`);
       items.push({ key: n.key, label: n.label, value: r.rows[0]?.n ?? 0 });
     }
-    return { env: this.envDb.label(env), at: new Date().toISOString(), items };
+    const data = { env: this.envDb.label(env), at: new Date().toISOString(), items };
+    this.numbersCache = { at: Date.now(), data };
+    return data;
   }
 
   /** 맥에서 쓰던 독립 HQ 기록을 한 번 옮겨 온다. 이미 판이 있으면 덮어쓰지 않는다. */
@@ -153,18 +170,47 @@ export class HqService {
   }
 
   async updateFlow(id: string, body: HqFlowUpdateDto, actor: HqActor): Promise<HqFlowStepDto> {
-    const board = await this.board();
-    const step = board.flow.find((s) => s.id === id);
-    if (!step) fail(404, '없는 단계입니다');
-    if (body.status !== undefined) {
-      if (!(HQ_FLOW_STATUSES as string[]).includes(body.status)) fail(400, '상태는 없음·만드는 중·있음·운영 중 중 하나입니다');
-      step.status = body.status as HqFlowStepDto['status'];
-    }
-    if (body.note !== undefined) step.note = clean(body.note);
+    if (body.status !== undefined && !(HQ_FLOW_STATUSES as string[]).includes(body.status)) fail(400, '상태는 없음·만드는 중·있음·운영 중 중 하나입니다');
     const who = await this.who(actor);
-    await this.repo.putState(BOARD_KEY, board, who);
+    let missing = false;
+    const step = await this.repo.updateState(BOARD_KEY, who, (board: HqBoardDto) => {
+      const s = board.flow.find((x) => x.id === id);
+      if (!s) { missing = true; return null; }
+      if (body.status !== undefined) s.status = body.status as HqFlowStepDto['status'];
+      if (body.note !== undefined) s.note = clean(body.note);
+      return s;
+    });
+    if (!step) fail(404, missing ? '없는 단계입니다' : 'HQ 기록이 아직 없습니다. 먼저 가져오기를 하세요.');
     await this.repo.insertLog({ who, kind: '흐름', text: `흐름 「${step.name}」 ${step.status}${body.note !== undefined ? ' · 메모 수정' : ''}` });
     return step;
+  }
+
+  /** 판의 한 칸(방향·무기·상품·지키는 것·바로가기)을 통째로 고친다 — 화면 '편집' 버튼 */
+  async updateBoardSection(section: string, body: HqBoardUpdateDto, actor: HqActor): Promise<HqBoardDto> {
+    if (!(HQ_BOARD_SECTIONS as string[]).includes(section)) fail(404, '고칠 수 없는 칸입니다');
+    const value = this.cleanSection(section as HqBoardSection, body?.value);
+    const who = await this.who(actor);
+    const board = await this.repo.updateState(BOARD_KEY, who, (b: HqBoardDto) => { (b as any)[section] = value; return b; });
+    if (!board) fail(404, 'HQ 기록이 아직 없습니다. 먼저 가져오기를 하세요.');
+    const LABEL: Record<HqBoardSection, string> = { direction: '방향', weapons: '우리 무기', products: '상품 초안', rules: '지키는 것', links: '바로가기' };
+    await this.repo.insertLog({ who, kind: '판', text: `「${LABEL[section as HqBoardSection]}」 수정` });
+    return board;
+  }
+
+  /** 칸마다 모양을 맞추고 길이를 자른다. 빈 줄은 버린다 */
+  private cleanSection(section: HqBoardSection, v: any): any {
+    const list = (x: any): any[] => (Array.isArray(x) ? x.slice(0, 50) : fail(400, '목록 모양이 아닙니다'));
+    switch (section) {
+      case 'direction': {
+        const line = clean(v?.line, 500);
+        if (!line) fail(400, '방향 한 줄이 비어 있습니다');
+        return { line, why: clean(v?.why, 1000), decided: clean(v?.decided, 20) };
+      }
+      case 'weapons': return list(v).map((w) => ({ name: clean(w?.name, 120), use: clean(w?.use, 300) })).filter((w) => w.name);
+      case 'products': return list(v).map((p) => ({ name: clean(p?.name, 80), who: clean(p?.who, 80), what: clean(p?.what, 300) })).filter((p) => p.name);
+      case 'rules': return list(v).map((r) => clean(r, 300)).filter(Boolean);
+      case 'links': return list(v).map((l) => ({ name: clean(l?.name, 80), url: clean(l?.url, 500) })).filter((l) => l.name && /^https?:\/\//.test(l.url));
+    }
   }
 
   async createDecision(body: HqDecisionCreateDto, actor: HqActor): Promise<HqDecisionDto> {
@@ -204,6 +250,7 @@ export class HqService {
     const item = await this.repo.insertLead({
       name, kind: clean(body.kind, 60), source: clean(body.source, 80), stage: board.leadStages[0],
       contact: clean(body.contact, 200), note: clean(body.note), businessId: await this.businessIdOrNull(body.businessId),
+      nextAction: clean(body.nextAction, 300), nextDate: dateOrNull(body.nextDate),
     });
     await this.repo.insertLog({ who: await this.who(actor), kind: '고객', text: `고객 추가: ${name}${item.source ? ` (${item.source})` : ''}` });
     return item;
@@ -223,6 +270,8 @@ export class HqService {
       contact: body.contact === undefined ? cur.contact : clean(body.contact, 200),
       note: body.note === undefined ? cur.note : clean(body.note),
       businessId: body.businessId === undefined ? cur.business_id : await this.businessIdOrNull(body.businessId),
+      nextAction: body.nextAction === undefined ? cur.next_action : clean(body.nextAction, 300),
+      nextDate: body.nextDate === undefined ? cur.next_date : dateOrNull(body.nextDate),
       stage,
     };
     if (!next.name) fail(400, '이름이 비어 있습니다');

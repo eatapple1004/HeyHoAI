@@ -31,6 +31,9 @@ export interface HqLeadRowVo {
   readonly contact: string;
   readonly note: string;
   readonly business_id: string | null;
+  /** 다음 할 일(없으면 빈 글자)과 날짜('YYYY-MM-DD' 또는 null) */
+  readonly next_action: string;
+  readonly next_date: string | null;
   readonly created_at: string;
   readonly updated_at: string;
 }
