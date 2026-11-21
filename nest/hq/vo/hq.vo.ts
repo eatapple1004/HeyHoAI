@@ -38,6 +38,25 @@ export interface HqLeadRowVo {
   readonly updated_at: string;
 }
 
+/** 공개 기록 한 줄 — 어디에(channel) 어떤 주소로(url) 언제(date, 'YYYY-MM-DD') */
+export interface HqPublishedVo { channel: string; url: string; date: string }
+
+export interface HqRefRowVo {
+  readonly id: string;
+  readonly title: string;
+  readonly client: string;
+  readonly kind: string;
+  readonly source: string;
+  readonly stage: string;
+  readonly lead_id: string | null;
+  readonly result_url: string;
+  readonly note: string;
+  readonly published: HqPublishedVo[];
+  readonly done_date: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
 export interface HqLogRowVo {
   readonly id: string;
   readonly at: string;

@@ -16,6 +16,9 @@ import {
   HqLeadCreateDto,
   HqLeadDto,
   HqLeadUpdateDto,
+  HqRefCreateDto,
+  HqRefDto,
+  HqRefUpdateDto,
   HqLogCreateDto,
   HqNumbersDto,
   HqSnapshotDto,
@@ -89,6 +92,26 @@ export class AdminHqController {
   @Delete('leads/:id')
   async deleteLead(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
     await this.hq.deleteLead(id, req.hqActor);
+    return { success: true };
+  }
+
+  // POST /api/admin/hq/refs — 레퍼런스 추가(기본 '작업 중'으로 들어간다)
+  @Post('refs')
+  @HttpCode(200)
+  async createRef(@Body() body: HqRefCreateDto, @Req() req: any): Promise<ApiResponse<HqRefDto>> {
+    return { success: true, data: await this.hq.createRef(body, req.hqActor) };
+  }
+
+  // PUT /api/admin/hq/refs/:id — 단계 이동·공개 기록·정보 수정
+  @Put('refs/:id')
+  async updateRef(@Param('id') id: string, @Body() body: HqRefUpdateDto, @Req() req: any): Promise<ApiResponse<HqRefDto>> {
+    return { success: true, data: await this.hq.updateRef(id, body, req.hqActor) };
+  }
+
+  // DELETE /api/admin/hq/refs/:id
+  @Delete('refs/:id')
+  async deleteRef(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
+    await this.hq.deleteRef(id, req.hqActor);
     return { success: true };
   }
 
