@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from '../db/db.service';
-import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqStateRowVo } from './vo/hq.vo';
+import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqRefRowVo, HqStateRowVo } from './vo/hq.vo';
 
 /**
  * HQ 저장소.
@@ -10,8 +10,9 @@ import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqStateRowVo } from './vo/hq.
  *   hq_decisions: 결정할 것(code = D1, D2 …)
  *   hq_leads   : 고객·후보 보드. business_id 로 사업체(businesses)와 이을 수 있다(선택). next_action·next_date = 다음 할 일
  *   hq_log     : 기록(사람이 쓴 메모 + 바뀐 것 자동 한 줄)
+ *   hq_refs    : 레퍼런스(작업 중·완성·권리 확인·공개). 목표 = 우리 작업을 알리고 레퍼런스를 쌓는 것
  */
-const SCHEMA_KEY = 'hq.v2';
+const SCHEMA_KEY = 'hq.v3';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS hq_state (
      key         VARCHAR(40) PRIMARY KEY,
@@ -53,7 +54,27 @@ const SCHEMA_SQL = [
   // v2(2026-11-20) 고객 다음 할 일·날짜 — 영업 보드에서 "무엇을 언제" 를 놓치지 않게
   `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS next_action TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS next_date DATE`,
+  // v3(2026-11-21) 레퍼런스 — 작업 하나가 작업 중→완성→권리 확인→공개를 지나 도피아의 레퍼런스가 된다
+  //   published = 어디에 올렸나 [{channel, url, date}] · lead_id 로 고객과 이을 수 있다(선택)
+  `CREATE TABLE IF NOT EXISTS hq_refs (
+     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     title       TEXT NOT NULL,
+     client      TEXT NOT NULL DEFAULT '',
+     kind        TEXT NOT NULL DEFAULT '',
+     source      TEXT NOT NULL DEFAULT '도피아',
+     stage       TEXT NOT NULL,
+     lead_id     UUID REFERENCES hq_leads(id) ON DELETE SET NULL,
+     result_url  TEXT NOT NULL DEFAULT '',
+     note        TEXT NOT NULL DEFAULT '',
+     published   JSONB NOT NULL DEFAULT '[]',
+     done_date   DATE,
+     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+   )`,
 ];
+
+/** 레퍼런스 행 SELECT 목록 — 날짜는 'YYYY-MM-DD' 문자열 */
+const REF_COLS = `id, title, client, kind, source, stage, lead_id, result_url, note, published, to_char(done_date, 'YYYY-MM-DD') AS done_date, created_at, updated_at`;
 
 /** 고객 행 SELECT 목록 — 날짜는 시간대 밀림이 없게 'YYYY-MM-DD' 문자열로 낸다 */
 const LEAD_COLS = `id, name, kind, source, stage, contact, note, business_id, next_action, to_char(next_date, 'YYYY-MM-DD') AS next_date, created_at, updated_at`;
@@ -191,6 +212,45 @@ export class HqRepository {
 
   async deleteLead(id: string): Promise<void> {
     await this.db.query(`DELETE FROM hq_leads WHERE id = $1`, [id]);
+  }
+
+  // ─── 레퍼런스 ───
+  async listRefs(): Promise<HqRefRowVo[]> {
+    await this.ensure();
+    const r = await this.db.query<HqRefRowVo>(`SELECT ${REF_COLS} FROM hq_refs ORDER BY updated_at DESC`);
+    return r.rows;
+  }
+
+  async findRef(id: string): Promise<HqRefRowVo | null> {
+    await this.ensure();
+    const r = await this.db.query<HqRefRowVo>(`SELECT ${REF_COLS} FROM hq_refs WHERE id = $1`, [id]);
+    return r.rows[0] || null;
+  }
+
+  async insertRef(d: { title: string; client: string; kind: string; source: string; stage: string; leadId: string | null; resultUrl: string; note: string; published: unknown[]; doneDate: string | null }): Promise<HqRefRowVo> {
+    await this.ensure();
+    const r = await this.db.query<HqRefRowVo>(
+      `INSERT INTO hq_refs (title, client, kind, source, stage, lead_id, result_url, note, published, done_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::date)
+       RETURNING ${REF_COLS}`,
+      [d.title, d.client, d.kind, d.source, d.stage, d.leadId, d.resultUrl, d.note, JSON.stringify(d.published), d.doneDate],
+    );
+    return r.rows[0];
+  }
+
+  async updateRef(id: string, d: { title: string; client: string; kind: string; source: string; stage: string; leadId: string | null; resultUrl: string; note: string; published: unknown[]; doneDate: string | null }): Promise<HqRefRowVo> {
+    const r = await this.db.query<HqRefRowVo>(
+      `UPDATE hq_refs SET title = $2, client = $3, kind = $4, source = $5, stage = $6, lead_id = $7, result_url = $8, note = $9,
+              published = $10, done_date = $11::date, updated_at = now()
+        WHERE id = $1
+       RETURNING ${REF_COLS}`,
+      [id, d.title, d.client, d.kind, d.source, d.stage, d.leadId, d.resultUrl, d.note, JSON.stringify(d.published), d.doneDate],
+    );
+    return r.rows[0];
+  }
+
+  async deleteRef(id: string): Promise<void> {
+    await this.db.query(`DELETE FROM hq_refs WHERE id = $1`, [id]);
   }
 
   // ─── 기록 ───

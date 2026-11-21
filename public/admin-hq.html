@@ -141,6 +141,13 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
 .board{scrollbar-color:var(--border) transparent;scrollbar-width:thin}
 .board::-webkit-scrollbar{height:8px}.board::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}.board::-webkit-scrollbar-track{background:transparent}
 .field small{color:var(--faint);font-size:.72rem}
+.goal .line{font-size:1.15rem}
+.goal .nums{margin-top:14px;cursor:pointer}
+.board.refs{grid-template-columns:repeat(4,minmax(210px,1fr))}
+.col .hint{color:var(--faint);font-size:.72rem;margin:-6px 0 10px}
+.lead .pub{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.lead .pub span{font-size:.68rem;padding:1px 7px;border-radius:20px;background:rgba(74,222,128,.14);color:var(--green)}
+.src{font-size:.68rem;font-weight:700;color:var(--gold);margin-left:4px}
 @media(max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
 @media(max-width:640px){body{padding:16px}.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}ul.todo li{grid-template-columns:80px 1fr}ul.todo .who{display:none}}
 </style>
@@ -162,11 +169,17 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
     <div class="tabs" id="tabs">
       <button data-tab="home" class="on">한눈에</button>
       <button data-tab="decisions">결정<span class="badge" id="decCount"></span></button>
+      <button data-tab="refs">레퍼런스</button>
       <button data-tab="leads">고객</button>
       <button data-tab="log">기록</button>
     </div>
 
     <section class="tab show" id="tab-home">
+      <div class="panel hero goal">
+        <div class="kicker"><span>목표 · <span id="goalDate"></span></span><button class="edit" data-edit="goal">편집</button></div>
+        <div class="line" id="goalLine"></div>
+        <div class="nums" id="refNums" data-go="refs" title="레퍼런스 탭으로"></div>
+      </div>
       <div class="panel hero">
         <div class="kicker"><span>방향 · <span id="dirDate"></span> 결정</span><button class="edit" data-edit="direction">편집</button></div>
         <div class="line" id="dirLine"></div>
@@ -206,6 +219,23 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
           <button class="pri">추가</button>
         </form>
       </details>
+    </section>
+
+    <section class="tab" id="tab-refs">
+      <div class="board refs" id="refBoard"></div>
+      <details class="panel add">
+        <summary>레퍼런스 추가</summary>
+        <form class="form" id="refForm">
+          <label>작업 이름<input name="title" required maxlength="160" placeholder="예: ○○ 홈페이지"></label>
+          <label>고객·매체<input name="client" maxlength="120"></label>
+          <label>종류<input name="kind" maxlength="60" placeholder="예: 홈페이지 · 지면 보도 · SNS 운영"></label>
+          <label>어디서 한 일<input name="source" maxlength="40" list="refSources" placeholder="비우면 도피아"></label>
+          <label class="wide">결과물 주소<input name="resultUrl" maxlength="500" placeholder="https://…"></label>
+          <label class="wide">메모<textarea name="note" rows="2"></textarea></label>
+          <button class="pri">추가</button>
+        </form>
+      </details>
+      <datalist id="refSources"></datalist>
     </section>
 
     <section class="tab" id="tab-leads">
@@ -255,6 +285,8 @@ const pill = (s) => `<span class="pill ${SC[s] || 's-none'}">${esc(s)}</span>`;
 const DAY = (iso) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? esc(iso) : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
 const TIME = (iso) => { const d = new Date(iso); return `${DAY(iso)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const NAME = (e) => String(e || '').split('@')[0];
+// 레퍼런스 칸마다 한 줄 설명 — 서버가 단계 목록(refStages)을 내려 준다
+const REF_HINT = { '작업 중': '지금 만들고 있는 것', '완성': '결과물이 나왔다', '권리 확인': '고객·매체가 공개해도 된다고 했다', '공개': '어딘가에 올렸다(채널 기록 필수)' };
 let D = null, logFilter = '전체', NUMS = null;
 // 흐름 단계 옆에 붙일 운영 숫자(키는 /numbers 의 key)
 const FLOW_NUM = { entry: 'diagnose_requests', diagnose: 'business_reports', contract: 'businesses', execute: 'marketing_tasks' };
@@ -299,6 +331,9 @@ function render() {
   $('#dirLine').textContent = b.direction.line;
   $('#dirWhy').textContent = b.direction.why;
   $('#dirDate').textContent = DAY(b.direction.decided);
+  $('#goalLine').textContent = b.goal ? b.goal.text : '목표를 아직 적지 않았습니다. 편집을 눌러 한 줄로 적으세요.';
+  $('#goalDate').textContent = b.goal && b.goal.decided ? `${DAY(b.goal.decided)} 정함` : '';
+  renderRefs();
   const bn = $('#envBanner');
   bn.hidden = D.env === 'prod';
   bn.textContent = '시험용 화면입니다. 여기 적은 내용은 운영 HQ에 남지 않습니다. 실제 기록은 doppia.ai/admin-hq 에 남기세요.';
@@ -320,7 +355,7 @@ function render() {
 
   $('#board').innerHTML = b.leadStages.map((st) => {
     const items = D.leads.filter((l) => l.stage === st);
-    return `<div class="col" data-stage="${esc(st)}"><h3>${esc(st)} <span>${items.length}</span></h3>${items.map((l) => `<div class="lead" draggable="true" data-lead="${l.id}"><div class="nm">${esc(l.name)}</div><div class="sm">${esc([l.kind, l.source].filter(Boolean).join(' · '))}</div>${l.next_action || l.next_date ? `<div class="next"><span class="d ${dueClass(l.next_date)}">${dueText(l.next_date)}</span>${esc(l.next_action)}</div>` : ''}</div>`).join('')}</div>`;
+    return `<div class="col" data-stage="${esc(st)}" data-board="lead"><h3>${esc(st)} <span>${items.length}</span></h3>${items.map((l) => `<div class="lead" draggable="true" data-lead="${l.id}"><div class="nm">${esc(l.name)}</div><div class="sm">${esc([l.kind, l.source].filter(Boolean).join(' · '))}</div>${l.next_action || l.next_date ? `<div class="next"><span class="d ${dueClass(l.next_date)}">${dueText(l.next_date)}</span>${esc(l.next_action)}</div>` : ''}</div>`).join('')}</div>`;
   }).join('');
 
   const kinds = ['전체', ...new Set(D.log.map((l) => l.kind))];
@@ -328,6 +363,57 @@ function render() {
   $('#logFilters').innerHTML = kinds.map((k) => `<button class="${k === logFilter ? 'on' : ''}" data-k="${esc(k)}">${esc(k)}</button>`).join('');
   const rows = D.log.filter((l) => logFilter === '전체' || l.kind === logFilter);
   $('#log').innerHTML = rows.length ? rows.map((l) => `<li><span class="at">${TIME(l.at)}<br>${esc(NAME(l.who))}</span><span class="k">${esc(l.kind)}</span><span>${esc(l.text)}</span></li>`).join('') : '<div class="empty">기록이 없습니다.</div>';
+}
+
+function renderRefs() {
+  const R = D.refs || [], st = D.refStages || [];
+  const month = TODAY().slice(0, 7);
+  const pubThisMonth = R.reduce((n, x) => n + (x.published || []).filter((p) => String(p.date || '').startsWith(month)).length, 0);
+  const cnt = (s) => R.filter((x) => x.stage === s).length;
+  const tile = (v, l) => `<div><span class="n">${v.toLocaleString()}</span><span class="l">${esc(l)}</span></div>`;
+  $('#refNums').innerHTML = [tile(R.length, '레퍼런스 전체'), tile(cnt('공개'), '공개됨'), tile(cnt('권리 확인'), '공개 허락 받음 · 올릴 차례'), tile(cnt('완성'), '완성 · 허락 받을 차례'), tile(cnt('작업 중'), '작업 중'), tile(pubThisMonth, `${Number(month.slice(5))}월에 올린 횟수`)].join('');
+  $('#refSources').innerHTML = [...new Set(['도피아', ...R.map((x) => x.source).filter(Boolean)])].map((s) => `<option value="${esc(s)}">`).join('');
+  $('#refBoard').innerHTML = st.map((s) => {
+    const items = R.filter((x) => x.stage === s);
+    return `<div class="col" data-stage="${esc(s)}" data-board="ref"><h3>${esc(s)} <span>${items.length}</span></h3><div class="hint">${esc(REF_HINT[s] || '')}</div>${items.map(refCard).join('')}</div>`;
+  }).join('');
+}
+function refCard(x) {
+  const pub = (x.published || []).length ? `<div class="pub">${x.published.map((p) => `<span>${esc(p.channel)}</span>`).join('')}</div>` : '';
+  const sub = [x.client, x.kind].filter(Boolean).join(' · ');
+  return `<div class="lead" draggable="true" data-ref="${x.id}"><div class="nm">${esc(x.title)}${x.source && x.source !== '도피아' ? `<span class="src">${esc(x.source)}</span>` : ''}</div>${sub ? `<div class="sm">${esc(sub)}</div>` : ''}${pub}</div>`;
+}
+
+function refDrawer(id, presetStage) {
+  const x = D.refs.find((r) => r.id === id);
+  const stage = presetStage || x.stage;
+  const opts = D.refStages.map((o) => `<option ${o === stage ? 'selected' : ''}>${esc(o)}</option>`).join('');
+  const leads = `<option value="">연결 안 함</option>` + D.leads.map((l) => `<option value="${l.id}" ${l.id === x.lead_id ? 'selected' : ''}>${esc(l.name)}</option>`).join('');
+  const pubText = (x.published || []).map((p) => [p.channel, p.url, p.date].join(' | ')).join('\n');
+  const f = (k, label, ta) => `<label class="field">${label}${ta ? `<textarea id="r_${k}" rows="4">${esc(x[k])}</textarea>` : `<input id="r_${k}" value="${esc(x[k])}">`}</label>`;
+  drawer(x.title, `
+    <label class="field">단계<select id="r_stage">${opts}</select></label>
+    <label class="field">공개 기록 <small>한 줄에 하나 · 채널 | 주소 | 날짜(2026-11-21) · '공개'로 옮기려면 한 줄 이상</small><textarea id="r_pub" rows="4" placeholder="인스타그램 | https://… | 2026-11-21">${esc(pubText)}</textarea></label>
+    ${f('title', '작업 이름')}${f('client', '고객·매체')}${f('kind', '종류')}
+    <label class="field">어디서 한 일<input id="r_source" value="${esc(x.source)}" maxlength="40" list="refSources"></label>
+    ${f('result_url', '결과물 주소')}
+    <label class="field">완성한 날<input id="r_done" type="date" value="${esc(x.done_date || '')}"></label>
+    <label class="field">고객 연결<select id="r_lead">${leads}</select></label>
+    ${f('note', '메모', true)}
+    <div class="field">마지막 수정<div class="v">${TIME(x.updated_at)}</div></div>
+    <div class="acts"><button class="pri" id="rSave">저장</button><button class="danger" id="rDel">삭제</button></div>`, (el) => {
+    if (presetStage === '공개') $('#r_pub', el).focus();
+    $('#rSave', el).onclick = async () => {
+      const published = $('#r_pub', el).value.split('\n').map((s) => s.trim()).filter(Boolean).map((ln) => { const [channel, url, date] = ln.split('|').map((s) => s.trim()); return { channel: channel || '', url: url || '', date: date || '' }; });
+      const body = { stage: $('#r_stage', el).value, published, title: $('#r_title', el).value, client: $('#r_client', el).value, kind: $('#r_kind', el).value,
+        source: $('#r_source', el).value, resultUrl: $('#r_result_url', el).value, doneDate: $('#r_done', el).value, leadId: $('#r_lead', el).value || null, note: $('#r_note', el).value };
+      if (await act('PUT', `/api/admin/hq/refs/${x.id}`, body, '저장했습니다')) closeDrawer();
+    };
+    $('#rDel', el).onclick = async () => {
+      if (!confirm(`「${x.title}」을 지울까요? 되돌릴 수 없습니다.`)) return;
+      if (await act('DELETE', `/api/admin/hq/refs/${x.id}`, null, '지웠습니다')) closeDrawer();
+    };
+  });
 }
 
 function decCard(x) {
@@ -397,6 +483,17 @@ const EDIT = {
 };
 function editDrawer(section) {
   const b = D.board;
+  if (section === 'goal') {
+    const g = b.goal || { text: '', decided: '' };
+    return drawer('목표', `
+      <label class="field">한 줄<textarea id="e_goal" rows="4">${esc(g.text)}</textarea></label>
+      <label class="field">정한 날<input id="e_dec" type="date" value="${esc(String(g.decided || '').slice(0, 10))}"></label>
+      <div class="acts"><button class="pri" id="eSave">저장</button></div>`, (el) => {
+      $('#eSave', el).onclick = async () => {
+        if (await act('PUT', '/api/admin/hq/board/goal', { value: { text: $('#e_goal', el).value, decided: $('#e_dec', el).value } }, '저장했습니다')) closeDrawer();
+      };
+    });
+  }
   if (section === 'direction') {
     return drawer('방향', `
       <label class="field">한 줄<textarea id="e_line" rows="3">${esc(b.direction.line)}</textarea></label>
@@ -422,15 +519,21 @@ function editDrawer(section) {
   });
 }
 
-// 고객 카드를 다른 단계 칸으로 끌어 놓으면 단계가 바뀐다
-let dragId = null;
-document.addEventListener('dragstart', (e) => { const c = e.target.closest && e.target.closest('.lead[draggable]'); if (!c) return; dragId = c.dataset.lead; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+// 고객·레퍼런스 카드를 다른 단계 칸으로 끌어 놓으면 단계가 바뀐다(같은 보드 안에서만)
+let dragId = null, dragBoard = null;
+document.addEventListener('dragstart', (e) => { const c = e.target.closest && e.target.closest('.lead[draggable]'); if (!c) return; dragBoard = c.dataset.ref ? 'ref' : 'lead'; dragId = c.dataset.ref || c.dataset.lead; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
 document.addEventListener('dragend', (e) => { const c = e.target.closest && e.target.closest('.lead'); if (c) c.classList.remove('dragging'); document.querySelectorAll('.col.drop').forEach((x) => x.classList.remove('drop')); });
-document.addEventListener('dragover', (e) => { const col = e.target.closest && e.target.closest('.col[data-stage]'); if (!col || !dragId) return; e.preventDefault(); document.querySelectorAll('.col.drop').forEach((x) => x !== col && x.classList.remove('drop')); col.classList.add('drop'); });
+document.addEventListener('dragover', (e) => { const col = e.target.closest && e.target.closest('.col[data-stage]'); if (!col || !dragId || col.dataset.board !== dragBoard) return; e.preventDefault(); document.querySelectorAll('.col.drop').forEach((x) => x !== col && x.classList.remove('drop')); col.classList.add('drop'); });
 document.addEventListener('drop', async (e) => {
-  const col = e.target.closest && e.target.closest('.col[data-stage]'); if (!col || !dragId) return;
+  const col = e.target.closest && e.target.closest('.col[data-stage]'); if (!col || !dragId || col.dataset.board !== dragBoard) return;
   e.preventDefault(); col.classList.remove('drop');
   const id = dragId; dragId = null;
+  if (dragBoard === 'ref') {
+    const x = D.refs.find((r) => r.id === id); if (!x || x.stage === col.dataset.stage) return;
+    // 공개는 어디에 올렸는지 적어야 하므로, 기록이 없으면 서랍을 열어 적게 한다
+    if (col.dataset.stage === '공개' && !(x.published || []).length) return refDrawer(id, '공개');
+    return act('PUT', `/api/admin/hq/refs/${id}`, { stage: col.dataset.stage }, `${x.title} → ${col.dataset.stage}`);
+  }
   const l = D.leads.find((x) => x.id === id); if (!l || l.stage === col.dataset.stage) return;
   await act('PUT', `/api/admin/hq/leads/${id}`, { stage: col.dataset.stage }, `${l.name} → ${col.dataset.stage}`);
 });
@@ -445,6 +548,8 @@ document.addEventListener('click', (e) => {
   const ed = e.target.closest('[data-edit]'); if (ed) return editDrawer(ed.dataset.edit);
   const fl = e.target.closest('[data-flow]'); if (fl) return flowDrawer(fl.dataset.flow);
   const ld = e.target.closest('[data-lead]'); if (ld) return leadDrawer(ld.dataset.lead);
+  const rf = e.target.closest('[data-ref]'); if (rf) return refDrawer(rf.dataset.ref);
+  const go = e.target.closest('[data-go]'); if (go) return document.querySelector(`#tabs button[data-tab="${go.dataset.go}"]`).click();
   const t = e.target;
   if (t.dataset.decide) {
     const answer = $(`[data-ans="${t.dataset.decide}"]`).value.trim();
@@ -460,6 +565,7 @@ document.addEventListener('click', (e) => {
 });
 $('#decForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/decisions', Object.fromEntries(new FormData(e.target)), '추가했습니다')) e.target.reset(); };
 $('#leadForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/leads', Object.fromEntries(new FormData(e.target)), '추가했습니다')) e.target.reset(); };
+$('#refForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/refs', Object.fromEntries(new FormData(e.target)), '추가했습니다')) e.target.reset(); };
 $('#logForm').onsubmit = async (e) => { e.preventDefault(); if (await act('POST', '/api/admin/hq/log', Object.fromEntries(new FormData(e.target)), '남겼습니다')) e.target.text.value = ''; };
 $('#importFile').onchange = async (e) => {
   const file = e.target.files[0]; if (!file) return;

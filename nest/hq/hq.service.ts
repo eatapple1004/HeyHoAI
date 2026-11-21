@@ -6,6 +6,7 @@ import {
   HQ_BOARD_SECTIONS,
   HQ_DECISION_STATUSES,
   HQ_FLOW_STATUSES,
+  HQ_REF_STAGES,
   HqBoardDto,
   HqBoardSection,
   HqBoardUpdateDto,
@@ -21,6 +22,9 @@ import {
   HqLogCreateDto,
   HqNumberDto,
   HqNumbersDto,
+  HqRefCreateDto,
+  HqRefDto,
+  HqRefUpdateDto,
   HqSnapshotDto,
 } from './dto/hq.dto';
 
@@ -85,14 +89,15 @@ export class HqService {
   }
 
   async snapshot(actor: HqActor): Promise<HqSnapshotDto> {
-    const [state, decisions, leads, log, me] = await Promise.all([
+    const [state, decisions, leads, refs, log, me] = await Promise.all([
       this.repo.getState(BOARD_KEY),
       this.repo.listDecisions(),
       this.repo.listLeads(),
+      this.repo.listRefs(),
       this.repo.listLog(LOG_LIMIT),
       this.who(actor),
     ]);
-    return { board: state ? (state.value as HqBoardDto) : null, decisions, leads, log, me, env: this.envDb.label(this.envDb.current()) };
+    return { board: state ? (state.value as HqBoardDto) : null, decisions, leads, refs, refStages: HQ_REF_STAGES, log, me, env: this.envDb.label(this.envDb.current()) };
   }
 
   async numbers(): Promise<HqNumbersDto> {
@@ -192,7 +197,7 @@ export class HqService {
     const who = await this.who(actor);
     const board = await this.repo.updateState(BOARD_KEY, who, (b: HqBoardDto) => { (b as any)[section] = value; return b; });
     if (!board) fail(404, 'HQ 기록이 아직 없습니다. 먼저 가져오기를 하세요.');
-    const LABEL: Record<HqBoardSection, string> = { direction: '방향', weapons: '우리 무기', products: '상품 초안', rules: '지키는 것', links: '바로가기' };
+    const LABEL: Record<HqBoardSection, string> = { goal: '목표', direction: '방향', weapons: '우리 무기', products: '상품 초안', rules: '지키는 것', links: '바로가기' };
     await this.repo.insertLog({ who, kind: '판', text: `「${LABEL[section as HqBoardSection]}」 수정` });
     return board;
   }
@@ -201,6 +206,11 @@ export class HqService {
   private cleanSection(section: HqBoardSection, v: any): any {
     const list = (x: any): any[] => (Array.isArray(x) ? x.slice(0, 50) : fail(400, '목록 모양이 아닙니다'));
     switch (section) {
+      case 'goal': {
+        const text = clean(v?.text, 500);
+        if (!text) fail(400, '목표 한 줄이 비어 있습니다');
+        return { text, decided: clean(v?.decided, 20) };
+      }
       case 'direction': {
         const line = clean(v?.line, 500);
         if (!line) fail(400, '방향 한 줄이 비어 있습니다');
@@ -287,6 +297,84 @@ export class HqService {
     if (!cur) fail(404, '없는 고객입니다');
     await this.repo.deleteLead(id);
     await this.repo.insertLog({ who: await this.who(actor), kind: '고객', text: `고객 삭제: ${cur.name}` });
+  }
+
+  // ─── 레퍼런스 ───
+  private async leadIdOrNull(v: unknown): Promise<string | null> {
+    const id = clean(v, 60);
+    if (!id) return null;
+    if (!UUID_RE.test(id) || !(await this.repo.findLead(id))) fail(400, '연결할 고객을 찾을 수 없습니다');
+    return id;
+  }
+
+  /** 공개 기록 — 채널 이름은 있어야 하고, 주소는 비우거나 http(s) 만. 날짜는 YYYY-MM-DD 또는 빈칸 */
+  private cleanPublished(v: unknown): { channel: string; url: string; date: string }[] {
+    if (v === undefined || v === null) return [];
+    if (!Array.isArray(v)) fail(400, '공개 기록 모양이 아닙니다');
+    return (v as any[]).slice(0, 30).map((p) => {
+      const url = clean(p?.url, 500);
+      if (url && !/^https?:\/\//.test(url)) fail(400, '공개 주소는 http(s) 로 시작해야 합니다');
+      return { channel: clean(p?.channel, 60), url, date: dateOrNull(p?.date) || '' };
+    }).filter((p) => p.channel);
+  }
+
+  private resultUrl(v: unknown): string {
+    const url = clean(v, 500);
+    if (url && !/^https?:\/\//.test(url)) fail(400, '결과물 주소는 http(s) 로 시작해야 합니다');
+    return url;
+  }
+
+  /** '공개' 칸은 실제로 어딘가에 올린 기록이 있어야 들어간다 — 레퍼런스 = 세상에 보인 것 */
+  private checkStage(stage: string, published: unknown[]): void {
+    if (!HQ_REF_STAGES.includes(stage)) fail(400, '없는 단계입니다');
+    if (stage === '공개' && !published.length) fail(400, '공개로 옮기려면 어디에 올렸는지(채널) 한 줄 이상 적어야 합니다');
+  }
+
+  async createRef(body: HqRefCreateDto, actor: HqActor): Promise<HqRefDto> {
+    const title = clean(body.title, 160);
+    if (!title) fail(400, '작업 이름이 비어 있습니다');
+    const stage = body.stage === undefined ? HQ_REF_STAGES[0] : String(body.stage);
+    const published = this.cleanPublished(body.published);
+    this.checkStage(stage, published);
+    const item = await this.repo.insertRef({
+      title, client: clean(body.client, 120), kind: clean(body.kind, 60), source: clean(body.source, 40) || '도피아', stage,
+      leadId: await this.leadIdOrNull(body.leadId), resultUrl: this.resultUrl(body.resultUrl), note: clean(body.note), published,
+      doneDate: dateOrNull(body.doneDate),
+    });
+    await this.repo.insertLog({ who: await this.who(actor), kind: '레퍼런스', text: `레퍼런스 추가: ${title} (${stage})` });
+    return item;
+  }
+
+  async updateRef(id: string, body: HqRefUpdateDto, actor: HqActor): Promise<HqRefDto> {
+    if (!UUID_RE.test(id)) fail(404, '없는 레퍼런스입니다');
+    const cur = await this.repo.findRef(id);
+    if (!cur) fail(404, '없는 레퍼런스입니다');
+    const next = {
+      title: body.title === undefined ? cur.title : clean(body.title, 160),
+      client: body.client === undefined ? cur.client : clean(body.client, 120),
+      kind: body.kind === undefined ? cur.kind : clean(body.kind, 60),
+      source: body.source === undefined ? cur.source : clean(body.source, 40) || '도피아',
+      stage: body.stage === undefined ? cur.stage : String(body.stage),
+      leadId: body.leadId === undefined ? cur.lead_id : await this.leadIdOrNull(body.leadId),
+      resultUrl: body.resultUrl === undefined ? cur.result_url : this.resultUrl(body.resultUrl),
+      note: body.note === undefined ? cur.note : clean(body.note),
+      published: body.published === undefined ? cur.published : this.cleanPublished(body.published),
+      doneDate: body.doneDate === undefined ? cur.done_date : dateOrNull(body.doneDate),
+    };
+    if (!next.title) fail(400, '작업 이름이 비어 있습니다');
+    this.checkStage(next.stage, next.published);
+    const item = await this.repo.updateRef(id, next);
+    const text = cur.stage !== next.stage ? `레퍼런스 ${item.title}: ${cur.stage} → ${next.stage}` : `레퍼런스 ${item.title} 수정`;
+    await this.repo.insertLog({ who: await this.who(actor), kind: '레퍼런스', text });
+    return item;
+  }
+
+  async deleteRef(id: string, actor: HqActor): Promise<void> {
+    if (!UUID_RE.test(id)) fail(404, '없는 레퍼런스입니다');
+    const cur = await this.repo.findRef(id);
+    if (!cur) fail(404, '없는 레퍼런스입니다');
+    await this.repo.deleteRef(id);
+    await this.repo.insertLog({ who: await this.who(actor), kind: '레퍼런스', text: `레퍼런스 삭제: ${cur.title}` });
   }
 
   async addLog(body: HqLogCreateDto, actor: HqActor): Promise<void> {
