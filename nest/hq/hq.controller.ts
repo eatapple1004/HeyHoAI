@@ -5,6 +5,8 @@ import { HqGuard, HqPageGuard } from './hq.guard';
 import { PageExceptionFilter } from '../pages/page-exception.filter';
 import { ApiOk, ApiResponse } from '../common/dto/api-response.dto';
 import {
+  HqBoardDto,
+  HqBoardUpdateDto,
   HqDecisionCreateDto,
   HqDecisionDto,
   HqDecisionUpdateDto,
@@ -14,6 +16,9 @@ import {
   HqLeadCreateDto,
   HqLeadDto,
   HqLeadUpdateDto,
+  HqRefCreateDto,
+  HqRefDto,
+  HqRefUpdateDto,
   HqLogCreateDto,
   HqNumbersDto,
   HqSnapshotDto,
@@ -51,6 +56,12 @@ export class AdminHqController {
     return { success: true, data: await this.hq.updateFlow(id, body, req.hqActor) };
   }
 
+  // PUT /api/admin/hq/board/:section — 판의 한 칸(direction·weapons·products·rules·links)을 통째로 고친다
+  @Put('board/:section')
+  async updateBoard(@Param('section') section: string, @Body() body: HqBoardUpdateDto, @Req() req: any): Promise<ApiResponse<HqBoardDto>> {
+    return { success: true, data: await this.hq.updateBoardSection(section, body, req.hqActor) };
+  }
+
   // POST /api/admin/hq/decisions — 결정할 것 추가(D번호 자동)
   @Post('decisions')
   @HttpCode(200)
@@ -81,6 +92,26 @@ export class AdminHqController {
   @Delete('leads/:id')
   async deleteLead(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
     await this.hq.deleteLead(id, req.hqActor);
+    return { success: true };
+  }
+
+  // POST /api/admin/hq/refs — 레퍼런스 추가(기본 '작업 중'으로 들어간다)
+  @Post('refs')
+  @HttpCode(200)
+  async createRef(@Body() body: HqRefCreateDto, @Req() req: any): Promise<ApiResponse<HqRefDto>> {
+    return { success: true, data: await this.hq.createRef(body, req.hqActor) };
+  }
+
+  // PUT /api/admin/hq/refs/:id — 단계 이동·공개 기록·정보 수정
+  @Put('refs/:id')
+  async updateRef(@Param('id') id: string, @Body() body: HqRefUpdateDto, @Req() req: any): Promise<ApiResponse<HqRefDto>> {
+    return { success: true, data: await this.hq.updateRef(id, body, req.hqActor) };
+  }
+
+  // DELETE /api/admin/hq/refs/:id
+  @Delete('refs/:id')
+  async deleteRef(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
+    await this.hq.deleteRef(id, req.hqActor);
     return { success: true };
   }
 
