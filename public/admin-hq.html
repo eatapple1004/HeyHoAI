@@ -148,8 +148,25 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
 .lead .pub{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
 .lead .pub span{font-size:.68rem;padding:1px 7px;border-radius:20px;background:rgba(74,222,128,.14);color:var(--green)}
 .src{font-size:.68rem;font-weight:700;color:var(--gold);margin-left:4px}
+.lbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.lbar select,.lbar input[type=search]{width:auto;min-width:120px}
+.lbar .sum{color:var(--dim);font-size:.82rem;margin-right:auto}
+.lbar label.chk{display:flex;gap:5px;align-items:center;font-size:.8rem;color:var(--dim)}
+.lbar label.chk input{width:auto}
+.vault{font-size:.8rem;color:var(--dim);display:flex;gap:8px;align-items:center}
+.month{color:var(--accent2);font-size:.8rem;font-weight:800;margin:16px 0 6px}
+ul.ledger{list-style:none}
+ul.ledger li{display:grid;grid-template-columns:86px 92px 1fr auto;gap:10px;align-items:center;padding:8px 6px;border-top:1px solid var(--border);font-size:.85rem;cursor:pointer}
+ul.ledger li:hover{background:var(--panel2)}
+ul.ledger .d{color:var(--faint);font-size:.76rem}
+ul.ledger .a{font-size:.72rem;font-weight:700;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ul.ledger .t{font-weight:700}
+ul.ledger .t small{color:var(--dim);font-weight:400;margin-left:6px}
+ul.ledger .k{color:var(--faint);font-size:.72rem;white-space:nowrap}
+ul.ledger li.locked .t{color:var(--faint)}
+.field ul{padding-left:18px;color:var(--text);font-size:.85rem}
 @media(max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
-@media(max-width:640px){body{padding:16px}.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}ul.todo li{grid-template-columns:80px 1fr}ul.todo .who{display:none}}
+@media(max-width:640px){ul.ledger li{grid-template-columns:70px 1fr}ul.ledger .a,ul.ledger .k{display:none}body{padding:16px}.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}ul.todo li{grid-template-columns:80px 1fr}ul.todo .who{display:none}}
 </style>
 </head>
 <body>
@@ -170,6 +187,7 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
       <button data-tab="home" class="on">한눈에</button>
       <button data-tab="decisions">결정<span class="badge" id="decCount"></span></button>
       <button data-tab="refs">레퍼런스</button>
+      <button data-tab="ledger">원장<span class="badge" id="ledgerNew"></span></button>
       <button data-tab="leads">고객</button>
       <button data-tab="log">기록</button>
     </div>
@@ -238,6 +256,23 @@ ul.todo .who{color:var(--faint);font-size:.75rem}
       <datalist id="refSources"></datalist>
     </section>
 
+    <section class="tab" id="tab-ledger">
+      <div class="panel">
+        <div class="lbar">
+          <span class="sum" id="lSum">불러오는 중…</span>
+          <span class="vault" id="vaultBox"></span>
+        </div>
+        <div class="lbar">
+          <select id="lArea"></select>
+          <select id="lKind"></select>
+          <select id="lVis"><option value="">공개 가능성 전체</option><option>공개 가능</option><option>확인 필요</option><option>내부</option></select>
+          <input type="search" id="lQ" placeholder="찾기 (제목·내용·꼬리표)">
+          <label class="chk"><input type="checkbox" id="lLocked" checked>잠긴 카드 포함</label>
+        </div>
+        <div id="ledger"></div>
+      </div>
+    </section>
+
     <section class="tab" id="tab-leads">
       <div class="board" id="board"></div>
       <details class="panel add">
@@ -304,6 +339,121 @@ async function api(method, url, body) {
 function say(t) { const m = $('#msg'); m.textContent = t; m.hidden = false; clearTimeout(say.t); say.t = setTimeout(() => { m.hidden = true; }, 2400); }
 async function load() { D = await api('GET', '/api/admin/hq'); render(); }
 async function act(method, url, body, done) { try { await api(method, url, body); await load(); if (done) say(done); return true; } catch (e) { say(e.message); return false; } }
+
+// ─── 레퍼런스 원장 + 금고(잠긴 카드) ───
+// 잠긴 카드는 서버에 잠긴 글만 있다. 주인 비밀 문구 → 개인 열쇠 → 카드 열쇠 순으로 **이 브라우저 안에서만** 푼다. 비밀 문구·열쇠는 서버로 보내지 않는다.
+let L = null, PRIV = null;
+const OPENED = new Map(); // 카드 id → 푼 카드(메모리에만)
+const PBKDF2_ITER = 600000;
+const b64 = (buf) => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function passKey(pass, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function createVault(pass) {
+  const kp = await crypto.subtle.generateKey({ name: 'RSA-OAEP', modulusLength: 3072, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['encrypt', 'decrypt']);
+  const publicKey = await crypto.subtle.exportKey('jwk', kp.publicKey);
+  const pkcs8 = await crypto.subtle.exportKey('pkcs8', kp.privateKey);
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await passKey(pass, salt), pkcs8);
+  await api('POST', '/api/admin/hq/vault', { publicKey, wrapped: { salt: b64(salt), iv: b64(iv), ct: b64(ct), iterations: PBKDF2_ITER } });
+  PRIV = kp.privateKey;
+}
+async function unlockVault(pass) {
+  const w = await api('GET', '/api/admin/hq/vault');
+  let pkcs8;
+  try { pkcs8 = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(w.iv) }, await passKey(pass, unb64(w.salt)), unb64(w.ct)); } catch (_) { throw new Error('비밀 문구가 맞지 않습니다'); }
+  PRIV = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['decrypt']);
+}
+async function openSealed(c) {
+  if (OPENED.has(c.id)) return OPENED.get(c.id);
+  const o = JSON.parse(c.sealed);
+  const raw = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, PRIV, unb64(o.k));
+  const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+  const card = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(o.iv) }, key, unb64(o.ct))));
+  OPENED.set(c.id, card);
+  return card;
+}
+async function openAll() {
+  for (const c of L.cards) if (c.sensitive) { try { await openSealed(c); } catch (_) { /* 다른 열쇠로 잠긴 카드는 건너뜀 */ } }
+}
+// 카드 하나를 화면용 모양으로 — 잠긴 카드는 풀렸으면 푼 내용, 아니면 자물쇠
+function view(c) {
+  if (!c.sensitive) return { ...c.body, title: c.title, area: c.area, kind: c.kind, day: c.day, locked: false };
+  const o = OPENED.get(c.id);
+  return o ? { ...o, area: c.area || o.area, day: c.day || o.date, locked: false, sealedOpen: true } : { title: '잠긴 카드', area: c.area, kind: c.kind, day: c.day, locked: true };
+}
+async function loadLedger() {
+  try { L = await api('GET', '/api/admin/hq/ledger'); if (PRIV) await openAll(); renderLedger(); } catch (e) { $('#lSum').textContent = e.message; }
+}
+function renderLedger() {
+  if (!L) return;
+  const cards = L.cards, V = L.vault;
+  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const fresh = cards.filter((c) => String(c.created_at).slice(0, 10) >= weekAgo).length;
+  $('#ledgerNew').textContent = fresh ? `+${fresh}` : '';
+  $('#lSum').textContent = `카드 ${cards.length.toLocaleString()}장 · 잠긴 카드 ${cards.filter((c) => c.sensitive).length}장 · 최근 7일 +${fresh}`;
+  $('#vaultBox').innerHTML = !V.owner ? (cards.some((c) => c.sensitive) ? '잠긴 카드는 금고 주인만 열 수 있습니다' : '')
+    : !V.exists ? '<button class="sm pri" id="vMake">금고 만들기</button>'
+    : PRIV ? '🔓 열림 <button class="sm" id="vLock">다시 잠그기</button>' : '🔒 <button class="sm pri" id="vOpen">잠금 열기</button>';
+  const keep = (id, vals, label) => { const el = $(id), cur = el.value; el.innerHTML = `<option value="">${label}</option>` + vals.map((v) => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join(''); };
+  keep('#lArea', [...new Set(cards.map((c) => c.area).filter(Boolean))].sort(), '사업 전체');
+  keep('#lKind', [...new Set(cards.map((c) => c.kind).filter(Boolean))].sort(), '종류 전체');
+  const area = $('#lArea').value, kind = $('#lKind').value, vis = $('#lVis').value, q = $('#lQ').value.trim().toLowerCase(), withLocked = $('#lLocked').checked;
+  const rows = cards.map((c) => ({ c, v: view(c) })).filter(({ c, v }) => {
+    if (v.locked && !withLocked) return false;
+    if (area && c.area !== area) return false;
+    if (kind && v.kind !== kind) return false;
+    if (vis && v.visibility !== vis) return false;
+    if (q && !(v.locked ? '' : [v.title, v.what, v.fails, (v.tags || []).join(' '), (v.numbers || []).join(' ')].join(' ')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (!rows.length) { $('#ledger').innerHTML = `<div class="empty">${cards.length ? '조건에 맞는 카드가 없습니다.' : '아직 카드가 없습니다. 수확기가 작업 세션에서 거둬 오면 여기에 쌓입니다.'}</div>`; return; }
+  let html = '', month = '';
+  for (const { c, v } of rows) {
+    const m = String(v.day || '').slice(0, 7) || '날짜 없음';
+    if (m !== month) { if (month) html += '</ul>'; month = m; html += `<div class="month">${m === '날짜 없음' ? m : `${m.slice(0, 4)}년 ${Number(m.slice(5))}월`}</div><ul class="ledger">`; }
+    html += `<li data-card="${c.id}" class="${v.locked ? 'locked' : ''}"><span class="d">${DAY(v.day)}</span><span class="a">${esc(c.area || '-')}</span><span class="t">${v.locked ? '🔒 잠긴 카드' : esc(v.title)}${!v.locked && v.tags && v.tags.length ? `<small>${esc(v.tags.join(' · '))}</small>` : ''}</span><span class="k">${esc(v.kind || '')}</span></li>`;
+  }
+  $('#ledger').innerHTML = html + '</ul>';
+}
+function cardDrawer(id) {
+  const c = L.cards.find((x) => x.id === id); if (!c) return;
+  const v = view(c);
+  if (v.locked) return say(L.vault.owner ? '먼저 「잠금 열기」를 누르세요' : '금고 주인만 볼 수 있는 카드입니다');
+  const onBoard = (D.refs || []).some((r) => r.ledger_id === c.id);
+  const f = (label, val) => (val && (!Array.isArray(val) || val.length) ? `<div class="field">${label}<div class="v">${Array.isArray(val) ? `<ul>${val.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : esc(val)}</div></div>` : '');
+  drawer(v.title, `
+    <div class="field">날짜 · 사업 · 종류<div class="v">${esc([DAY(v.day), c.area, v.kind].filter(Boolean).join(' · '))}</div></div>
+    ${f('한 일', v.what)}${f('결과물', v.result)}${f('숫자', v.numbers)}${f('AI와 사람', v.ai_role)}${f('실패·고친 것', v.fails)}
+    ${f('공개 가능성', v.visibility)}${f('이야기 꼬리표', v.tags)}
+    <div class="field">출처 세션<div class="v">${esc(c.session || '-')}</div></div>
+    ${c.sensitive ? '<div class="field"><small>잠긴 카드 — 이 내용은 이 브라우저에서만 풀렸습니다. 보드에는 올리지 않습니다.</small></div>'
+      : `<div class="acts">${onBoard ? '<span class="pill s-done">보드에 있음</span>' : '<button class="pri" id="cPromote">레퍼런스 보드로 올리기</button>'}</div>`}`, (el) => {
+    const b = $('#cPromote', el);
+    if (b) b.onclick = async () => { try { await api('POST', `/api/admin/hq/ledger/${c.id}/promote`); await load(); await loadLedger(); closeDrawer(); say('보드 「완성」 칸에 올렸습니다'); } catch (e) { say(e.message); } };
+  });
+}
+function passDrawer(make) {
+  drawer(make ? '금고 만들기' : '잠금 열기', `
+    ${make ? '<div class="field"><small>잠긴 카드를 푸는 비밀 문구입니다. 서버에 저장되지 않아 개발자도 볼 수 없습니다. <b>잊으면 잠긴 카드는 영영 열 수 없습니다.</b> 문장처럼 길게 정하세요(12자 이상).</small></div>' : ''}
+    <label class="field">비밀 문구<input type="password" id="pw1" autocomplete="off"></label>
+    ${make ? '<label class="field">한 번 더<input type="password" id="pw2" autocomplete="off"></label>' : ''}
+    <div class="acts"><button class="pri" id="pwGo">${make ? '만들기' : '열기'}</button></div>`, (el) => {
+    $('#pw1', el).focus();
+    const go = async () => {
+      const p1 = $('#pw1', el).value;
+      if (make && p1.length < 12) return say('12자 이상으로 정하세요');
+      if (make && p1 !== $('#pw2', el).value) return say('두 번 적은 문구가 다릅니다');
+      const btn = $('#pwGo', el); btn.disabled = true; btn.textContent = '처리 중…';
+      try { if (make) await createVault(p1); else await unlockVault(p1); $('#pw1', el).value = ''; closeDrawer(); await loadLedger(); say(make ? '금고를 만들었습니다' : '잠긴 카드를 열었습니다'); }
+      catch (e) { say(e.message); btn.disabled = false; btn.textContent = make ? '만들기' : '열기'; }
+    };
+    $('#pwGo', el).onclick = go;
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
+}
 
 async function loadNumbers() {
   try {
@@ -543,12 +693,19 @@ $('#tabs').onclick = (e) => {
   document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('show', x.id === `tab-${b.dataset.tab}`));
   try { localStorage.setItem('adminHq.tab', b.dataset.tab); } catch (_) {}
+  if (b.dataset.tab === 'ledger') loadLedger();
 };
+['#lArea', '#lKind', '#lVis', '#lLocked'].forEach((s) => { $(s).onchange = renderLedger; });
+$('#lQ').oninput = renderLedger;
 document.addEventListener('click', (e) => {
   const ed = e.target.closest('[data-edit]'); if (ed) return editDrawer(ed.dataset.edit);
   const fl = e.target.closest('[data-flow]'); if (fl) return flowDrawer(fl.dataset.flow);
   const ld = e.target.closest('[data-lead]'); if (ld) return leadDrawer(ld.dataset.lead);
   const rf = e.target.closest('[data-ref]'); if (rf) return refDrawer(rf.dataset.ref);
+  const cd = e.target.closest('[data-card]'); if (cd) return cardDrawer(cd.dataset.card);
+  if (e.target.id === 'vMake') return passDrawer(true);
+  if (e.target.id === 'vOpen') return passDrawer(false);
+  if (e.target.id === 'vLock') { PRIV = null; OPENED.clear(); renderLedger(); return say('다시 잠갔습니다'); }
   const go = e.target.closest('[data-go]'); if (go) return document.querySelector(`#tabs button[data-tab="${go.dataset.go}"]`).click();
   const t = e.target;
   if (t.dataset.decide) {

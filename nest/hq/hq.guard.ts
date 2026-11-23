@@ -10,7 +10,11 @@ import { HqRepository } from './hq.repository';
  *   목록이 비어 있으면 아무도 못 들어온다(fail closed).
  * 통과하면 req.hqActor = { id?, email } 를 남긴다. 서비스는 이걸로 기록의 '누가'를 적는다.
  */
-export interface HqActor { id?: string; email?: string }
+export interface HqActor { id?: string; email?: string; service?: string }
+
+/** 기계(서비스 토큰)가 갈 수 있는 길 — 카드 넣기·금고 공개 열쇠 읽기·기록 한 줄. 승인·공개·삭제·편집은 못 한다 */
+const SERVICE_ROUTES = new Set(['POST /api/admin/hq/ledger/bulk', 'GET /api/admin/hq/vault/public', 'POST /api/admin/hq/log']);
+const routeOf = (req: any) => `${req.method} ${String(req.originalUrl || req.url || '').split('?')[0].replace(/\/+$/, '')}`;
 
 /** 계정 id → 메일. 요청마다 users 를 다시 읽지 않게 5분 동안 기억한다(메일이 바뀌어도 5분 뒤엔 반영) */
 const EMAIL_TTL_MS = 5 * 60_000;
@@ -32,6 +36,8 @@ async function resolve(req: any, tokens: TokenService, access: HqAccessService, 
   }
   const email = await access.emailFrom(req);
   if (email) return { actor: { email }, loggedIn: !!payload };
+  const service = await access.serviceFrom(req);
+  if (service) return { actor: { service }, loggedIn: false };
   return { actor: null, loggedIn: !!payload };
 }
 
@@ -43,6 +49,7 @@ export class HqGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
     const { actor, loggedIn } = await resolve(req, this.tokens, this.access, this.repo);
+    if (actor && actor.service && !SERVICE_ROUTES.has(routeOf(req))) throw new ForbiddenException({ success: false, error: 'Forbidden — 기계 열쇠로는 갈 수 없는 길입니다' });
     if (actor) { req.hqActor = actor; return true; }
     if (loggedIn) throw new ForbiddenException({ success: false, error: 'Forbidden — HQ 허용 목록에 없는 계정입니다' });
     throw new UnauthorizedException({ success: false, error: 'Unauthorized' });
@@ -57,7 +64,7 @@ export class HqPageGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
     const { actor, loggedIn } = await resolve(req, this.tokens, this.access, this.repo);
-    if (actor) { req.hqActor = actor; return true; }
+    if (actor && !actor.service) { req.hqActor = actor; return true; }
     if (loggedIn) throw new AdminPageForbiddenException();
     throw new PageRedirectException(`/login?next=${encodeURIComponent(req.originalUrl)}`);
   }

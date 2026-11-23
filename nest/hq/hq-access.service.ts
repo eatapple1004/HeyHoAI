@@ -40,8 +40,34 @@ export class HqAccessService {
     return list;
   }
 
+  /** 서비스 토큰 Client ID 목록(HQ_ACCESS_SERVICES) — 비어 있으면 기계 접근 없음 */
+  serviceList(): Set<string> {
+    return new Set(String(env.HQ_ACCESS_SERVICES || '').split(',').map((s) => s.trim()).filter(Boolean));
+  }
+
   /** 통과하면 소문자 메일, 아니면 null */
   async emailFrom(req: any): Promise<string | null> {
+    const claims = await this.claims(req);
+    const email = claims && claims.email ? String(claims.email).toLowerCase() : '';
+    return email && this.allowed(email) ? email : null;
+  }
+
+  /** 서비스 토큰으로 들어온 기계면 그 Client ID, 아니면 null — 사람 메일이 있는 서명은 기계로 보지 않는다 */
+  async serviceFrom(req: any): Promise<string | null> {
+    const claims = await this.claims(req);
+    if (!claims || claims.email) return null;
+    const cn = String(claims.common_name || '');
+    return cn && this.serviceList().has(cn) ? cn : null;
+  }
+
+  /** Access 서명을 검증하고 claims 를 돌려준다(요청마다 한 번만 계산) */
+  private async claims(req: any): Promise<any | null> {
+    if (req.__hqClaims !== undefined) return req.__hqClaims;
+    req.__hqClaims = await this.verify(req);
+    return req.__hqClaims;
+  }
+
+  private async verify(req: any): Promise<any | null> {
     const cfg = this.config();
     if (!cfg) return null;
     const token = String(req.headers?.['cf-access-jwt-assertion'] || '');
@@ -59,10 +85,7 @@ export class HqAccessService {
       if (![].concat(claims.aud || []).includes(cfg.aud)) return null;
       const now = Date.now() / 1000;
       if (!claims.exp || claims.exp < now || (claims.nbf && claims.nbf > now + 60)) return null;
-      const email = claims.email ? String(claims.email).toLowerCase() : '';
-      if (!email) return null;
-      if (!this.allowed(email)) return null;
-      return email;
+      return claims;
     } catch {
       return null;
     }
