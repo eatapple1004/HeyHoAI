@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
 import * as path from 'path';
 import { HqService } from './hq.service';
+import { HqLedgerService } from './hq-ledger.service';
 import { HqGuard, HqPageGuard } from './hq.guard';
 import { PageExceptionFilter } from '../pages/page-exception.filter';
 import { ApiOk, ApiResponse } from '../common/dto/api-response.dto';
@@ -16,6 +17,11 @@ import {
   HqLeadCreateDto,
   HqLeadDto,
   HqLeadUpdateDto,
+  HqLedgerBulkDto,
+  HqLedgerBulkResultDto,
+  HqLedgerListDto,
+  HqVaultCreateDto,
+  HqVaultWrappedDto,
   HqRefCreateDto,
   HqRefDto,
   HqRefUpdateDto,
@@ -28,7 +34,7 @@ import {
 @Controller('api/admin/hq')
 @UseGuards(HqGuard)
 export class AdminHqController {
-  constructor(private readonly hq: HqService) {}
+  constructor(private readonly hq: HqService, private readonly ledger: HqLedgerService) {}
 
   // GET /api/admin/hq — 판·결정·고객·기록 한 번에
   @Get()
@@ -112,6 +118,46 @@ export class AdminHqController {
   @Delete('refs/:id')
   async deleteRef(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
     await this.hq.deleteRef(id, req.hqActor);
+    return { success: true };
+  }
+
+  // GET /api/admin/hq/ledger — 레퍼런스 원장 전체 + 금고 상태(잠긴 카드는 잠긴 글 그대로)
+  @Get('ledger')
+  async ledgerList(@Req() req: any): Promise<ApiResponse<HqLedgerListDto>> {
+    return { success: true, data: await this.ledger.list(req.hqActor) };
+  }
+
+  // POST /api/admin/hq/ledger/bulk — 카드 넣기(origin 같으면 고침). 수확기 기계 열쇠가 쓰는 길
+  @Post('ledger/bulk')
+  @HttpCode(200)
+  async ledgerBulk(@Body() body: HqLedgerBulkDto, @Req() req: any): Promise<ApiResponse<HqLedgerBulkResultDto>> {
+    return { success: true, data: await this.ledger.bulk(body, req.hqActor) };
+  }
+
+  // POST /api/admin/hq/ledger/:id/promote — 원장 카드를 레퍼런스 보드 '완성' 칸으로
+  @Post('ledger/:id/promote')
+  @HttpCode(200)
+  async ledgerPromote(@Param('id') id: string, @Req() req: any): Promise<ApiResponse<HqRefDto>> {
+    return { success: true, data: await this.ledger.promote(id, req.hqActor) };
+  }
+
+  // GET /api/admin/hq/vault/public — 금고 공개 열쇠(잠그는 데만 쓰임). 수확기도 읽는다
+  @Get('vault/public')
+  async vaultPublic(): Promise<ApiResponse<{ publicKey: JsonWebKey | null }>> {
+    return { success: true, data: await this.ledger.vaultPublic() };
+  }
+
+  // GET /api/admin/hq/vault — 주인만: 비밀 문구로 잠긴 개인 열쇠(브라우저가 푼다)
+  @Get('vault')
+  async vaultWrapped(@Req() req: any): Promise<ApiResponse<HqVaultWrappedDto>> {
+    return { success: true, data: await this.ledger.vaultWrapped(req.hqActor) };
+  }
+
+  // POST /api/admin/hq/vault — 주인만, 처음 한 번 금고 만들기
+  @Post('vault')
+  @HttpCode(200)
+  async vaultCreate(@Body() body: HqVaultCreateDto, @Req() req: any): Promise<ApiOk> {
+    await this.ledger.createVault(body, req.hqActor);
     return { success: true };
   }
 

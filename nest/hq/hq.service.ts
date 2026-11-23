@@ -79,6 +79,7 @@ export class HqService {
 
   /** 기록에 남길 이름 — 메일 인증이면 그 메일, 관리자 로그인이면 토큰엔 id 만 있어 메일을 한 번 찾아 기억한다 */
   async who(actor: HqActor): Promise<string> {
+    if (actor.service) return '수확기';
     if (actor.email) return actor.email;
     const id = String(actor.id || '');
     const cached = this.emails.get(id);

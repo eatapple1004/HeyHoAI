@@ -49,10 +49,32 @@ export interface HqRefRowVo {
   readonly source: string;
   readonly stage: string;
   readonly lead_id: string | null;
+  readonly ledger_id?: string | null;
   readonly result_url: string;
   readonly note: string;
   readonly published: HqPublishedVo[];
   readonly done_date: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+/** 원장 카드 본문(민감하지 않은 카드만 평문으로 둔다) */
+export interface HqLedgerBodyVo {
+  what?: string; result?: string; numbers?: string[]; ai_role?: string; fails?: string; visibility?: string; tags?: string[];
+}
+
+export interface HqLedgerRowVo {
+  readonly id: string;
+  readonly origin: string;
+  readonly day: string | null;
+  readonly area: string;
+  readonly title: string;
+  readonly kind: string;
+  readonly sensitive: boolean;
+  readonly body: HqLedgerBodyVo;
+  /** 민감 카드만 — 금고 공개 열쇠로 잠근 글(JSON 문자열 {v,k,iv,ct}). 서버는 풀 수 없다 */
+  readonly sealed: string;
+  readonly session: string;
   readonly created_at: string;
   readonly updated_at: string;
 }

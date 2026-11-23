@@ -1,4 +1,4 @@
-import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqPublishedVo, HqRefRowVo } from '../vo/hq.vo';
+import { HqDecisionRowVo, HqLeadRowVo, HqLedgerBodyVo, HqLedgerRowVo, HqLogRowVo, HqPublishedVo, HqRefRowVo } from '../vo/hq.vo';
 
 /**
  * HQ API 계약 — 관리자 전용 운영 기록판(/admin-hq).
@@ -86,6 +86,21 @@ export class HqLogCreateDto { kind?: string; text!: string }
 export class HqRefCreateDto { title!: string; client?: string; kind?: string; source?: string; stage?: string; leadId?: string; resultUrl?: string; note?: string; published?: HqPublishedVo[]; doneDate?: string }
 export class HqRefUpdateDto { title?: string; client?: string; kind?: string; source?: string; stage?: string; leadId?: string | null; resultUrl?: string; note?: string; published?: HqPublishedVo[]; doneDate?: string | null }
 export type HqRefDto = HqRefRowVo;
+
+/** 원장 카드 넣기 — 수확기(기계 열쇠)나 사람이 보낸다. origin 이 같으면 고친다 */
+export class HqLedgerCardInDto {
+  origin!: string; day?: string; area?: string; title?: string; kind?: string; session?: string;
+  sensitive?: boolean; body?: HqLedgerBodyVo; sealed?: string;
+}
+export class HqLedgerBulkDto { cards!: HqLedgerCardInDto[] }
+export interface HqLedgerBulkResultDto { added: number; changed: number; skipped: number }
+
+/** 금고 — 공개 열쇠(누구나 잠글 수 있음)와, 주인 비밀 문구로 잠근 개인 열쇠(주인 브라우저에서만 풀림) */
+export interface HqVaultWrappedDto { salt: string; iv: string; ct: string; iterations: number }
+export class HqVaultCreateDto { publicKey!: JsonWebKey; wrapped!: HqVaultWrappedDto }
+export interface HqVaultStatusDto { exists: boolean; owner: boolean; publicKey?: JsonWebKey | null }
+
+export interface HqLedgerListDto { cards: HqLedgerRowVo[]; vault: HqVaultStatusDto }
 
 export type HqDecisionDto = HqDecisionRowVo;
 export type HqLeadDto = HqLeadRowVo;

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from '../db/db.service';
-import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqRefRowVo, HqStateRowVo } from './vo/hq.vo';
+import { HqDecisionRowVo, HqLeadRowVo, HqLedgerRowVo, HqLogRowVo, HqRefRowVo, HqStateRowVo } from './vo/hq.vo';
 
 /**
  * HQ 저장소.
@@ -11,8 +11,10 @@ import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo, HqRefRowVo, HqStateRowVo } fr
  *   hq_leads   : 고객·후보 보드. business_id 로 사업체(businesses)와 이을 수 있다(선택). next_action·next_date = 다음 할 일
  *   hq_log     : 기록(사람이 쓴 메모 + 바뀐 것 자동 한 줄)
  *   hq_refs    : 레퍼런스(작업 중·완성·권리 확인·공개). 목표 = 우리 작업을 알리고 레퍼런스를 쌓는 것
+ *   hq_ledger  : 레퍼런스 원장 — 모든 작업 세션에서 거둔 「한 일」 카드. origin 으로 같은 카드를 다시 넣어도 하나로 유지.
+ *                민감 카드는 sealed(금고 공개 열쇠로 잠근 글)만 저장하고 제목·내용은 비운다 — 서버·DB 에서는 읽을 수 없다
  */
-const SCHEMA_KEY = 'hq.v3';
+const SCHEMA_KEY = 'hq.v4';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS hq_state (
      key         VARCHAR(40) PRIMARY KEY,
@@ -71,10 +73,30 @@ const SCHEMA_SQL = [
      created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
      updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
    )`,
+  // v4(2026-11-23) 레퍼런스 원장 + 보드로 올린 카드 잇기
+  `CREATE TABLE IF NOT EXISTS hq_ledger (
+     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     origin      TEXT NOT NULL UNIQUE,
+     day         DATE,
+     area        TEXT NOT NULL DEFAULT '',
+     title       TEXT NOT NULL,
+     kind        TEXT NOT NULL DEFAULT '',
+     sensitive   BOOLEAN NOT NULL DEFAULT false,
+     body        JSONB NOT NULL DEFAULT '{}',
+     sealed      TEXT NOT NULL DEFAULT '',
+     session     TEXT NOT NULL DEFAULT '',
+     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_hq_ledger_day ON hq_ledger(day DESC)`,
+  `ALTER TABLE hq_refs ADD COLUMN IF NOT EXISTS ledger_id UUID REFERENCES hq_ledger(id) ON DELETE SET NULL`,
 ];
 
+/** 원장 행 SELECT 목록 */
+const LEDGER_COLS = `id, origin, to_char(day, 'YYYY-MM-DD') AS day, area, title, kind, sensitive, body, sealed, session, created_at, updated_at`;
+
 /** 레퍼런스 행 SELECT 목록 — 날짜는 'YYYY-MM-DD' 문자열 */
-const REF_COLS = `id, title, client, kind, source, stage, lead_id, result_url, note, published, to_char(done_date, 'YYYY-MM-DD') AS done_date, created_at, updated_at`;
+const REF_COLS = `id, title, client, kind, source, stage, lead_id, ledger_id, result_url, note, published, to_char(done_date, 'YYYY-MM-DD') AS done_date, created_at, updated_at`;
 
 /** 고객 행 SELECT 목록 — 날짜는 시간대 밀림이 없게 'YYYY-MM-DD' 문자열로 낸다 */
 const LEAD_COLS = `id, name, kind, source, stage, contact, note, business_id, next_action, to_char(next_date, 'YYYY-MM-DD') AS next_date, created_at, updated_at`;
@@ -251,6 +273,57 @@ export class HqRepository {
 
   async deleteRef(id: string): Promise<void> {
     await this.db.query(`DELETE FROM hq_refs WHERE id = $1`, [id]);
+  }
+
+  // ─── 레퍼런스 원장 ───
+  async listLedger(): Promise<HqLedgerRowVo[]> {
+    await this.ensure();
+    const r = await this.db.query<HqLedgerRowVo>(`SELECT ${LEDGER_COLS} FROM hq_ledger ORDER BY day DESC NULLS LAST, created_at DESC`);
+    return r.rows;
+  }
+
+  async findLedger(id: string): Promise<HqLedgerRowVo | null> {
+    await this.ensure();
+    const r = await this.db.query<HqLedgerRowVo>(`SELECT ${LEDGER_COLS} FROM hq_ledger WHERE id = $1`, [id]);
+    return r.rows[0] || null;
+  }
+
+  /** origin 기준으로 넣거나 고친다(한 묶음 = 한 트랜잭션). 돌려주는 값 = [새로 넣은 수, 고친 수] */
+  async upsertLedger(cards: Array<{ origin: string; day: string | null; area: string; title: string; kind: string; sensitive: boolean; body: unknown; sealed: string; session: string }>): Promise<[number, number]> {
+    await this.ensure();
+    const conn = await this.db.connect();
+    let added = 0, changed = 0;
+    try {
+      await conn.query('BEGIN');
+      for (const c of cards) {
+        const r = await conn.query(
+          `INSERT INTO hq_ledger (origin, day, area, title, kind, sensitive, body, sealed, session)
+           VALUES ($1, $2::date, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (origin) DO UPDATE SET day = EXCLUDED.day, area = EXCLUDED.area, title = EXCLUDED.title, kind = EXCLUDED.kind,
+             sensitive = EXCLUDED.sensitive, body = EXCLUDED.body, sealed = EXCLUDED.sealed, session = EXCLUDED.session, updated_at = now()
+           RETURNING (xmax = 0) AS inserted`,
+          [c.origin, c.day, c.area, c.title, c.kind, c.sensitive, JSON.stringify(c.body), c.sealed, c.session],
+        );
+        if (r.rows[0]?.inserted) added++; else changed++;
+      }
+      await conn.query('COMMIT');
+    } catch (err) {
+      await conn.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    } finally {
+      conn.release();
+    }
+    return [added, changed];
+  }
+
+  async refByLedger(ledgerId: string): Promise<HqRefRowVo | null> {
+    await this.ensure();
+    const r = await this.db.query<HqRefRowVo>(`SELECT ${REF_COLS} FROM hq_refs WHERE ledger_id = $1 LIMIT 1`, [ledgerId]);
+    return r.rows[0] || null;
+  }
+
+  async setRefLedger(refId: string, ledgerId: string): Promise<void> {
+    await this.db.query(`UPDATE hq_refs SET ledger_id = $2 WHERE id = $1`, [refId, ledgerId]);
   }
 
   // ─── 기록 ───
