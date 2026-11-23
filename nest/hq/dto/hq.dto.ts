@@ -1,4 +1,4 @@
-import { HqDecisionRowVo, HqLeadRowVo, HqLogRowVo } from '../vo/hq.vo';
+import { HqDecisionRowVo, HqLeadRowVo, HqLedgerBodyVo, HqLedgerRowVo, HqLogRowVo, HqPublishedVo, HqRefRowVo } from '../vo/hq.vo';
 
 /**
  * HQ API 계약 — 관리자 전용 운영 기록판(/admin-hq).
@@ -19,6 +19,8 @@ export interface HqLinkDto { name: string; url: string }
 
 /** 판 전체(hq_state 'board') — 화면 '한눈에' 탭이 그대로 그린다 */
 export interface HqBoardDto {
+  /** 목표(2026-11-21 추가). 예전 판에는 없을 수 있다 */
+  goal?: { text: string; decided: string };
   direction: { line: string; why: string; decided: string };
   weapons: HqNameUseDto[];
   flow: HqFlowStepDto[];
@@ -28,12 +30,21 @@ export interface HqBoardDto {
   leadStages: string[];
 }
 
+/** 화면에서 통째로 고칠 수 있는 판의 칸 — 흐름은 단계별 PUT /flow/:id 로 따로 고친다 */
+export type HqBoardSection = 'goal' | 'direction' | 'weapons' | 'products' | 'rules' | 'links';
+export const HQ_BOARD_SECTIONS: HqBoardSection[] = ['goal', 'direction', 'weapons', 'products', 'rules', 'links'];
+
+/** 레퍼런스가 지나는 네 칸 — 순서가 곧 진행 */
+export const HQ_REF_STAGES = ['작업 중', '완성', '권리 확인', '공개'];
+
 /** GET /api/admin/hq 응답 */
 export interface HqSnapshotDto {
   /** 아직 아무것도 가져오지 않았으면 null — 화면이 '가져오기'를 띄운다 */
   board: HqBoardDto | null;
   decisions: HqDecisionRowVo[];
   leads: HqLeadRowVo[];
+  refs: HqRefRowVo[];
+  refStages: string[];
   log: HqLogRowVo[];
   me: string;
   env: string;
@@ -65,11 +76,31 @@ export class HqImportDto {
 }
 
 export class HqFlowUpdateDto { status?: string; note?: string }
+/** PUT /api/admin/hq/board/:section — value 모양은 칸마다 HqBoardDto 의 그 칸과 같다 */
+export class HqBoardUpdateDto { value!: unknown }
 export class HqDecisionCreateDto { question!: string; options?: string; recommend?: string }
 export class HqDecisionUpdateDto { status?: string; answer?: string }
-export class HqLeadCreateDto { name!: string; kind?: string; source?: string; contact?: string; note?: string; businessId?: string }
-export class HqLeadUpdateDto { name?: string; kind?: string; source?: string; stage?: string; contact?: string; note?: string; businessId?: string | null }
+export class HqLeadCreateDto { name!: string; kind?: string; source?: string; contact?: string; note?: string; businessId?: string; nextAction?: string; nextDate?: string }
+export class HqLeadUpdateDto { name?: string; kind?: string; source?: string; stage?: string; contact?: string; note?: string; businessId?: string | null; nextAction?: string; nextDate?: string | null }
 export class HqLogCreateDto { kind?: string; text!: string }
+export class HqRefCreateDto { title!: string; client?: string; kind?: string; source?: string; stage?: string; leadId?: string; resultUrl?: string; note?: string; published?: HqPublishedVo[]; doneDate?: string }
+export class HqRefUpdateDto { title?: string; client?: string; kind?: string; source?: string; stage?: string; leadId?: string | null; resultUrl?: string; note?: string; published?: HqPublishedVo[]; doneDate?: string | null }
+export type HqRefDto = HqRefRowVo;
+
+/** 원장 카드 넣기 — 수확기(기계 열쇠)나 사람이 보낸다. origin 이 같으면 고친다 */
+export class HqLedgerCardInDto {
+  origin!: string; day?: string; area?: string; title?: string; kind?: string; session?: string;
+  sensitive?: boolean; body?: HqLedgerBodyVo; sealed?: string;
+}
+export class HqLedgerBulkDto { cards!: HqLedgerCardInDto[] }
+export interface HqLedgerBulkResultDto { added: number; changed: number; skipped: number }
+
+/** 금고 — 공개 열쇠(누구나 잠글 수 있음)와, 주인 비밀 문구로 잠근 개인 열쇠(주인 브라우저에서만 풀림) */
+export interface HqVaultWrappedDto { salt: string; iv: string; ct: string; iterations: number }
+export class HqVaultCreateDto { publicKey!: JsonWebKey; wrapped!: HqVaultWrappedDto }
+export interface HqVaultStatusDto { exists: boolean; owner: boolean; publicKey?: JsonWebKey | null }
+
+export interface HqLedgerListDto { cards: HqLedgerRowVo[]; vault: HqVaultStatusDto }
 
 export type HqDecisionDto = HqDecisionRowVo;
 export type HqLeadDto = HqLeadRowVo;

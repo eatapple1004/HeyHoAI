@@ -66,6 +66,8 @@ const envSchema = z.object({
   // 도피아 로그인(계정 메일이 목록에 있을 때) 또는 Access 메일 코드 인증(ADAM HQ와 같은 방식). 목록이 비면 아무도 못 들어온다.
   HQ_ACCESS_TEAM: z.string().optional(),                     // Access 팀 도메인(예: xxx.cloudflareaccess.com)
   HQ_ACCESS_AUD: z.string().optional(),                      // Access 앱의 AUD 태그
+  HQ_ACCESS_SERVICES: z.string().optional(),                 // 쉼표로 구분한 Access 서비스 토큰 Client ID — 사람 없이 HQ에 쓰는 기계(레퍼런스 수확기). 정해진 길만 허용
+  HQ_VAULT_OWNER: z.string().optional(),                     // 잠긴 카드 금고 주인 메일(한 명). 이 사람만 금고를 만들고 열 수 있다
   HQ_ACCESS_EMAILS: z.string().optional(),                   // 쉼표로 구분한 허용 메일(Access 정책과 같은 목록). HQ 입구의 유일한 기준
 
   // ── 미디어 오브젝트 스토리지 (S3 호환 — AWS S3 / Cloudflare R2) ──
