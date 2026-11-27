@@ -198,7 +198,7 @@ export class HqService {
     const who = await this.who(actor);
     const board = await this.repo.updateState(BOARD_KEY, who, (b: HqBoardDto) => { (b as any)[section] = value; return b; });
     if (!board) fail(404, 'HQ 기록이 아직 없습니다. 먼저 가져오기를 하세요.');
-    const LABEL: Record<HqBoardSection, string> = { goal: '목표', axes: '축', direction: '방향', weapons: '우리 무기', products: '상품 초안', rules: '지키는 것', links: '바로가기' };
+    const LABEL: Record<HqBoardSection, string> = { goal: '목표', axes: '축', engine: '엔진 한 장', direction: '방향', weapons: '우리 무기', products: '상품 초안', rules: '지키는 것', links: '바로가기' };
     await this.repo.insertLog({ who, kind: '판', text: `「${LABEL[section as HqBoardSection]}」 수정` });
     return board;
   }
@@ -212,6 +212,12 @@ export class HqService {
         color: /^#[0-9a-f]{6}$/i.test(String(a?.color || '').trim()) ? String(a.color).trim().toLowerCase() : '#9a9ab2',
         match: (Array.isArray(a?.match) ? a.match : String(a?.match || '').split(',')).map((m: unknown) => clean(m, 40)).filter(Boolean).slice(0, 30),
       })).filter((a) => a.name);
+      case 'engine': {
+        const strs = (x: any, n: number) => (Array.isArray(x) ? x : []).slice(0, n).map((s: unknown) => clean(s, 60)).filter(Boolean);
+        const stages = (Array.isArray(v?.stages) ? v.stages : []).slice(0, 8).map((s: any) => ({ when: clean(s?.when, 20), what: clean(s?.what, 40) })).filter((s: any) => s.when || s.what);
+        const now = Math.max(0, Math.min(stages.length - 1, Number.parseInt(String(v?.now ?? 0), 10) || 0));
+        return { title: clean(v?.title, 60), sources: strs(v?.sources, 8), parts: strs(v?.parts, 8), businesses: strs(v?.businesses, 8), evidence: strs(v?.evidence, 6), loop: clean(v?.loop, 60), stages, now, math: strs(v?.math, 4) };
+      }
       case 'goal': {
         const text = clean(v?.text, 500);
         if (!text) fail(400, '목표 한 줄이 비어 있습니다');

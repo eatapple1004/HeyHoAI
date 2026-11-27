@@ -168,6 +168,39 @@ ul.ledger .a i{display:inline-block;width:8px;height:8px;border-radius:50%;margi
 a.maplink{margin-left:auto;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;color:#fff;background:linear-gradient(90deg,#3987e5,#9085e9,#d55181);text-decoration:none}
 a.maplink:hover{filter:brightness(1.15);text-decoration:none}
 .field ul{padding-left:18px;color:var(--text);font-size:.85rem}
+/* 엔진 한 장 — 무채색 + 강조색 하나 */
+.engine{--ink:#e9e7e2;--mute:#8d8b86;--line:rgba(233,231,226,.14);--acc:#ffce7a;background:linear-gradient(180deg,#101016,#0c0c12);padding:26px 28px}
+.eg-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
+.eg-k{font-size:.72rem;letter-spacing:.42em;font-weight:800;color:var(--ink)}
+.eg-t{font-size:1.15rem;font-weight:300;color:var(--ink);letter-spacing:-.01em}
+.eg-head .edit{margin-left:auto}
+.eg-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:34px;position:relative}
+.eg-col{position:relative}
+.eg-col:not(:last-child)::after{content:'';position:absolute;right:-26px;top:34px;width:18px;height:1px;background:var(--mute)}
+.eg-col:not(:last-child)::before{content:'';position:absolute;right:-26px;top:31px;width:6px;height:6px;border-top:1px solid var(--mute);border-right:1px solid var(--mute);transform:rotate(45deg)}
+.eg-col h4{font-size:.66rem;letter-spacing:.32em;color:var(--mute);font-weight:700;margin-bottom:10px}
+.eg-col ul{list-style:none;border-top:1px solid var(--line)}
+.eg-col li{font-size:.86rem;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.eg-col li b{font-weight:600;color:var(--acc);font-variant-numeric:tabular-nums}
+.eg-col.core ul{border-top-color:var(--acc)}
+.eg-col.core h4{color:var(--acc)}
+.eg-loop{margin:16px 0 26px;color:var(--mute);font-size:.78rem;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+.eg-loop i{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+.eg-time{display:grid;position:relative;margin-bottom:26px}
+.eg-time::before{content:'';position:absolute;left:0;right:0;top:5px;height:1px;background:var(--line)}
+.eg-st{position:relative;padding-top:20px}
+.eg-st::before{content:'';position:absolute;left:0;top:1px;width:9px;height:9px;border-radius:50%;background:#0c0c12;border:1px solid var(--mute)}
+.eg-st.now::before{background:var(--acc);border-color:var(--acc);box-shadow:0 0 0 5px rgba(255,206,122,.15)}
+.eg-st .w{font-size:.7rem;letter-spacing:.14em;color:var(--mute);font-variant-numeric:tabular-nums}
+.eg-st .x{font-size:.84rem;color:var(--ink);margin-top:2px}
+.eg-st.now .w{color:var(--acc)}
+.eg-bottom{display:grid;grid-template-columns:1.3fr 1fr;gap:34px}
+.eg-bottom h4{font-size:.66rem;letter-spacing:.32em;color:var(--mute);font-weight:700;margin-bottom:10px}
+.eg-check li,.eg-math li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem;color:var(--ink)}
+.eg-check li span:last-child{color:var(--mute);font-variant-numeric:tabular-nums}
+.eg-check li span.ok{color:var(--acc)}
+.eg-math li{color:var(--ink)}
+@media(max-width:1000px){.eg-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.eg-col:nth-child(2)::after,.eg-col:nth-child(2)::before{display:none}.eg-bottom{grid-template-columns:1fr}}
 @media(max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
 @media(max-width:640px){ul.ledger li{grid-template-columns:70px 1fr}ul.ledger .a,ul.ledger .k{display:none}body{padding:16px}.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}ul.todo li{grid-template-columns:80px 1fr}ul.todo .who{display:none}}
 </style>
@@ -196,8 +229,12 @@ a.maplink:hover{filter:brightness(1.15);text-decoration:none}
     </div>
 
     <section class="tab show" id="tab-home">
+      <div class="panel engine" id="engineBox">
+        <div class="eg-head"><span class="eg-k">DOPPIA</span><span class="eg-t" id="egTitle"></span><button class="edit" data-edit="engine">편집</button></div>
+        <div id="egBody"></div>
+      </div>
       <div class="panel hero goal">
-        <div class="kicker"><span>목표 · <span id="goalDate"></span></span><a class="maplink" href="/admin-hq/map">도피아 지도 ✦</a><button class="edit" data-edit="goal" style="margin-left:6px">편집</button></div>
+        <div class="kicker"><span>목표 · <span id="goalDate"></span></span><button class="edit" data-edit="goal">편집</button></div>
         <div class="line" id="goalLine"></div>
         <div class="nums" id="refNums" data-go="refs" title="레퍼런스 탭으로"></div>
       </div>
@@ -470,6 +507,7 @@ function render() {
   $('#goalLine').textContent = b.goal ? b.goal.text : '목표를 아직 적지 않았습니다. 편집을 눌러 한 줄로 적으세요.';
   $('#goalDate').textContent = b.goal && b.goal.decided ? `${DAY(b.goal.decided)} 정함` : '';
   renderRefs();
+  renderEngine();
   const bn = $('#envBanner');
   bn.hidden = D.env === 'prod';
   bn.textContent = '시험용 화면입니다. 여기 적은 내용은 운영 HQ에 남지 않습니다. 실제 기록은 doppia.ai/admin-hq 에 남기세요.';
@@ -500,6 +538,35 @@ function render() {
   const rows = D.log.filter((l) => logFilter === '전체' || l.kind === logFilter);
   $('#log').innerHTML = rows.length ? rows.map((l) => `<li><span class="at">${TIME(l.at)}<br>${esc(NAME(l.who))}</span><span class="k">${esc(l.kind)}</span><span>${esc(l.text)}</span></li>`).join('') : '<div class="empty">기록이 없습니다.</div>';
 }
+
+// ─── 엔진 한 장 ─── 내용은 판(board.engine)에서, 숫자는 HQ 데이터에서 자동으로
+let LEDGER_N = null;
+function renderEngine() {
+  const e = D.board && D.board.engine;
+  $('#egTitle').textContent = e ? e.title : '';
+  if (!e) { $('#egBody').innerHTML = '<div class="empty">아직 비어 있습니다. 「편집」에서 채우세요.</div>'; return; }
+  const refs = D.refs || [];
+  const live = (s) => {  // 증거 칸에 실제 숫자를 붙인다
+    if (/원장/.test(s) && LEDGER_N != null) return `${LEDGER_N}장`;
+    if (/공개/.test(s)) return `${refs.filter((r) => r.stage === '공개').length}건`;
+    if (/숫자|결과/.test(s)) return '측정 전';
+    return '';
+  };
+  const col = (h, items, core, withLive) => `<div class="eg-col${core ? ' core' : ''}"><h4>${h}</h4><ul>${items.map((s) => `<li><span>${esc(s)}</span>${withLive && live(s) ? `<b>${esc(live(s))}</b>` : ''}</li>`).join('')}</ul></div>`;
+  // 유료 외부 고객 = 고객 보드 「계약」「운영 중」 중에서, 엔진 한 장 「사업」 칸에 적힌 자사 사업은 뺀다
+  const own = (n) => e.businesses.some((b) => b && (n.includes(b) || b.includes(n)));
+  const paid = D.leads.filter((l) => ['계약', '운영 중'].includes(l.stage) && !own(l.name)).length;
+  const checks = [['고객 숫자 개선', '측정 전'], ['고객당 사람 시간', '측정 전'], ['해지', '측정 전'], ['유료 외부 고객', `${paid}곳`]];
+  $('#egBody').innerHTML = `
+    <div class="eg-flow">${col('입구', e.sources)}${col('엔진', e.parts, true)}${col('사업', e.businesses)}${col('증거', e.evidence, false, true)}</div>
+    <div class="eg-loop">↺ <span>${esc(e.loop)}</span><i></i></div>
+    <div class="eg-time" style="grid-template-columns:repeat(${Math.max(1, e.stages.length)},minmax(0,1fr))">${e.stages.map((s, i) => `<div class="eg-st${i === e.now ? ' now' : ''}"><div class="w">${esc(s.when)}${i === e.now ? ' · 지금' : ''}</div><div class="x">${esc(s.what)}</div></div>`).join('')}</div>
+    <div class="eg-bottom">
+      <div class="eg-check"><h4>베스트 플로우가 참이 되려면</h4><ul>${checks.map(([k, v], i) => `<li><span>${i + 1}. ${k}</span><span class="${v !== '측정 전' && !/^0/.test(v) ? 'ok' : ''}">${esc(v)}</span></li>`).join('')}</ul></div>
+      <div class="eg-math"><h4>1조의 산수 (가정)</h4><ul>${e.math.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></div>
+    </div>`;
+}
+async function loadLedgerCount() { try { const l = await api('GET', '/api/admin/hq/ledger'); L = L || l; LEDGER_N = l.cards.length; renderEngine(); } catch (_) {} }
 
 function renderRefs() {
   const R = D.refs || [], st = D.refStages || [];
@@ -619,6 +686,18 @@ const EDIT = {
 };
 function editDrawer(section) {
   const b = D.board;
+  if (section === 'engine') {
+    const cur = JSON.stringify(b.engine || { title: '', sources: [], parts: [], businesses: [], evidence: [], loop: '', stages: [], now: 0, math: [] }, null, 2);
+    return drawer('엔진 한 장', `
+      <div class="field"><small>입구·엔진·사업·증거는 목록, stages 는 {when, what}, now 는 지금 단계 번호(0부터).</small></div>
+      <label class="field">내용<textarea id="e_eng" rows="22" style="font-family:ui-monospace,Menlo,monospace;font-size:.78rem">${esc(cur)}</textarea></label>
+      <div class="acts"><button class="pri" id="eSave">저장</button></div>`, (el) => {
+      $('#eSave', el).onclick = async () => {
+        let value; try { value = JSON.parse($('#e_eng', el).value); } catch (_) { return say('모양이 맞지 않습니다(JSON)'); }
+        if (await act('PUT', '/api/admin/hq/board/engine', { value }, '저장했습니다')) closeDrawer();
+      };
+    });
+  }
   if (section === 'goal') {
     const g = b.goal || { text: '', decided: '' };
     return drawer('목표', `
@@ -717,7 +796,7 @@ $('#importFile').onchange = async (e) => {
 };
 
 try { const t = localStorage.getItem('adminHq.tab'); if (t) { const b = document.querySelector(`#tabs button[data-tab="${t}"]`); if (b) b.click(); } } catch (_) {}
-load().then(loadNumbers).catch((e) => say(e.message));
+load().then(() => { loadNumbers(); loadLedgerCount(); }).catch((e) => say(e.message));
 </script>
 </body>
 </html>
