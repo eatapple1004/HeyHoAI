@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도피아 지도 · Doppia Admin</title>
+<style>
+/* 도피아 지도 — 레퍼런스 원장 카드를 축(큰 갈래)별로 그린다. 데이터: /api/admin/hq + /api/admin/hq/ledger */
+:root{--bg:#07070d;--panel:#11111a;--panel2:#181824;--text:#f0efec;--dim:#a9a8bd;--faint:#6a6a85;--border:#262636;--gold:#ffce7a;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#1a1440 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);font-family:var(--font);padding:28px;min-height:100vh;line-height:1.55}
+.wrap{max-width:1500px;margin:0 auto}
+button,input,select,textarea{font-family:inherit;font-size:.88rem;color:var(--text)}
+button{font-weight:600;padding:7px 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel);cursor:pointer;white-space:nowrap}
+button:hover{border-color:#9085e9}
+button.pri{color:#fff;background:linear-gradient(90deg,#3987e5,#9085e9);border-color:transparent}
+textarea,input{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 12px;width:100%}
+a{color:#9085e9;text-decoration:none}
+
+.head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:8px 0 18px}
+.head h1{font-size:2.1rem;font-weight:900;letter-spacing:-.02em;background:linear-gradient(90deg,#86b6ef,#9085e9,#e87ba4,#ffce7a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.head .goal{color:var(--dim);font-size:.95rem;flex:1;min-width:240px}
+.head .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.tile{background:linear-gradient(160deg,rgba(57,135,229,.10),rgba(144,133,233,.04) 60%,transparent),var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.tile .n{font-size:1.9rem;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.tile .l{color:var(--dim);font-size:.78rem}
+.tile .s{color:var(--faint);font-size:.72rem;margin-top:2px}
+
+.stage{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:16px}
+.sky{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;min-height:640px}
+.sky canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.sky .hint{position:absolute;left:16px;bottom:12px;color:var(--faint);font-size:.75rem;pointer-events:none}
+.legend{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:4px;max-height:640px;overflow:auto}
+.legend h3{font-size:.85rem;color:var(--dim);font-weight:700;margin-bottom:6px}
+.lg{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;cursor:pointer}
+.lg:hover,.lg.on{background:var(--panel2)}
+.lg i{width:12px;height:12px;border-radius:50%}
+.lg .nm{font-weight:700;font-size:.88rem}
+.lg .ct{font-variant-numeric:tabular-nums;color:var(--dim);font-size:.82rem}
+.lg .bar{grid-column:2/4;height:4px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.lg .bar b{display:block;height:100%;border-radius:4px}
+.unmapped{margin-top:10px;color:var(--faint);font-size:.74rem}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:18px 20px;margin-bottom:16px}
+.panel h2{font-size:1rem;margin-bottom:4px}
+.panel .sub{color:var(--faint);font-size:.78rem;margin-bottom:12px}
+.stream{position:relative}
+.stream svg{display:block;width:100%;height:280px}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+table.heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:.8rem}
+table.heat th{color:var(--dim);font-weight:600;font-size:.72rem;text-align:center;padding:4px}
+table.heat th.ax{text-align:left;white-space:nowrap}
+table.heat td{text-align:center;border-radius:6px;padding:7px 4px;font-variant-numeric:tabular-nums}
+ul.recent{list-style:none}
+ul.recent li{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:.84rem;cursor:pointer}
+ul.recent li:first-child{border-top:0}
+ul.recent .d{color:var(--faint);font-size:.76rem}
+ul.recent i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+.tip{position:fixed;pointer-events:none;z-index:40;background:rgba(17,17,26,.96);border:1px solid #3a3a52;border-radius:12px;padding:10px 12px;font-size:.8rem;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.tip[hidden]{display:none}
+.tip b{display:block;font-size:.88rem;margin-bottom:2px}
+.tip .m{color:var(--dim)}
+.tip .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.tip .row i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+
+.drawer{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;justify-content:flex-end;z-index:30}
+.drawer[hidden]{display:none}
+.drawer .in{width:min(520px,100%);height:100%;background:var(--panel);border-left:1px solid var(--border);padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.drawer .hd{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.drawer .hd h3{font-size:1.15rem}
+.drawer .x{border:0;background:none;font-size:1.6rem;line-height:1;color:var(--dim);padding:0 4px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--dim)}
+.field .v{color:var(--text);font-size:.88rem}
+.field small{color:var(--faint)}
+.field ul{padding-left:18px;color:var(--text);font-size:.85rem}
+.msg{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--border);padding:10px 16px;border-radius:11px;font-size:.88rem;z-index:50}
+.msg[hidden]{display:none}
+.empty{color:var(--faint);font-size:.88rem;padding:6px 0}
+@media(max-width:1100px){.stage{grid-template-columns:1fr}.legend{max-height:none}.grid2{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){body{padding:16px}.sky{min-height:440px}.head h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="adminNav"></div>
+  <div class="head">
+    <h1>도피아 지도</h1>
+    <div class="goal" id="goal"></div>
+    <div class="acts">
+      <button id="vaultBtn" hidden></button>
+      <button id="axesBtn">축 편집</button>
+      <a href="/admin-hq"><button>HQ로</button></a>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="stage">
+    <div class="sky" id="sky"><canvas id="cv"></canvas><div class="hint">별 하나 = 한 일 · 행성 = 축 · 금색 고리 = 레퍼런스 보드에 오른 일 · 누르면 자세히</div></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel">
+    <h2>주마다 쌓인 일</h2>
+    <div class="sub" id="streamSub"></div>
+    <div class="stream" id="stream"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>축 × 일의 종류</h2>
+      <div class="sub">진할수록 많음</div>
+      <div id="heat"></div>
+    </div>
+    <div class="panel">
+      <h2>최근 쌓인 일</h2>
+      <div class="sub">새것부터 12장</div>
+      <ul class="recent" id="recent"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="drawer" id="drawer" hidden><div class="in">
+  <div class="hd"><h3 id="drTitle"></h3><button class="x" id="drClose" aria-label="닫기">×</button></div>
+  <div id="drBody"></div>
+</div></div>
+<div class="msg" id="msg" hidden></div>
+
+<script src="/js/admin-nav.js?v=4" defer></script>
+<script src="/js/hq-shared.js?v=1"></script>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DAY = (s) => { if (!s) return ''; const d = new Date(s); return isNaN(d) ? esc(s) : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+const KINDS = ['구축', '운영', '제작', '조사', '사고 대응', '결정', '계획', '영업'];
+function say(t) { const m = $('#msg'); m.textContent = t; m.hidden = false; clearTimeout(say.t); say.t = setTimeout(() => { m.hidden = true; }, 2600); }
+
+let SNAP = null, LED = null, PRIV = null;
+const OPENED = new Map();
+let AXES = [], CARDS = [], focus = '';
+
+// ─── 데이터 ───
+async function load() {
+  [SNAP, LED] = await Promise.all([HQ.api('GET', '/api/admin/hq'), HQ.api('GET', '/api/admin/hq/ledger')]);
+  build();
+}
+function build() {
+  const board = (SNAP && SNAP.board) || {};
+  AXES = (board.axes || []).map((a) => ({ ...a }));
+  const onBoard = new Set((SNAP.refs || []).map((r) => r.ledger_id).filter(Boolean));
+  CARDS = LED.cards.map((c) => {
+    let v;
+    if (!c.sensitive) v = { ...c.body, title: c.title, area: c.area, kind: c.kind, day: c.day, locked: false };
+    else { const o = OPENED.get(c.id); v = o ? { ...o, area: o.area, kind: o.kind, day: c.day || o.date, locked: false } : { title: '잠긴 카드', area: '', kind: '', day: c.day, locked: true }; }
+    const ax = v.locked ? HQ.VAULT : HQ.axisOf(v.area, AXES);
+    return { id: c.id, c, v, ax, board: onBoard.has(c.id), created: c.created_at };
+  });
+  // 축 목록 = 설정한 축 + 기타 + 금고(잠긴 카드가 남아 있으면)
+  const used = [...AXES];
+  if (CARDS.some((x) => x.ax === HQ.OTHER)) used.push(HQ.OTHER);
+  if (CARDS.some((x) => x.ax === HQ.VAULT)) used.push(HQ.VAULT);
+  AXES_USED = used.map((a) => ({ ...a, cards: CARDS.filter((x) => x.ax.name === a.name) }));
+  $('#goal').textContent = board.goal ? board.goal.text : '';
+  renderTiles(); renderLegend(); renderStream(); renderHeat(); renderRecent(); renderVault(); layoutSky();
+}
+let AXES_USED = [];
+
+// ─── 숫자 타일 ───
+function renderTiles() {
+  const month = new Date().toISOString().slice(0, 7);
+  const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const mine = CARDS.filter((x) => String(x.v.day || '').startsWith(month)).length;
+  const fresh = CARDS.filter((x) => String(x.created).slice(0, 10) >= week).length;
+  const refs = SNAP.refs || [];
+  const top = [...AXES_USED].filter((a) => a !== HQ.VAULT && a.name !== HQ.OTHER.name).sort((a, b) => b.cards.length - a.cards.length)[0];
+  const t = (n, l, s) => `<div class="tile"><div class="n">${n}</div><div class="l">${esc(l)}</div>${s ? `<div class="s">${esc(s)}</div>` : ''}</div>`;
+  $('#tiles').innerHTML = [
+    t(CARDS.length.toLocaleString(), '쌓인 일', `최근 7일 +${fresh}`),
+    t(AXES.length, '축', top ? `가장 큰 축: ${top.name}` : ''),
+    t(mine.toLocaleString(), `${Number(month.slice(5))}월에 한 일`, ''),
+    t(refs.filter((r) => r.stage === '공개').length + ' / ' + refs.length, '공개된 레퍼런스 / 보드', ''),
+    t(CARDS.filter((x) => x.v.locked).length, '잠긴 카드', PRIV ? '열림' : '주인만 열 수 있음'),
+  ].join('');
+}
+
+// ─── 범례(=축 표) ───
+function renderLegend() {
+  const max = Math.max(1, ...AXES_USED.map((a) => a.cards.length));
+  const unm = [...new Set(CARDS.filter((x) => x.ax === HQ.OTHER).map((x) => x.v.area).filter(Boolean))];
+  $('#legend').innerHTML = '<h3>축</h3>' + AXES_USED.map((a) => `<div class="lg ${focus === a.name ? 'on' : ''}" data-axis="${esc(a.name)}"><i style="background:${a.color}"></i><span class="nm">${esc(a.name)}</span><span class="ct">${a.cards.length}</span><span class="bar"><b style="width:${(a.cards.length / max) * 100}%;background:${a.color}"></b></span></div>`).join('')
+    + (unm.length ? `<div class="unmapped">축 없는 사업: ${unm.map(esc).join(' · ')}<br>「축 편집」에서 넣을 수 있습니다.</div>` : '');
+}
+
+// ─── 주별 흐름(쌓은 면) ───
+function weekKey(s) { const d = new Date(s); if (isNaN(d)) return null; const m = new Date(d); m.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return m.toISOString().slice(0, 10); }
+function renderStream() {
+  const el = $('#stream');
+  const dated = CARDS.filter((x) => weekKey(x.v.day));
+  if (!dated.length) { el.innerHTML = '<div class="empty">아직 없습니다.</div>'; return; }
+  // 최근 16주만 그린다(그 이전 카드는 제목 옆에 숫자로)
+  const earliest = new Date(weekKey(dated.map((x) => x.v.day).sort()[0]));
+  const cut = new Date(weekKey(new Date(Date.now() - 15 * 7 * 864e5).toISOString()));
+  const first = earliest > cut ? earliest : cut;
+  const weeks = []; for (let d = new Date(first); d <= new Date(); d.setDate(d.getDate() + 7)) weeks.push(d.toISOString().slice(0, 10));
+  const before = dated.filter((x) => weekKey(x.v.day) < weeks[0]).length;
+  $('#streamSub').textContent = `축별로 한 주에 몇 장이 쌓였는지 · 최근 ${weeks.length}주${before ? ` · 그 이전 ${before}장` : ''} · 마우스를 올리면 그 주 숫자`;
+  const series = AXES_USED.map((a) => ({ a, vals: weeks.map((w) => a.cards.filter((x) => weekKey(x.v.day) === w).length) }));
+  const W = el.clientWidth || 900, H = 280, P = { l: 34, r: 12, t: 10, b: 26 };
+  const tot = weeks.map((_, i) => series.reduce((s, x) => s + x.vals[i], 0));
+  const maxY = Math.max(1, ...tot);
+  const X = (i) => P.l + (weeks.length === 1 ? (W - P.l - P.r) / 2 : (i * (W - P.l - P.r)) / (weeks.length - 1));
+  const Y = (v) => H - P.b - (v / maxY) * (H - P.t - P.b);
+  const base = weeks.map(() => 0);
+  const smooth = (pts) => pts.map((p, i) => (i ? (() => { const q = pts[i - 1]; const cx = (q[0] + p[0]) / 2; return `C${cx},${q[1]} ${cx},${p[1]} ${p[0]},${p[1]}`; })() : `M${p[0]},${p[1]}`)).join(' ');
+  let paths = '';
+  for (const s of series) {
+    const lo = base.slice(); const hi = base.map((b, i) => b + s.vals[i]);
+    const top = hi.map((v, i) => [X(i), Y(v)]), bot = lo.map((v, i) => [X(i), Y(v)]).reverse();
+    const d = smooth(top) + ' L' + bot.map((p, i) => (i ? `${p[0]},${p[1]}` : `${p[0]},${p[1]}`)).join(' L') + ' Z';
+    const gid = 'g' + Math.abs([...s.a.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
+    paths += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.a.color}" stop-opacity=".95"/><stop offset="1" stop-color="${s.a.color}" stop-opacity=".55"/></linearGradient></defs><path d="${d}" fill="url(#${gid})" stroke="#11111a" stroke-width="1.5"/>`;
+    hi.forEach((v, i) => { base[i] = v; });
+  }
+  const ticks = [0, Math.round(maxY / 2), maxY].map((v) => `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#262636"/><text x="${P.l - 6}" y="${Y(v) + 4}" fill="#6a6a85" font-size="10" text-anchor="end">${v}</text>`).join('');
+  const step = Math.max(1, Math.ceil(weeks.length / 8));
+  const xl = weeks.map((w, i) => (i % step === 0 ? `<text x="${X(i)}" y="${H - 8}" fill="#6a6a85" font-size="10" text-anchor="middle">${DAY(w)}</text>` : '')).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${ticks}${paths}${xl}<line id="cross" x1="0" x2="0" y1="${P.t}" y2="${H - P.b}" stroke="#f0efec" stroke-opacity=".5" stroke-dasharray="3 3" visibility="hidden"/></svg>`;
+  const svg = el.querySelector('svg'), cross = el.querySelector('#cross');
+  svg.onmousemove = (e) => {
+    const r = svg.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * W;
+    let i = 0, best = 1e9; weeks.forEach((_, k) => { const dd = Math.abs(X(k) - x); if (dd < best) { best = dd; i = k; } });
+    cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+    tip(`<b>${DAY(weeks[i])} 주 · ${tot[i]}장</b>` + series.filter((s) => s.vals[i]).map((s) => `<div class="row"><span><i style="background:${s.a.color}"></i>${esc(s.a.name)}</span><span>${s.vals[i]}</span></div>`).join(''), e);
+  };
+  svg.onmouseleave = () => { cross.setAttribute('visibility', 'hidden'); untip(); };
+}
+
+// ─── 축 × 종류 ───
+function renderHeat() {
+  const rows = AXES_USED.filter((a) => a.cards.length);
+  const max = Math.max(1, ...rows.flatMap((a) => KINDS.map((k) => a.cards.filter((x) => x.v.kind === k).length)));
+  const cell = (n) => { const t = n / max; return `<td style="background:rgba(57,135,229,${n ? 0.12 + t * 0.78 : 0.04});color:${t > 0.55 ? '#fff' : n ? '#c3c2b7' : '#3a3a52'}">${n || '·'}</td>`; };
+  $('#heat').innerHTML = `<table class="heat"><tr><th></th>${KINDS.map((k) => `<th>${k}</th>`).join('')}</tr>` +
+    rows.map((a) => `<tr><th class="ax"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${a.color};margin-right:6px"></span>${esc(a.name)}</th>${KINDS.map((k) => cell(a.cards.filter((x) => x.v.kind === k).length)).join('')}</tr>`).join('') + '</table>';
+}
+
+function renderRecent() {
+  const r = [...CARDS].sort((a, b) => String(b.v.day || '').localeCompare(String(a.v.day || '')) || String(b.created).localeCompare(String(a.created))).slice(0, 12);
+  $('#recent').innerHTML = r.map((x) => `<li data-card="${x.id}"><span class="d">${DAY(x.v.day)}</span><span><i style="background:${x.ax.color}"></i>${x.v.locked ? '🔒 잠긴 카드' : esc(x.v.title)}</span></li>`).join('');
+}
+
+// ─── 금고 ───
+function renderVault() {
+  const V = LED.vault, b = $('#vaultBtn');
+  b.hidden = !(V.owner && V.exists && CARDS.some((x) => x.c.sensitive));
+  b.textContent = PRIV ? '🔓 다시 잠그기' : '🔒 잠금 열기';
+}
+$('#vaultBtn').onclick = () => {
+  if (PRIV) { PRIV = null; OPENED.clear(); build(); return say('다시 잠갔습니다'); }
+  drawer('잠금 열기', `<label class="field">비밀 문구<input type="password" id="pw" autocomplete="off"></label><div><button class="pri" id="pwGo">열기</button></div>`, (el) => {
+    $('#pw', el).focus();
+    const go = async () => {
+      const btn = $('#pwGo', el); btn.disabled = true; btn.textContent = '여는 중…';
+      try { PRIV = await HQ.unlockVault($('#pw', el).value); $('#pw', el).value = '';
+        for (const c of LED.cards) if (c.sensitive && !OPENED.has(c.id)) { try { OPENED.set(c.id, await HQ.openSealed(PRIV, c.sealed)); } catch (_) {} }
+        closeDrawer(); build(); say('잠긴 카드를 열었습니다 — 이 화면에서만 보입니다'); }
+      catch (e) { say(e.message); btn.disabled = false; btn.textContent = '열기'; }
+    };
+    $('#pwGo', el).onclick = go; el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
+};
+
+// ─── 축 편집 ───
+$('#axesBtn').onclick = () => {
+  const text = AXES.map((a) => [a.name, a.color, (a.match || []).join(', ')].join(' | ')).join('\n');
+  const unm = [...new Set(CARDS.filter((x) => x.ax === HQ.OTHER).map((x) => x.v.area).filter(Boolean))];
+  drawer('축 편집', `
+    <div class="field"><small>한 줄에 축 하나 · <b>이름 | 색(#rrggbb) | 사업 이름에 들어갈 말, 쉼표로</b> · 위에 있는 축이 먼저 잡습니다. 어디에도 안 걸리면 「기타」.</small></div>
+    <label class="field">축<textarea id="axT" rows="12" style="font-family:ui-monospace,Menlo,monospace;font-size:.8rem">${esc(text)}</textarea></label>
+    ${unm.length ? `<div class="field">지금 축 없는 사업<div class="v">${unm.map(esc).join(' · ')}</div></div>` : ''}
+    <div><button class="pri" id="axSave">저장</button></div>`, (el) => {
+    $('#axSave', el).onclick = async () => {
+      const value = $('#axT', el).value.split('\n').map((s) => s.trim()).filter(Boolean).map((ln) => { const [name, color, match] = ln.split('|').map((s) => s.trim()); return { name, color, match: String(match || '').split(',').map((s) => s.trim()).filter(Boolean) }; });
+      try { await HQ.api('PUT', '/api/admin/hq/board/axes', { value }); closeDrawer(); await load(); say('축을 저장했습니다'); } catch (e) { say(e.message); }
+    };
+  });
+};
+
+// ─── 서랍·말풍선 ───
+function drawer(title, html, bind) { $('#drTitle').textContent = title; $('#drBody').innerHTML = html; $('#drawer').hidden = false; if (bind) bind($('#drBody')); }
+function closeDrawer() { $('#drawer').hidden = true; }
+$('#drClose').onclick = closeDrawer;
+$('#drawer').onclick = (e) => { if (e.target.id === 'drawer') closeDrawer(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+function tip(html, e) { const t = $('#tip'); t.innerHTML = html; t.hidden = false; const x = Math.min(e.clientX + 16, innerWidth - t.offsetWidth - 10), y = Math.min(e.clientY + 16, innerHeight - t.offsetHeight - 10); t.style.left = x + 'px'; t.style.top = y + 'px'; }
+function untip() { $('#tip').hidden = true; }
+
+function cardDrawer(id) {
+  const x = CARDS.find((k) => k.id === id); if (!x) return;
+  if (x.v.locked) return say(LED.vault.owner ? '먼저 「잠금 열기」를 누르세요' : '금고 주인만 볼 수 있는 카드입니다');
+  const v = x.v, f = (l, val) => (val && (!Array.isArray(val) || val.length) ? `<div class="field">${l}<div class="v">${Array.isArray(val) ? `<ul>${val.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : esc(val)}</div></div>` : '');
+  drawer(v.title, `<div class="field">날짜 · 축 · 사업 · 종류<div class="v"><span style="color:${x.ax.color}">●</span> ${esc([DAY(v.day), x.ax.name, v.area, v.kind].filter(Boolean).join(' · '))}</div></div>
+    ${f('한 일', v.what)}${f('결과물', v.result)}${f('숫자', v.numbers)}${f('AI와 사람', v.ai_role)}${f('실패·고친 것', v.fails)}${f('공개 가능성', v.visibility)}${f('꼬리표', v.tags)}
+    ${x.board ? '<div class="field"><div class="v" style="color:#ffce7a">★ 레퍼런스 보드에 오른 일</div></div>' : ''}${x.c.sensitive ? '<div class="field"><small>잠긴 카드 — 이 화면에서만 풀렸습니다</small></div>' : ''}`);
+}
+function axisDrawer(name) {
+  const a = AXES_USED.find((k) => k.name === name); if (!a) return;
+  const list = [...a.cards].sort((p, q) => String(q.v.day || '').localeCompare(String(p.v.day || '')));
+  const areas = {}; list.forEach((x) => { if (x.v.area) areas[x.v.area] = (areas[x.v.area] || 0) + 1; });
+  drawer(a.name, `<div class="field">카드<div class="v">${list.length}장 · ${Object.entries(areas).sort((p, q) => q[1] - p[1]).map(([k, n]) => `${esc(k)} ${n}`).join(' · ') || '-'}</div></div>
+    <ul class="recent">${list.map((x) => `<li data-card="${x.id}"><span class="d">${DAY(x.v.day)}</span><span><i style="background:${x.ax.color}"></i>${x.v.locked ? '🔒 잠긴 카드' : esc(x.v.title)}${x.board ? ' <span style="color:#ffce7a">★</span>' : ''}</span></li>`).join('')}</ul>`);
+}
+document.addEventListener('click', (e) => {
+  const cd = e.target.closest('[data-card]'); if (cd) return cardDrawer(cd.dataset.card);
+  const ax = e.target.closest('[data-axis]'); if (ax) { focus = focus === ax.dataset.axis ? '' : ax.dataset.axis; renderLegend(); return; }
+});
+document.addEventListener('dblclick', (e) => { const ax = e.target.closest('[data-axis]'); if (ax) axisDrawer(ax.dataset.axis); });
+
+// ─── 하늘(은하) ───
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W = 0, H = 0, DPR = 1, BG = [], PLANETS = [], STARS = [], hoverItem = null, t0 = performance.now();
+function rand(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function hashStr(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function resize() {
+  const r = cv.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height;
+  cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const R = rand(7); BG = Array.from({ length: Math.round((W * H) / 2600) }, () => ({ x: R() * W, y: R() * H, r: R() * 1.2 + 0.2, a: R() * 0.6 + 0.15, tw: R() * 6 }));
+  layoutSky();
+}
+function layoutSky() {
+  if (!W) return;
+  const cx = W / 2, cy = H / 2, orbit = Math.min(W, H) * 0.34;
+  const list = AXES_USED.filter((a) => a.cards.length);
+  const maxN = Math.max(1, ...list.map((a) => a.cards.length));
+  PLANETS = list.map((a, i) => {
+    const ang = -Math.PI / 2 + (i / list.length) * Math.PI * 2;
+    const pr = 10 + 22 * Math.sqrt(a.cards.length / maxN);
+    return { a, ang, orbit: orbit * (0.86 + 0.14 * ((i % 2) ? 1 : 0)), pr, x: 0, y: 0 };
+  });
+  STARS = [];
+  for (const p of PLANETS) {
+    const cards = [...p.a.cards].sort((q, r) => String(r.v.day || '').localeCompare(String(q.v.day || '')));
+    cards.forEach((x, k) => {
+      const R = rand(hashStr(x.id));
+      const ring = p.pr + 10 + Math.sqrt(k + 1) * 6.2;  // 새것일수록 행성 가까이
+      STARS.push({ x, p, ring, ang: R() * Math.PI * 2, spd: (0.08 + R() * 0.06) * (30 / ring), size: x.board ? 2.6 : 1.3 + R() * 1.1, tw: R() * 6, sx: 0, sy: 0, fresh: k < 5 });
+    });
+  }
+}
+function frame(now) {
+  const t = (now - t0) / 1000, cx = W / 2, cy = H / 2;
+  ctx.clearRect(0, 0, W, H);
+  // 배경 별
+  for (const s of BG) { ctx.globalAlpha = s.a * (REDUCED ? 1 : 0.65 + 0.35 * Math.sin(t * 1.3 + s.tw)); ctx.fillStyle = '#cfd3ff'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  // 성운
+  const neb = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.55);
+  neb.addColorStop(0, 'rgba(144,133,233,.18)'); neb.addColorStop(0.5, 'rgba(57,135,229,.06)'); neb.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = neb; ctx.fillRect(0, 0, W, H);
+  const spin = REDUCED || hoverItem ? 0 : t * 0.018;
+  for (const p of PLANETS) { p.x = cx + Math.cos(p.ang + spin) * p.orbit; p.y = cy + Math.sin(p.ang + spin) * p.orbit * 0.82; }
+  // 궤도 링
+  ctx.strokeStyle = 'rgba(169,168,189,.08)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(cx, cy, PLANETS[0] ? PLANETS[0].orbit : 0, (PLANETS[0] ? PLANETS[0].orbit : 0) * 0.82, 0, 0, 6.283); ctx.stroke();
+  // 중심 → 행성 빛줄기와 흐르는 빛
+  for (const p of PLANETS) {
+    const dim = focus && focus !== p.a.name;
+    const g = ctx.createLinearGradient(cx, cy, p.x, p.y); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(1, p.a.color);
+    ctx.globalAlpha = dim ? 0.08 : 0.35; ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p.x, p.y); ctx.stroke();
+    const recent = p.a.cards.filter((x) => String(x.created).slice(0, 10) >= new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)).length;
+    const pulses = Math.min(4, 1 + Math.floor(recent / 10));
+    for (let k = 0; k < pulses && !REDUCED; k++) {
+      const u = ((t * 0.35 + k / pulses + p.ang) % 1);
+      ctx.globalAlpha = dim ? 0.1 : 0.9 * Math.sin(u * Math.PI); ctx.fillStyle = p.a.color;
+      ctx.beginPath(); ctx.arc(cx + (p.x - cx) * u, cy + (p.y - cy) * u, 2.2, 0, 6.283); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+  // 카드 별
+  for (const s of STARS) {
+    const dim = focus && focus !== s.p.a.name;
+    const a = s.ang + (REDUCED || hoverItem ? 0 : t * s.spd);
+    s.sx = s.p.x + Math.cos(a) * s.ring; s.sy = s.p.y + Math.sin(a) * s.ring * 0.9;
+    const tw = REDUCED ? 1 : 0.7 + 0.3 * Math.sin(t * 2 + s.tw);
+    ctx.globalAlpha = (dim ? 0.12 : (s.x.v.locked ? 0.45 : 0.9)) * tw;
+    if (s.fresh && !dim) { ctx.shadowColor = s.p.a.color; ctx.shadowBlur = 10; }
+    ctx.fillStyle = s.p.a.color; ctx.beginPath(); ctx.arc(s.sx, s.sy, s.size, 0, 6.283); ctx.fill();
+    ctx.shadowBlur = 0;
+    if (s.x.board && !dim) { ctx.globalAlpha = 0.95; ctx.strokeStyle = '#ffce7a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(s.sx, s.sy, s.size + 2.5, 0, 6.283); ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+  // 행성
+  for (const p of PLANETS) {
+    const dim = focus && focus !== p.a.name, hov = hoverItem && hoverItem.p === p && !hoverItem.s;
+    const halo = ctx.createRadialGradient(p.x, p.y, p.pr * 0.4, p.x, p.y, p.pr * 2.6);
+    halo.addColorStop(0, p.a.color + (dim ? '22' : '66')); halo.addColorStop(1, p.a.color + '00');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(p.x, p.y, p.pr * 2.6, 0, 6.283); ctx.fill();
+    const body = ctx.createRadialGradient(p.x - p.pr * 0.35, p.y - p.pr * 0.35, p.pr * 0.1, p.x, p.y, p.pr);
+    body.addColorStop(0, '#ffffff'); body.addColorStop(0.25, p.a.color); body.addColorStop(1, '#0b0b14');
+    ctx.globalAlpha = dim ? 0.3 : 1; ctx.fillStyle = body; ctx.beginPath(); ctx.arc(p.x, p.y, p.pr * (hov ? 1.12 : 1), 0, 6.283); ctx.fill();
+    ctx.globalAlpha = dim ? 0.35 : 1;
+    ctx.font = '700 13px Pretendard, "Apple SD Gothic Neo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#f0efec';
+    ctx.fillText(p.a.name, p.x, p.y + p.pr + 18);
+    ctx.font = '600 11px Pretendard, sans-serif'; ctx.fillStyle = '#a9a8bd'; ctx.fillText(`${p.a.cards.length}장`, p.x, p.y + p.pr + 32);
+  }
+  ctx.globalAlpha = 1;
+  // 중심 — 도피아
+  const pulse = REDUCED ? 0 : (t % 3) / 3;
+  for (let k = 0; k < 2; k++) { const u = (pulse + k / 2) % 1; ctx.globalAlpha = 0.5 * (1 - u); ctx.strokeStyle = '#9085e9'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 30 + u * 60, 0, 6.283); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  const core = ctx.createRadialGradient(cx, cy, 2, cx, cy, 34);
+  core.addColorStop(0, '#ffffff'); core.addColorStop(0.35, '#c9c1ff'); core.addColorStop(1, 'rgba(144,133,233,0)');
+  ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, 34, 0, 6.283); ctx.fill();
+  ctx.font = '900 15px Pretendard, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText('DOPPIA', cx, cy + 50);
+  if (!REDUCED || frame.once !== true) { frame.once = true; requestAnimationFrame(frame); }
+}
+function pick(mx, my) {
+  let best = null, bd = 9;
+  for (const s of STARS) { if (focus && focus !== s.p.a.name) continue; const d = Math.hypot(s.sx - mx, s.sy - my); if (d < bd) { bd = d; best = { s, p: s.p }; } }
+  if (best) return best;
+  for (const p of PLANETS) if (Math.hypot(p.x - mx, p.y - my) < p.pr + 6) return { p };
+  return null;
+}
+cv.addEventListener('mousemove', (e) => {
+  const r = cv.getBoundingClientRect(); const it = pick(e.clientX - r.left, e.clientY - r.top); hoverItem = it;
+  if (!it) return untip();
+  if (it.s) { const v = it.s.x.v; tip(`<b>${v.locked ? '🔒 잠긴 카드' : esc(v.title)}</b><div class="m">${esc([DAY(v.day), it.p.a.name, v.area, v.kind].filter(Boolean).join(' · '))}</div>${it.s.x.board ? '<div style="color:#ffce7a">★ 레퍼런스 보드</div>' : ''}`, e); }
+  else { const a = it.p.a; const areas = {}; a.cards.forEach((x) => { if (x.v.area) areas[x.v.area] = (areas[x.v.area] || 0) + 1; }); tip(`<b>${esc(a.name)} · ${a.cards.length}장</b><div class="m">${Object.entries(areas).sort((p, q) => q[1] - p[1]).slice(0, 5).map(([k, n]) => `${esc(k)} ${n}`).join(' · ') || ''}</div><div class="m">누르면 목록</div>`, e); }
+});
+cv.addEventListener('mouseleave', () => { hoverItem = null; untip(); });
+cv.addEventListener('click', (e) => { const r = cv.getBoundingClientRect(); const it = pick(e.clientX - r.left, e.clientY - r.top); if (!it) return; if (it.s) cardDrawer(it.s.x.id); else axisDrawer(it.p.a.name); });
+addEventListener('resize', () => { resize(); renderStream(); });
+
+load().then(() => { resize(); requestAnimationFrame(frame); }).catch((e) => say(e.message));
+</script>
+</body>
+</html>
