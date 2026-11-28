@@ -1,0 +1,99 @@
+/**
+ * 관리자 화면 공통 테마 — 단일 소스. (2026-11-28)
+ *
+ * 왜 한 파일인가 — 관리자 화면 20개가 각자 <style> 안에 같은 변수(--bg·--panel·--accent…)와
+ *   같은 생김새(보라 그라데이션 버튼, h1 앞 점, 둥근 판)를 복제해 두고 있었다. 디자인을 바꾸려면
+ *   20군데를 고쳐야 했다. 이 파일이 페이지 <style> **뒤에** 실려서 같은 이름의 변수·기본 요소를
+ *   덮어쓴다 → 페이지 코드는 그대로 두고 전체 모양만 바뀐다.
+ *
+ * 규칙
+ *   - 페이지 고유 레이아웃(표 열, 칸반 칸 등)은 건드리지 않는다. 여기는 토큰·기본 요소·공통 부품만.
+ *   - 색은 토큰으로만. 강조색은 --accent 하나(따뜻한 금색). 상태색(green·red·gold)은 의미가 있을 때만.
+ *   - 왼쪽 메뉴(.adm-side)는 js/admin-nav.js 가 그린다. 메뉴 목록도 그 파일이 단일 소스.
+ *
+ * ⚠️ 고쳤으면 모든 관리자 화면의 `admin-theme.css?v=` 를 같이 올릴 것(정적 자산 max-age 4시간).
+ *   sed -i '' 's|admin-theme\.css?v=N|admin-theme.css?v=N+1|g' public/admin-*.html
+ */
+
+/* ─── 토큰: 페이지들이 쓰던 이름 그대로, 값만 바꾼다 ─── */
+:root{
+  --bg:#09090b; --panel:#111114; --panel2:#18181c;
+  --text:#ececef; --dim:#a1a1aa; --faint:#6b6b76;
+  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.13);
+  --accent:#f3d29b; --accent2:#e6cfa6; --pink:#f3d29b; --gold:#f3d29b;
+  --green:#5ad38a; --red:#f2777a;
+  --hover:rgba(255,255,255,.04);
+  --side-w:232px;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',Inter,system-ui,sans-serif;
+}
+
+/* ─── 기본 요소 ─── */
+html,body{background:var(--bg)}
+body{color:var(--text);font-family:var(--font);font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(243,210,155,.25)}
+a{color:var(--text)}
+h1{font-size:22px;font-weight:650;letter-spacing:-.02em}
+h1 .dot{display:none}
+.sub{color:var(--faint)}
+body .wrap{max-width:1240px;margin-left:0}
+
+button,input,select,textarea{font-family:inherit;font-size:13px}
+button{font-weight:500;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text);transition:background .12s,border-color .12s}
+button:hover{background:var(--hover);border-color:rgba(255,255,255,.22)}
+/* 페이지마다 이름이 다른 "주 버튼"을 한 모양으로 — 흰 바탕 검은 글자 */
+button.on,button.pri,button.primary,.btn.primary,.btn.pri,a.btn.primary,.btn-primary{background:var(--text)!important;color:#0b0b0d!important;border-color:var(--text)!important;background-image:none!important}
+button.on:hover,button.pri:hover,button.primary:hover,.btn-primary:hover{background:#fff!important}
+/* 페이지 안 작은 선택 표시(칩·단계·페이지 안 탭)는 흰 버튼까지는 아니고 옅은 면으로 */
+.chip.on,.steps .st.cur,.nav a.on,button.fc.on{background:rgba(255,255,255,.08)!important;background-image:none!important;color:var(--text)!important;border-color:var(--border2)!important}
+button.danger,.btn.danger{color:var(--red)}
+button:disabled{opacity:.5}
+input,select,textarea{background:#0e0e11;border:1px solid var(--border2);border-radius:8px;color:var(--text);transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(255,255,255,.3);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+input[type=checkbox],input[type=radio]{accent-color:var(--text)}
+
+/* 표: 세로줄 없이 가로 선만, 머리줄은 작게 */
+table{font-size:13px}
+th,td{border-color:var(--border)!important;border-right:0!important}
+th{color:var(--faint);font-weight:600;font-size:12px;background:var(--bg)}
+tbody tr:hover{background:var(--hover)}
+
+/* 공통 판 — 이름은 페이지마다 달라도 같은 판으로 */
+.panel,.card,.sum,.tile,.stat,.panelbox{background:var(--panel);border:1px solid var(--border);border-radius:12px}
+
+/* 작은 표시(배지·태그·칩): 색 덩어리 대신 얇은 테두리 */
+.tag,.chip{border:1px solid var(--border2);background:transparent;border-radius:20px}
+
+/* ─── 왼쪽 메뉴(js/admin-nav.js 가 그림) ─── */
+body.adm-has-side{padding-left:calc(var(--side-w) + 40px)!important;padding-right:40px!important;padding-top:26px!important;max-width:none!important;margin:0!important}
+.adm-side{position:fixed;left:0;top:0;bottom:0;width:var(--side-w);background:#0c0c0e;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 10px;z-index:15;overflow-y:auto}
+.adm-brand{display:flex;align-items:center;gap:9px;padding:6px 8px 16px;color:var(--text);text-decoration:none}
+.adm-brand:hover{text-decoration:none}
+.adm-brand i{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#f3d29b,#9b7bd9 60%,#5b8cff);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.adm-brand b{font-size:14px;font-weight:650;letter-spacing:-.01em}
+.adm-brand span{font-size:11px;color:var(--faint);border:1px solid var(--border2);border-radius:5px;padding:0 5px}
+.adm-side nav{display:flex;flex-direction:column;gap:1px}
+.adm-side nav a{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:7px;font-size:13px;color:var(--dim);text-decoration:none}
+.adm-side nav a svg{width:15px;height:15px;flex:none;opacity:.7}
+.adm-side nav a:hover{background:var(--hover);color:var(--text)}
+.adm-side nav a.on{background:rgba(255,255,255,.07);color:var(--text)}
+.adm-side nav a.on svg{opacity:1}
+/* 지금 페이지 아래 붙는 하위 메뉴 자리(예: HQ 의 한눈에·결정·원장…) */
+.adm-side-sub{display:flex;flex-direction:column;gap:1px;margin:2px 0 8px 14px;padding-left:10px;border-left:1px solid var(--border)}
+.adm-side-sub:empty{display:none}
+.adm-side-sub button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:transparent;color:var(--faint);padding:5px 8px;border-radius:7px;font-size:12.5px;font-weight:500}
+.adm-side-sub button svg{width:14px;height:14px;flex:none;opacity:.7}
+.adm-side-sub button:hover{background:var(--hover);color:var(--text)}
+.adm-side-sub button.on{background:rgba(255,255,255,.06)!important;color:var(--text)!important;border:0!important}
+.adm-side-sub .badge{margin-left:auto;min-width:18px;padding:0 6px;border-radius:20px;background:rgba(243,210,155,.14);color:var(--accent);font-size:11px;font-weight:600;line-height:18px;text-align:center}
+.adm-side-sub .badge:empty{display:none}
+.adm-side-foot{margin-top:auto;padding:12px 8px 4px;border-top:1px solid var(--border);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:8px}
+.adm-side-foot:empty{display:none}
+
+@media(max-width:820px){
+  body.adm-has-side{padding:16px!important}
+  .adm-side{position:static;width:auto;height:auto;margin:-16px -16px 16px;border-right:0;border-bottom:1px solid var(--border)}
+  .adm-side nav{flex-direction:row;flex-wrap:wrap}
+  .adm-side-sub{flex-direction:row;flex-wrap:wrap;margin:6px 0 0;padding:6px 0 0;border-left:0;border-top:1px solid var(--border)}
+  .adm-side-sub button{width:auto}
+  .adm-side-foot{display:none}
+}

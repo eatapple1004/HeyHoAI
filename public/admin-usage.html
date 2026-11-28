@@ -56,6 +56,7 @@ td.f{color:var(--dim)}
 .muted{color:var(--faint);font-size:.85rem}
 .note{font-size:.78rem;color:var(--faint);margin-top:10px;line-height:1.6}
 </style>
+<link rel="stylesheet" href="/css/admin-theme.css?v=1">
 </head>
 <body>
 <div class="wrap">
@@ -123,6 +124,6 @@ function ago(t){const s=(Date.now()-new Date(t))/1000;return s<3600?Math.max(1,M
 $('#feat').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;pick=b.dataset.f||null;document.querySelectorAll('#feat .fc').forEach(x=>x.classList.toggle('on',x===b));renderEngines();});
 load();
 </script>
-<script src="/js/admin-nav.js?v=4" defer></script>
+<script src="/js/admin-nav.js?v=5" defer></script>
 </body>
 </html>
