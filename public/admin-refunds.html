@@ -59,6 +59,7 @@ body.prod h1 .dot{background:linear-gradient(135deg,#f87171,#dc2626)}
 .empty{color:var(--faint);text-align:center;padding:40px}
 @media(max-width:820px){body{padding:16px}}
 </style>
+<link rel="stylesheet" href="/css/admin-theme.css?v=1">
 </head>
 <body>
 <div class="wrap">
@@ -155,7 +156,7 @@ body.prod h1 .dot{background:linear-gradient(135deg,#f87171,#dc2626)}
   </div>
 </div>
 
-<script src="/js/admin-nav.js?v=4" defer></script>
+<script src="/js/admin-nav.js?v=5" defer></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
