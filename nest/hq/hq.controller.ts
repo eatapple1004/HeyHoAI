@@ -173,6 +173,7 @@ export class AdminHqController {
 // /admin-hq 화면 — 관리자 화면들과 같은 페이지 응답(PageExceptionFilter). 입구는 HqPageGuard(허용 메일 목록).
 //   HqModule 이 PagesModule 보다 먼저 등록돼 있어 클린 URL(:name)보다 이 라우트가 먼저 잡힌다.
 const ADMIN_HQ_PAGE = path.join(__dirname, '..', '..', 'public', 'admin-hq.html');
+const ADMIN_HQ_MAP_PAGE = path.join(__dirname, '..', '..', 'public', 'admin-hq-map.html');
 
 @Controller()
 @UseFilters(PageExceptionFilter)
@@ -180,4 +181,9 @@ export class HqPageController {
   @UseGuards(HqPageGuard)
   @Get('admin-hq')
   page(@Res() res: any) { return res.sendFile(ADMIN_HQ_PAGE); }
+
+  // /admin-hq/map — 도피아 지도(원장 카드를 축별로 그린 시각화)
+  @UseGuards(HqPageGuard)
+  @Get('admin-hq/map')
+  map(@Res() res: any) { return res.sendFile(ADMIN_HQ_MAP_PAGE); }
 }

@@ -21,6 +21,10 @@ export interface HqLinkDto { name: string; url: string }
 export interface HqBoardDto {
   /** 목표(2026-11-21 추가). 예전 판에는 없을 수 있다 */
   goal?: { text: string; decided: string };
+  /** 축(2026-11-27) — 원장 카드의 사업(area)을 묶는 큰 갈래. match 중 하나가 사업 이름에 들어 있으면 그 축 */
+  axes?: HqAxisDto[];
+  /** 엔진 한 장(2026-11-27) — 입구→엔진→사업→증거 고리, 단계, 1조 산수. 내용은 DB에만(공개 저장소라 이름을 코드에 두지 않는다) */
+  engine?: HqEngineDto;
   direction: { line: string; why: string; decided: string };
   weapons: HqNameUseDto[];
   flow: HqFlowStepDto[];
@@ -31,8 +35,10 @@ export interface HqBoardDto {
 }
 
 /** 화면에서 통째로 고칠 수 있는 판의 칸 — 흐름은 단계별 PUT /flow/:id 로 따로 고친다 */
-export type HqBoardSection = 'goal' | 'direction' | 'weapons' | 'products' | 'rules' | 'links';
-export const HQ_BOARD_SECTIONS: HqBoardSection[] = ['goal', 'direction', 'weapons', 'products', 'rules', 'links'];
+export type HqBoardSection = 'goal' | 'axes' | 'engine' | 'direction' | 'weapons' | 'products' | 'rules' | 'links';
+export const HQ_BOARD_SECTIONS: HqBoardSection[] = ['goal', 'axes', 'engine', 'direction', 'weapons', 'products', 'rules', 'links'];
+export interface HqEngineDto { title: string; sources: string[]; parts: string[]; businesses: string[]; evidence: string[]; loop: string; stages: { when: string; what: string }[]; now: number; math: string[] }
+export interface HqAxisDto { name: string; color: string; match: string[] }
 
 /** 레퍼런스가 지나는 네 칸 — 순서가 곧 진행 */
 export const HQ_REF_STAGES = ['작업 중', '완성', '권리 확인', '공개'];
