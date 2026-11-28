@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AdminHqController, HqPageController } from './hq.controller';
+import { AdminHqController, HqClientPageController, HqPageController } from './hq.controller';
 import { HqService } from './hq.service';
 import { HqLedgerService } from './hq-ledger.service';
+import { HqClientsService } from './hq-clients.service';
 import { HqRepository } from './hq.repository';
 import { HqAccessService } from './hq-access.service';
 import { HqGuard, HqPageGuard } from './hq.guard';
@@ -16,7 +17,7 @@ import { HqGuard, HqPageGuard } from './hq.guard';
  *   NEST_PREFIXES에 '/api/admin/hq' 등록 — 레거시에 같은 접두사 없음(확인 2026-11-15).
  */
 @Module({
-  controllers: [AdminHqController, HqPageController],
-  providers: [HqService, HqLedgerService, HqRepository, HqAccessService, HqGuard, HqPageGuard],
+  controllers: [AdminHqController, HqPageController, HqClientPageController],
+  providers: [HqService, HqLedgerService, HqClientsService, HqRepository, HqAccessService, HqGuard, HqPageGuard],
 })
 export class HqModule {}

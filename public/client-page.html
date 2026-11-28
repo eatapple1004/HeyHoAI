@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Doppia</title>
+<style>
+/* 고객 전용 페이지 — 로그인 없이 링크로 연다. 사장님은 휴대폰으로 보므로 폰 먼저.
+   데이터: GET /api/client-page/:token (HqClientsService.clientPage). 정한 칸만 온다. */
+:root{--bg:#f6f5f2;--card:#ffffff;--ink:#121214;--dim:#6b6a70;--faint:#a3a2a8;--line:rgba(18,18,20,.08);--acc:#b8862f;--up:#1f8a4c;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.6;min-height:100vh}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 56px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.top .mark{width:22px;height:22px;border-radius:6px;background:var(--ink)}
+.top b{font-size:13px;letter-spacing:.32em;font-weight:700}
+.top .when{margin-left:auto;font-size:12px;color:var(--faint)}
+.hello{font-size:13px;color:var(--dim)}
+h1{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.3;margin:4px 0 6px}
+.meta{font-size:13px;color:var(--dim)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:16px}
+.label{font-size:12px;color:var(--faint);font-weight:600;letter-spacing:.02em;margin-bottom:10px}
+.metric{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.metric .now{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.metric .unit{font-size:15px;color:var(--dim);margin-left:4px;font-weight:500}
+.metric .from{font-size:13px;color:var(--dim);padding-bottom:6px}
+.metric .delta{font-size:13px;font-weight:700;color:var(--up);padding-bottom:6px}
+.metric-name{font-size:15px;font-weight:600;margin-bottom:12px}
+.week .when{font-size:12px;color:var(--acc);font-weight:700;margin-bottom:10px}
+.week h3{font-size:13px;color:var(--faint);font-weight:600;margin:14px 0 6px}
+.week h3:first-of-type{margin-top:0}
+.week p{font-size:15px;white-space:pre-line}
+ul.res{list-style:none}
+ul.res li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:15px}
+ul.res li:first-child{border-top:0;padding-top:0}
+ul.res .k{font-size:12px;color:var(--faint)}
+ul.res a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+ul.past{list-style:none}
+ul.past li{padding:12px 0;border-top:1px solid var(--line)}
+ul.past li:first-child{border-top:0;padding-top:0}
+ul.past .w{font-size:12px;color:var(--faint);font-weight:600}
+ul.past .d{font-size:14px;color:var(--dim);white-space:pre-line;margin-top:2px}
+.empty{font-size:14px;color:var(--faint)}
+.foot{text-align:center;margin-top:36px;font-size:12px;color:var(--faint)}
+.foot b{color:var(--ink);letter-spacing:.32em;font-size:11px}
+.gone{text-align:center;padding:120px 20px;color:var(--dim)}
+@media (prefers-color-scheme: dark){:root{--bg:#0d0d0f;--card:#141417;--ink:#f1f0ec;--dim:#a3a2a8;--faint:#6b6a70;--line:rgba(255,255,255,.08);--acc:#e3b86a;--up:#5ad38a}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="gone">불러오는 중…</div></div>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const DAY = (s) => { if (!s) return ''; const d = new Date(s); return isNaN(d) ? esc(s) : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+  const num = (s) => { const n = parseFloat(String(s).replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : null; };
+  const token = location.pathname.split('/').filter(Boolean)[1] || '';
+  fetch(`/api/client-page/${encodeURIComponent(token)}`).then((r) => r.json()).then((j) => {
+    if (!j || j.success === false) throw new Error();
+    const d = j.data, m = d.metric, last = d.reports[0];
+    document.title = `${d.name} · Doppia`;
+    const a = num(m.start), b = num(last && last.metric_value ? last.metric_value : m.now);
+    const nowText = (last && last.metric_value) || m.now || '—';
+    const delta = a !== null && b !== null && a !== 0 ? Math.round(((b - a) / Math.abs(a)) * 100) : null;
+    app.innerHTML = `
+      <div class="top"><span class="mark"></span><b>DOPPIA</b><span class="when">${esc(DAY(d.updated_at))} 갱신</span></div>
+      <div class="hello">${esc(d.studio || '도피아')}</div>
+      <h1>${esc(d.name)}</h1>
+      <div class="meta">${esc([d.service, d.started ? `${DAY(d.started)} 시작` : ''].filter(Boolean).join(' · '))}</div>
+      ${m.name ? `<div class="card"><div class="label">핵심 숫자</div><div class="metric-name">${esc(m.name)}</div>
+        <div class="metric"><div class="now">${esc(nowText)}<span class="unit">${esc(m.unit)}</span></div>
+        ${m.start ? `<div class="from">시작 ${esc(m.start)}${esc(m.unit)}</div>` : ''}
+        ${delta !== null && delta !== 0 ? `<div class="delta">${delta > 0 ? '+' : ''}${delta}%</div>` : ''}</div></div>` : ''}
+      <div class="card week"><div class="label">이번 주</div>${last ? `<div class="when">${esc(DAY(last.week))} 주</div>
+        <h3>한 일</h3><p>${esc(last.done)}</p>${last.next ? `<h3>다음 주</h3><p>${esc(last.next)}</p>` : ''}` : '<div class="empty">첫 보고를 준비하고 있습니다.</div>'}</div>
+      ${d.results.length ? `<div class="card"><div class="label">결과물</div><ul class="res">${d.results.map((r) => `<li><span>${r.result_url && /^https?:\/\//.test(r.result_url) ? `<a href="${esc(r.result_url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : esc(r.title)}</span><span class="k">${esc([r.kind, DAY(r.done_date)].filter(Boolean).join(' · '))}</span></li>`).join('')}</ul></div>` : ''}
+      ${d.reports.length > 1 ? `<div class="card"><div class="label">지난 보고</div><ul class="past">${d.reports.slice(1).map((r) => `<li><div class="w">${esc(DAY(r.week))} 주${r.metric_value ? ` · ${esc(r.metric_value)}${esc(m.unit)}` : ''}</div><div class="d">${esc(r.done)}</div></li>`).join('')}</ul></div>` : ''}
+      <div class="foot"><b>DOPPIA</b><br>AI로 사업을 굴립니다</div>`;
+  }).catch(() => { app.innerHTML = '<div class="gone">페이지를 찾을 수 없습니다.<br>받으신 링크를 다시 확인해 주세요.</div>'; });
+})();
+</script>
+</body>
+</html>

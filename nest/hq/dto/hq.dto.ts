@@ -1,4 +1,4 @@
-import { HqDecisionRowVo, HqLeadRowVo, HqLedgerBodyVo, HqLedgerRowVo, HqLogRowVo, HqPublishedVo, HqRefRowVo } from '../vo/hq.vo';
+import { HqDecisionRowVo, HqLeadOpsVo, HqLeadRowVo, HqLedgerBodyVo, HqLedgerRowVo, HqLogRowVo, HqPublishedVo, HqRefRowVo, HqReportRowVo } from '../vo/hq.vo';
 
 /**
  * HQ API 계약 — 관리자 전용 운영 기록판(/admin-hq).
@@ -50,6 +50,7 @@ export interface HqSnapshotDto {
   decisions: HqDecisionRowVo[];
   leads: HqLeadRowVo[];
   refs: HqRefRowVo[];
+  reports: HqReportRowVo[];
   refStages: string[];
   log: HqLogRowVo[];
   me: string;
@@ -87,6 +88,27 @@ export class HqBoardUpdateDto { value!: unknown }
 export class HqDecisionCreateDto { question!: string; options?: string; recommend?: string }
 export class HqDecisionUpdateDto { status?: string; answer?: string }
 export class HqLeadCreateDto { name!: string; kind?: string; source?: string; contact?: string; note?: string; businessId?: string; nextAction?: string; nextDate?: string }
+/** 고객 운영 — 서비스 형태·공개 수준은 정해진 값만 */
+export const HQ_SERVICES = ['미정', '구축', '운영', '구축+운영', '자사'];
+export const HQ_SHARE_LEVELS = ['미정', '실명', '업종만', '내부만'];
+export class HqLeadOpsDto { ops!: HqLeadOpsVo }
+export class HqLeadPageDto { on!: boolean; regenerate?: boolean }
+export class HqReportCreateDto { week!: string; metricValue?: string; done?: string; next?: string }
+export class HqReportUpdateDto { week?: string; metricValue?: string; done?: string; next?: string; status?: string }
+export type HqReportDto = HqReportRowVo;
+
+/** 고객 전용 페이지(로그인 없음)에 나가는 것 — 이 목록 밖은 절대 내보내지 않는다 */
+export interface HqClientPageDto {
+  name: string;
+  studio: string;
+  service: string;
+  started: string;
+  metric: { name: string; unit: string; start: string; now: string };
+  reports: { week: string; metric_value: string; done: string; next: string }[];
+  results: { title: string; kind: string; done_date: string | null; result_url: string }[];
+  updated_at: string;
+}
+
 export class HqLeadUpdateDto { name?: string; kind?: string; source?: string; stage?: string; contact?: string; note?: string; businessId?: string | null; nextAction?: string; nextDate?: string | null }
 export class HqLogCreateDto { kind?: string; text!: string }
 export class HqRefCreateDto { title!: string; client?: string; kind?: string; source?: string; stage?: string; leadId?: string; resultUrl?: string; note?: string; published?: HqPublishedVo[]; doneDate?: string }
