@@ -57,6 +57,7 @@ td.zero{color:var(--faint)}
 .msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
 @media(max-width:820px){body{padding:16px}}
 </style>
+<link rel="stylesheet" href="/css/admin-theme.css?v=1">
 </head>
 <body>
 <div class="wrap">
@@ -87,7 +88,7 @@ td.zero{color:var(--faint)}
   </div>
 </div>
 
-<script src="/js/admin-nav.js?v=4" defer></script>
+<script src="/js/admin-nav.js?v=5" defer></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
