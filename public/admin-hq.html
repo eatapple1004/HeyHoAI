@@ -217,6 +217,20 @@ ul.ledger li.locked .t{color:var(--faint)}
 .eg-check li span:last-child{color:var(--mute);font-variant-numeric:tabular-nums}
 .eg-check li span.ok{color:var(--acc)}
 
+/* 고객 운영(서랍 안) */
+.sec{margin-top:8px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.sec>h4{font-size:12px;color:var(--faint);font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-4{display:grid;grid-template-columns:1.4fr .7fr 1fr 1fr;gap:8px}
+.pagebox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+.pagebox a{font-size:12px;border:1px solid var(--line2);border-radius:8px;padding:4px 10px;text-decoration:none;color:var(--text);white-space:nowrap}
+.pagebox a:hover{background:var(--hover)}
+.pagebox code{flex:1 1 200px;min-width:0;font-size:11.5px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rep{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px}
+.rep .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lead .ops{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.lead .ops span{font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--line2);color:var(--dim)}
+.lead .ops span.live{border-color:rgba(90,211,138,.35);color:var(--green)}
 @media(max-width:1100px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.eg-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.eg-col:nth-child(2)::after,.eg-col:nth-child(2)::before{display:none}.eg-bottom{grid-template-columns:1fr}}
 @media(max-width:640px){.flow{grid-template-columns:1fr}.flow li{min-height:0}.form{grid-template-columns:1fr}.logform{grid-template-columns:1fr}ul.log li{grid-template-columns:1fr;gap:2px}ul.todo li{grid-template-columns:80px 1fr}ul.todo .who{display:none}ul.ledger li{grid-template-columns:70px 1fr}ul.ledger .a,ul.ledger .k{display:none}.eg-flow{grid-template-columns:1fr}.eg-col::after,.eg-col::before{display:none}}
 </style>
@@ -556,7 +570,7 @@ function render() {
 
   $('#board').innerHTML = b.leadStages.map((st) => {
     const items = D.leads.filter((l) => l.stage === st);
-    return `<div class="col" data-stage="${esc(st)}" data-board="lead"><h3>${esc(st)} <span>${items.length}</span></h3>${items.map((l) => `<div class="lead" draggable="true" data-lead="${l.id}"><div class="nm">${esc(l.name)}</div><div class="sm">${esc([l.kind, l.source].filter(Boolean).join(' · '))}</div>${l.next_action || l.next_date ? `<div class="next"><span class="d ${dueClass(l.next_date)}">${dueText(l.next_date)}</span>${esc(l.next_action)}</div>` : ''}</div>`).join('')}</div>`;
+    return `<div class="col" data-stage="${esc(st)}" data-board="lead"><h3>${esc(st)} <span>${items.length}</span></h3>${items.map((l) => `<div class="lead" draggable="true" data-lead="${l.id}"><div class="nm">${esc(l.name)}</div><div class="sm">${esc([l.kind, l.source].filter(Boolean).join(' · '))}</div>${l.next_action || l.next_date ? `<div class="next"><span class="d ${dueClass(l.next_date)}">${dueText(l.next_date)}</span>${esc(l.next_action)}</div>` : ''}${opsTags(l)}</div>`).join('')}</div>`;
   }).join('');
 
   const kinds = ['전체', ...new Set(D.log.map((l) => l.kind))];
@@ -678,18 +692,76 @@ function flowDrawer(id) {
   });
 }
 
+// 고객 카드 아래 작은 표시: 스튜디오·형태·고객 페이지 켜짐
+function opsTags(l) {
+  const o = l.ops || {};
+  const tags = [o.studio, o.service && o.service !== '미정' ? o.service : ''].filter(Boolean).map((x) => `<span>${esc(x)}</span>`);
+  if (l.page_on) tags.push('<span class="live">페이지 켜짐</span>');
+  return tags.length ? `<div class="ops">${tags.join('')}</div>` : '';
+}
+const SERVICES = ['미정', '구축', '운영', '구축+운영', '자사'];
+const SHARES = ['미정', '실명', '업종만', '내부만'];
+const mondayOf = (d = new Date()) => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+const pageUrl = (l) => (l.page_token ? `${location.origin}/c/${l.page_token}` : '');
+
+// 이번 주 보고 초안 — 원장 카드·기록에서 그 고객 이름이 나온 지난 7일 일을 모은다(대표가 고쳐서 게시)
+async function draftFor(l) {
+  if (!L) { try { L = await api('GET', '/api/admin/hq/ledger'); } catch (_) { L = { cards: [] }; } }
+  const since = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const name = l.name.replace(/\s*\(.*\)$/, '');
+  const fromLedger = L.cards.filter((c) => !c.sensitive && String(c.day || '') >= since && [c.title, c.body && c.body.what].join(' ').includes(name)).map((c) => `· ${c.title}`);
+  const fromLog = D.log.filter((g) => String(g.at).slice(0, 10) >= since && g.text.includes(name) && !['고객', '보고', '결정', '판', '흐름'].includes(g.kind)).map((g) => `· ${g.text}`);
+  const done = [...new Set([...fromLedger, ...fromLog])].slice(0, 8).join('\n');
+  return { week: mondayOf(), metricValue: (l.ops && l.ops.metric && l.ops.metric.now) || '', done, next: l.next_action || '' };
+}
+
 function leadDrawer(id) {
   const l = D.leads.find((x) => x.id === id);
-  const opts = D.board.leadStages.map((o) => `<option ${o === l.stage ? 'selected' : ''}>${esc(o)}</option>`).join('');
-  const f = (k, label, ta) => `<label class="field">${label}${ta ? `<textarea id="l_${k}" rows="5">${esc(l[k])}</textarea>` : `<input id="l_${k}" value="${esc(l[k])}">`}</label>`;
+  const o = l.ops || {}, m = o.metric || {};
+  const opts = D.board.leadStages.map((s) => `<option ${s === l.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
+  const sel = (idv, list, cur) => `<select id="${idv}">${list.map((x) => `<option ${x === (cur || '미정') ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  const studios = [...new Set(D.leads.map((x) => x.ops && x.ops.studio).filter(Boolean))];
+  const f = (k, label, ta) => `<label class="field">${label}${ta ? `<textarea id="l_${k}" rows="4">${esc(l[k])}</textarea>` : `<input id="l_${k}" value="${esc(l[k])}">`}</label>`;
+  const reps = (D.reports || []).filter((r) => r.lead_id === l.id);
+  const repHtml = reps.length ? reps.map((r) => `<div class="rep" data-rep="${r.id}">
+      <div class="row"><input type="date" class="r-week" value="${esc(r.week)}" style="width:auto"><input class="r-metric" placeholder="핵심 숫자" value="${esc(r.metric_value)}" style="width:110px">${pill(r.status === '게시' ? '결정' : '대기').replace(/결정|대기/, r.status)}</div>
+      <label class="field">한 일<textarea class="r-done" rows="3">${esc(r.done)}</textarea></label>
+      <label class="field">다음 주<textarea class="r-next" rows="2">${esc(r.next)}</textarea></label>
+      <div class="acts"><button class="sm r-save">저장</button><button class="sm r-post ${r.status === '게시' ? '' : 'pri'}">${r.status === '게시' ? '고객 페이지에서 내리기' : '고객 페이지에 게시'}</button><button class="sm danger r-del">삭제</button></div></div>`).join('') : '<div class="empty">아직 보고가 없습니다.</div>';
   drawer(l.name, `
     <label class="field">단계<select id="l_stage">${opts}</select></label>
     ${f('next_action', '다음 할 일')}
     <label class="field">그 날짜<input id="l_next_date" type="date" value="${esc(l.next_date || '')}"></label>
-    ${f('name', '이름')}${f('kind', '업종')}${f('source', '들어온 곳')}${f('contact', '연락처')}${f('note', '메모', true)}
-    <div class="field">사업체 연결${l.business_id ? `<div class="v"><a href="/admin-business/${encodeURIComponent(l.business_id)}">사업체 화면 열기</a></div>` : '<div class="v">연결 안 됨</div>'}</div>
-    <div class="field">마지막 수정<div class="v">${TIME(l.updated_at)}</div></div>
-    <div class="acts"><button class="pri" id="lSave">저장</button><button class="danger" id="lDel">삭제</button></div>`, (el) => {
+
+    <div class="sec"><h4>운영</h4>
+      <div class="grid-2"><label class="field">형태${sel('o_service', SERVICES, o.service)}</label>
+        <label class="field">스튜디오<input id="o_studio" value="${esc(o.studio || '')}" list="studioList" placeholder="예: 마케팅 스튜디오"><datalist id="studioList">${studios.map((s) => `<option value="${esc(s)}">`).join('')}</datalist></label></div>
+      <label class="field">범위<textarea id="o_scope" rows="2" placeholder="해 주기로 한 일">${esc(o.scope || '')}</textarea></label>
+      <div class="grid-2"><label class="field">시작일<input id="o_started" type="date" value="${esc(o.started || '')}"></label>
+        <label class="field">공개 수준${sel('o_share', SHARES, o.share)}</label></div>
+      <label class="field">핵심 숫자 <small>이름 · 단위 · 시작값 · 지금값</small><div class="grid-4"><input id="o_mname" value="${esc(m.name || '')}" placeholder="예: 신규 초진"><input id="o_munit" value="${esc(m.unit || '')}" placeholder="명"><input id="o_mstart" value="${esc(m.start || '')}" placeholder="시작"><input id="o_mnow" value="${esc(m.now || '')}" placeholder="지금"></div></label>
+      <label class="field">시작 전 기록 <small>사이트·계정 주소, 숫자, 날짜 — 한 번 놓치면 다시 못 구함</small><textarea id="o_before" rows="3">${esc(o.before || '')}</textarea></label>
+      <div class="acts"><button class="pri" id="oSave">운영 정보 저장</button></div>
+    </div>
+
+    <div class="sec"><h4>고객 전용 페이지 ${l.page_on ? '<span class="pill s-live">켜짐</span>' : '<span class="pill">꺼짐</span>'}</h4>
+      <div class="pagebox">${l.page_token ? `<code id="pUrl">${esc(pageUrl(l))}</code><button class="sm" id="pCopy">주소 복사</button><a class="sm" href="${esc(pageUrl(l))}" target="_blank" rel="noopener">열어 보기</a>` : '<span>아직 주소가 없습니다.</span>'}</div>
+      <div class="acts"><button class="sm ${l.page_on ? '' : 'pri'}" id="pToggle">${l.page_on ? '끄기' : '켜기'}</button>${l.page_token ? '<button class="sm" id="pNew">주소 새로 만들기</button>' : ''}</div>
+      <div class="field"><small>로그인 없이 이 주소로 열립니다. 게시한 주간 보고·핵심 숫자·결과물만 보이고 메모·연락처·내부 기록은 안 보입니다.</small></div>
+    </div>
+
+    <div class="sec"><h4>주간 보고</h4>
+      <div class="acts" style="padding-top:0"><button class="sm pri" id="rNew">이번 주 초안 만들기</button></div>
+      ${repHtml}
+    </div>
+
+    <div class="sec"><h4>기본 정보</h4>
+      ${f('name', '이름')}${f('kind', '업종')}${f('source', '들어온 곳')}${f('contact', '연락처')}${f('note', '메모', true)}
+      <div class="field">사업체 연결${l.business_id ? `<div class="v"><a href="/admin-business/${encodeURIComponent(l.business_id)}">사업체 화면 열기</a></div>` : '<div class="v">연결 안 됨</div>'}</div>
+      <div class="field">마지막 수정<div class="v">${TIME(l.updated_at)}</div></div>
+      <div class="acts"><button class="pri" id="lSave">저장</button><button class="danger" id="lDel">삭제</button></div>
+    </div>`, (el) => {
+    const reopen = () => { const again = D.leads.find((x) => x.id === id); if (again) leadDrawer(id); };
     $('#lSave', el).onclick = async () => {
       const body = { stage: $('#l_stage', el).value };
       for (const k of ['name', 'kind', 'source', 'contact', 'note']) body[k] = $(`#l_${k}`, el).value;
@@ -701,6 +773,25 @@ function leadDrawer(id) {
       if (!confirm(`「${l.name}」을 지울까요? 되돌릴 수 없습니다.`)) return;
       if (await act('DELETE', `/api/admin/hq/leads/${l.id}`, null, '지웠습니다')) closeDrawer();
     };
+    $('#oSave', el).onclick = async () => {
+      const ops = { service: $('#o_service', el).value, studio: $('#o_studio', el).value, scope: $('#o_scope', el).value, started: $('#o_started', el).value, share: $('#o_share', el).value, before: $('#o_before', el).value,
+        metric: { name: $('#o_mname', el).value, unit: $('#o_munit', el).value, start: $('#o_mstart', el).value, now: $('#o_mnow', el).value } };
+      if (await act('PUT', `/api/admin/hq/leads/${l.id}/ops`, { ops }, '운영 정보를 저장했습니다')) reopen();
+    };
+    $('#pToggle', el).onclick = async () => { if (await act('POST', `/api/admin/hq/leads/${l.id}/page`, { on: !l.page_on }, l.page_on ? '페이지를 껐습니다' : '페이지를 켰습니다')) reopen(); };
+    const pNew = $('#pNew', el); if (pNew) pNew.onclick = async () => {
+      if (!confirm('주소를 새로 만들면 예전 링크는 바로 안 열립니다. 새로 만들까요?')) return;
+      if (await act('POST', `/api/admin/hq/leads/${l.id}/page`, { on: l.page_on, regenerate: true }, '새 주소를 만들었습니다')) reopen();
+    };
+    const pCopy = $('#pCopy', el); if (pCopy) pCopy.onclick = async () => { try { await navigator.clipboard.writeText(pageUrl(l)); say('주소를 복사했습니다'); } catch (_) { say('복사가 막혔습니다. 주소를 직접 선택해 주세요'); } };
+    $('#rNew', el).onclick = async () => { if (reps.some((r) => r.week === mondayOf()) && !confirm('이번 주 보고가 이미 있습니다. 하나 더 만들까요?')) return; const body = await draftFor(l); if (await act('POST', `/api/admin/hq/leads/${l.id}/reports`, body, '초안을 만들었습니다')) reopen(); };
+    el.querySelectorAll('[data-rep]').forEach((box) => {
+      const rid = box.dataset.rep, cur = reps.find((x) => x.id === rid);
+      const read = () => ({ week: $('.r-week', box).value, metricValue: $('.r-metric', box).value, done: $('.r-done', box).value, next: $('.r-next', box).value });
+      $('.r-save', box).onclick = async () => { if (await act('PUT', `/api/admin/hq/reports/${rid}`, read(), '보고를 저장했습니다')) reopen(); };
+      $('.r-post', box).onclick = async () => { if (await act('PUT', `/api/admin/hq/reports/${rid}`, { ...read(), status: cur.status === '게시' ? '초안' : '게시' }, cur.status === '게시' ? '내렸습니다' : '고객 페이지에 게시했습니다')) reopen(); };
+      $('.r-del', box).onclick = async () => { if (!confirm('이 보고를 지울까요?')) return; if (await act('DELETE', `/api/admin/hq/reports/${rid}`, null, '지웠습니다')) reopen(); };
+    });
   });
 }
 

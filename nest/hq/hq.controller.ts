@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res, Us
 import * as path from 'path';
 import { HqService } from './hq.service';
 import { HqLedgerService } from './hq-ledger.service';
+import { HqClientsService } from './hq-clients.service';
 import { HqGuard, HqPageGuard } from './hq.guard';
 import { PageExceptionFilter } from '../pages/page-exception.filter';
 import { ApiOk, ApiResponse } from '../common/dto/api-response.dto';
@@ -18,6 +19,12 @@ import {
   HqLeadDto,
   HqLeadUpdateDto,
   HqLedgerBulkDto,
+  HqLeadOpsDto,
+  HqLeadPageDto,
+  HqReportCreateDto,
+  HqReportDto,
+  HqReportUpdateDto,
+  HqClientPageDto,
   HqLedgerBulkResultDto,
   HqLedgerListDto,
   HqVaultCreateDto,
@@ -34,7 +41,7 @@ import {
 @Controller('api/admin/hq')
 @UseGuards(HqGuard)
 export class AdminHqController {
-  constructor(private readonly hq: HqService, private readonly ledger: HqLedgerService) {}
+  constructor(private readonly hq: HqService, private readonly ledger: HqLedgerService, private readonly clients: HqClientsService) {}
 
   // GET /api/admin/hq — 판·결정·고객·기록 한 번에
   @Get()
@@ -92,6 +99,39 @@ export class AdminHqController {
   @Put('leads/:id')
   async updateLead(@Param('id') id: string, @Body() body: HqLeadUpdateDto, @Req() req: any): Promise<ApiResponse<HqLeadDto>> {
     return { success: true, data: await this.hq.updateLead(id, body, req.hqActor) };
+  }
+
+  // PUT /api/admin/hq/leads/:id/ops — 고객 운영 정보(형태·스튜디오·범위·핵심 숫자·시작 전 기록·공개 수준)
+  @Put('leads/:id/ops')
+  async leadOps(@Param('id') id: string, @Body() body: HqLeadOpsDto, @Req() req: any): Promise<ApiResponse<HqLeadDto>> {
+    return { success: true, data: await this.clients.updateOps(id, body, req.hqActor) };
+  }
+
+  // POST /api/admin/hq/leads/:id/page — 고객 전용 페이지 켜기·끄기·주소 새로 만들기
+  @Post('leads/:id/page')
+  @HttpCode(200)
+  async leadPage(@Param('id') id: string, @Body() body: HqLeadPageDto, @Req() req: any): Promise<ApiResponse<HqLeadDto>> {
+    return { success: true, data: await this.clients.setPage(id, body, req.hqActor) };
+  }
+
+  // POST /api/admin/hq/leads/:id/reports — 주간 보고 초안
+  @Post('leads/:id/reports')
+  @HttpCode(200)
+  async createReport(@Param('id') id: string, @Body() body: HqReportCreateDto, @Req() req: any): Promise<ApiResponse<HqReportDto>> {
+    return { success: true, data: await this.clients.createReport(id, body, req.hqActor) };
+  }
+
+  // PUT /api/admin/hq/reports/:id — 보고 고치기·게시·내리기
+  @Put('reports/:id')
+  async updateReport(@Param('id') id: string, @Body() body: HqReportUpdateDto, @Req() req: any): Promise<ApiResponse<HqReportDto>> {
+    return { success: true, data: await this.clients.updateReport(id, body, req.hqActor) };
+  }
+
+  // DELETE /api/admin/hq/reports/:id
+  @Delete('reports/:id')
+  async deleteReport(@Param('id') id: string, @Req() req: any): Promise<ApiOk> {
+    await this.clients.deleteReport(id, req.hqActor);
+    return { success: true };
   }
 
   // DELETE /api/admin/hq/leads/:id
@@ -186,4 +226,26 @@ export class HqPageController {
   @UseGuards(HqPageGuard)
   @Get('admin-hq/map')
   map(@Res() res: any) { return res.sendFile(ADMIN_HQ_MAP_PAGE); }
+}
+
+// 고객 전용 페이지 — 로그인 없이 링크 하나로 연다(/c/:token). 보는 전용, 정한 칸만(HqClientsService.clientPage).
+//   API 는 /api/client-page/:token — NEST_PREFIXES 에 등록. 꺼진·없는 주소는 같은 404.
+const CLIENT_PAGE = path.join(__dirname, '..', '..', 'public', 'client-page.html');
+
+@Controller()
+export class HqClientPageController {
+  constructor(private readonly clients: HqClientsService) {}
+
+  @Get('c/:token')
+  page(@Res() res: any) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    return res.sendFile(CLIENT_PAGE);
+  }
+
+  @Get('api/client-page/:token')
+  async data(@Param('token') token: string, @Res({ passthrough: true }) res: any): Promise<ApiResponse<HqClientPageDto>> {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    return { success: true, data: await this.clients.clientPage(token) };
+  }
 }

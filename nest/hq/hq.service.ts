@@ -90,15 +90,16 @@ export class HqService {
   }
 
   async snapshot(actor: HqActor): Promise<HqSnapshotDto> {
-    const [state, decisions, leads, refs, log, me] = await Promise.all([
+    const [state, decisions, leads, refs, reports, log, me] = await Promise.all([
       this.repo.getState(BOARD_KEY),
       this.repo.listDecisions(),
       this.repo.listLeads(),
       this.repo.listRefs(),
+      this.repo.listReports(),
       this.repo.listLog(LOG_LIMIT),
       this.who(actor),
     ]);
-    return { board: state ? (state.value as HqBoardDto) : null, decisions, leads, refs, refStages: HQ_REF_STAGES, log, me, env: this.envDb.label(this.envDb.current()) };
+    return { board: state ? (state.value as HqBoardDto) : null, decisions, leads, refs, reports, refStages: HQ_REF_STAGES, log, me, env: this.envDb.label(this.envDb.current()) };
   }
 
   async numbers(): Promise<HqNumbersDto> {

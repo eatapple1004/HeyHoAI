@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from '../db/db.service';
-import { HqDecisionRowVo, HqLeadRowVo, HqLedgerRowVo, HqLogRowVo, HqRefRowVo, HqStateRowVo } from './vo/hq.vo';
+import { HqDecisionRowVo, HqLeadRowVo, HqLedgerRowVo, HqLogRowVo, HqRefRowVo, HqReportRowVo, HqStateRowVo } from './vo/hq.vo';
 
 /**
  * HQ 저장소.
@@ -14,7 +14,7 @@ import { HqDecisionRowVo, HqLeadRowVo, HqLedgerRowVo, HqLogRowVo, HqRefRowVo, Hq
  *   hq_ledger  : 레퍼런스 원장 — 모든 작업 세션에서 거둔 「한 일」 카드. origin 으로 같은 카드를 다시 넣어도 하나로 유지.
  *                민감 카드는 sealed(금고 공개 열쇠로 잠근 글)만 저장하고 제목·내용은 비운다 — 서버·DB 에서는 읽을 수 없다
  */
-const SCHEMA_KEY = 'hq.v4';
+const SCHEMA_KEY = 'hq.v5';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS hq_state (
      key         VARCHAR(40) PRIMARY KEY,
@@ -90,7 +90,29 @@ const SCHEMA_SQL = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_hq_ledger_day ON hq_ledger(day DESC)`,
   `ALTER TABLE hq_refs ADD COLUMN IF NOT EXISTS ledger_id UUID REFERENCES hq_ledger(id) ON DELETE SET NULL`,
+  // v5(2026-11-29) 고객 운영 — 계약한 고객 카드에 운영 정보(ops)·고객 전용 페이지 주소(page_token)를 붙이고,
+  //   주간 보고(hq_reports)를 쌓는다. 고객 페이지에는 status='게시' 인 보고만 나간다
+  `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS ops JSONB NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS page_token TEXT`,
+  `ALTER TABLE hq_leads ADD COLUMN IF NOT EXISTS page_on BOOLEAN NOT NULL DEFAULT false`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_hq_leads_page_token ON hq_leads(page_token) WHERE page_token IS NOT NULL`,
+  `CREATE TABLE IF NOT EXISTS hq_reports (
+     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     lead_id       UUID NOT NULL REFERENCES hq_leads(id) ON DELETE CASCADE,
+     week          DATE NOT NULL,
+     metric_value  TEXT NOT NULL DEFAULT '',
+     done          TEXT NOT NULL DEFAULT '',
+     next          TEXT NOT NULL DEFAULT '',
+     status        TEXT NOT NULL DEFAULT '초안',
+     posted_at     TIMESTAMPTZ,
+     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_hq_reports_lead ON hq_reports(lead_id, week DESC)`,
 ];
+
+/** 주간 보고 행 SELECT 목록 */
+const REPORT_COLS = `id, lead_id, to_char(week, 'YYYY-MM-DD') AS week, metric_value, done, next, status, posted_at, created_at, updated_at`;
 
 /** 원장 행 SELECT 목록 */
 const LEDGER_COLS = `id, origin, to_char(day, 'YYYY-MM-DD') AS day, area, title, kind, sensitive, body, sealed, session, created_at, updated_at`;
@@ -99,7 +121,7 @@ const LEDGER_COLS = `id, origin, to_char(day, 'YYYY-MM-DD') AS day, area, title,
 const REF_COLS = `id, title, client, kind, source, stage, lead_id, ledger_id, result_url, note, published, to_char(done_date, 'YYYY-MM-DD') AS done_date, created_at, updated_at`;
 
 /** 고객 행 SELECT 목록 — 날짜는 시간대 밀림이 없게 'YYYY-MM-DD' 문자열로 낸다 */
-const LEAD_COLS = `id, name, kind, source, stage, contact, note, business_id, next_action, to_char(next_date, 'YYYY-MM-DD') AS next_date, created_at, updated_at`;
+const LEAD_COLS = `id, name, kind, source, stage, contact, note, business_id, next_action, to_char(next_date, 'YYYY-MM-DD') AS next_date, ops, page_token, page_on, created_at, updated_at`;
 
 @Injectable()
 export class HqRepository {
@@ -273,6 +295,66 @@ export class HqRepository {
 
   async deleteRef(id: string): Promise<void> {
     await this.db.query(`DELETE FROM hq_refs WHERE id = $1`, [id]);
+  }
+
+  // ─── 고객 운영(ops·고객 페이지·주간 보고) ───
+  async setLeadOps(id: string, ops: unknown): Promise<HqLeadRowVo> {
+    const r = await this.db.query<HqLeadRowVo>(`UPDATE hq_leads SET ops = $2, updated_at = now() WHERE id = $1 RETURNING ${LEAD_COLS}`, [id, JSON.stringify(ops)]);
+    return r.rows[0];
+  }
+
+  async setLeadPage(id: string, token: string | null, on: boolean): Promise<HqLeadRowVo> {
+    const r = await this.db.query<HqLeadRowVo>(`UPDATE hq_leads SET page_token = COALESCE($2, page_token), page_on = $3, updated_at = now() WHERE id = $1 RETURNING ${LEAD_COLS}`, [id, token, on]);
+    return r.rows[0];
+  }
+
+  /** 고객 페이지 — 켜져 있는 주소만 찾는다(꺼졌거나 없는 주소는 null) */
+  async findLeadByPage(token: string): Promise<HqLeadRowVo | null> {
+    await this.ensure();
+    const r = await this.db.query<HqLeadRowVo>(`SELECT ${LEAD_COLS} FROM hq_leads WHERE page_token = $1 AND page_on`, [token]);
+    return r.rows[0] || null;
+  }
+
+  async listReports(leadId?: string, postedOnly = false): Promise<HqReportRowVo[]> {
+    await this.ensure();
+    const where = [leadId ? 'lead_id = $1' : '', postedOnly ? `status = '게시'` : ''].filter(Boolean).join(' AND ');
+    const r = await this.db.query<HqReportRowVo>(`SELECT ${REPORT_COLS} FROM hq_reports${where ? ` WHERE ${where}` : ''} ORDER BY week DESC, created_at DESC`, leadId ? [leadId] : []);
+    return r.rows;
+  }
+
+  async findReport(id: string): Promise<HqReportRowVo | null> {
+    await this.ensure();
+    const r = await this.db.query<HqReportRowVo>(`SELECT ${REPORT_COLS} FROM hq_reports WHERE id = $1`, [id]);
+    return r.rows[0] || null;
+  }
+
+  async insertReport(d: { leadId: string; week: string; metricValue: string; done: string; next: string }): Promise<HqReportRowVo> {
+    await this.ensure();
+    const r = await this.db.query<HqReportRowVo>(
+      `INSERT INTO hq_reports (lead_id, week, metric_value, done, next) VALUES ($1, $2::date, $3, $4, $5) RETURNING ${REPORT_COLS}`,
+      [d.leadId, d.week, d.metricValue, d.done, d.next],
+    );
+    return r.rows[0];
+  }
+
+  async updateReport(id: string, d: { week: string; metricValue: string; done: string; next: string; status: string }): Promise<HqReportRowVo> {
+    const r = await this.db.query<HqReportRowVo>(
+      `UPDATE hq_reports SET week = $2::date, metric_value = $3, done = $4, next = $5, status = $6,
+              posted_at = CASE WHEN $6 = '게시' THEN COALESCE(posted_at, now()) ELSE NULL END, updated_at = now()
+        WHERE id = $1 RETURNING ${REPORT_COLS}`,
+      [id, d.week, d.metricValue, d.done, d.next, d.status],
+    );
+    return r.rows[0];
+  }
+
+  async deleteReport(id: string): Promise<void> {
+    await this.db.query(`DELETE FROM hq_reports WHERE id = $1`, [id]);
+  }
+
+  /** 고객 페이지 「결과물」 — 그 고객에 이어진 레퍼런스 중 완성 이후 단계만 */
+  async refsForLead(leadId: string): Promise<HqRefRowVo[]> {
+    const r = await this.db.query<HqRefRowVo>(`SELECT ${REF_COLS} FROM hq_refs WHERE lead_id = $1 AND stage <> '작업 중' ORDER BY done_date DESC NULLS LAST, updated_at DESC`, [leadId]);
+    return r.rows;
   }
 
   // ─── 레퍼런스 원장 ───
